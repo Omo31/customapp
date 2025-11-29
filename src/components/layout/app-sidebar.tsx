@@ -4,7 +4,7 @@ import { Sidebar, SidebarHeader, SidebarContent, SidebarMenu, SidebarMenuItem, S
 import { Logo } from "@/components/logo"
 import { useAuth } from "@/hooks/use-auth.tsx"
 import { usePathname } from "next/navigation"
-import { Home, User as UserIcon, LogOut, FileText, Package } from "lucide-react"
+import { Home, User as UserIcon, LogOut, FileText } from "lucide-react"
 import Link from "next/link"
 
 export default function AppSidebar() {
@@ -13,7 +13,6 @@ export default function AppSidebar() {
   
     const navLinks = [
         { href: '/', label: 'Home', icon: <Home />, protected: false },
-        { href: '/gallery', label: 'Gallery', icon: <Package />, protected: false },
         { href: '/custom-order', label: 'Custom Order', icon: <FileText />, protected: true },
     ];
     
