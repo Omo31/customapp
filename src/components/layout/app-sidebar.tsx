@@ -5,7 +5,7 @@ import { Logo } from "@/components/logo"
 import { Button } from "@/components/ui/button"
 import { useAuth } from "@/hooks/use-auth"
 import { usePathname } from "next/navigation"
-import { Home, Palette, LayoutDashboard, User as UserIcon, LogOut, LogIn, UserPlus } from "lucide-react"
+import { Home, Palette, LayoutDashboard, User as UserIcon, LogOut, LogIn, UserPlus, FileText } from "lucide-react"
 import Link from "next/link"
 
 export default function AppSidebar() {
@@ -16,6 +16,7 @@ export default function AppSidebar() {
         { href: '/', label: 'Home', icon: <Home />, protected: false },
         { href: '/generate', label: 'Generate', icon: <Palette />, protected: true },
         { href: '/gallery', label: 'Gallery', icon: <LayoutDashboard />, protected: true },
+        { href: '/custom-order', label: 'Custom Order', icon: <FileText />, protected: true },
     ];
     
     return (
