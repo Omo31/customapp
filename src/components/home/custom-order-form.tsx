@@ -16,15 +16,15 @@ import {
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { useAuth } from "@/hooks/use-auth"
+import { useAuth } from "@/hooks/use-auth.tsx"
 import { useToast } from "@/hooks/use-toast"
 import { useRouter } from "next/navigation"
 import { Loader2 } from "lucide-react"
 
 const formSchema = z.object({
-  title: z.string().min(2, { message: "Title must be at least 2 characters." }),
-  description: z.string().min(10, { message: "Please provide a detailed description." }),
-  size: z.string().optional(),
+  itemName: z.string().min(2, { message: "Item name must be at least 2 characters." }),
+  description: z.string().min(10, { message: "Please provide a detailed description of the item." }),
+  quantity: z.string().optional(),
 })
 
 export function CustomOrderForm() {
@@ -36,9 +36,9 @@ export function CustomOrderForm() {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      title: "",
+      itemName: "",
       description: "",
-      size: "",
+      quantity: "",
     },
   })
 
@@ -46,7 +46,7 @@ export function CustomOrderForm() {
     if (!user) {
       toast({
         title: "Authentication Required",
-        description: "Please log in to submit a custom order.",
+        description: "Please log in to submit a special request.",
         variant: "destructive",
         action: (
           <Button onClick={() => router.push("/login")}>Login</Button>
@@ -60,8 +60,8 @@ export function CustomOrderForm() {
     // Simulate API call
     setTimeout(() => {
       toast({
-        title: "Quote Submitted!",
-        description: "We've received your custom order request and will get back to you shortly.",
+        title: "Request Submitted!",
+        description: "We've received your special request and will get back to you shortly.",
       })
       form.reset()
       setIsSubmitting(false)
@@ -71,19 +71,19 @@ export function CustomOrderForm() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="font-headline">Request a Custom Order</CardTitle>
+        <CardTitle className="font-headline">Special Item Request</CardTitle>
       </CardHeader>
       <CardContent>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             <FormField
               control={form.control}
-              name="title"
+              name="itemName"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Image Title</FormLabel>
+                  <FormLabel>Item Name</FormLabel>
                   <FormControl>
-                    <Input placeholder="e.g., 'Cyberpunk City at Night'" {...field} />
+                    <Input placeholder="e.g., 'Fresh Bitter-leaf'" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -97,7 +97,7 @@ export function CustomOrderForm() {
                   <FormLabel>Detailed Description</FormLabel>
                   <FormControl>
                     <Textarea
-                      placeholder="Describe the scene, characters, colors, and style you envision."
+                      placeholder="Describe the item, including any specific brand, type, or preparation you're looking for."
                       rows={6}
                       {...field}
                     />
@@ -108,12 +108,12 @@ export function CustomOrderForm() {
             />
              <FormField
               control={form.control}
-              name="size"
+              name="quantity"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Image Size (Optional)</FormLabel>
+                  <FormLabel>Quantity (Optional)</FormLabel>
                   <FormControl>
-                    <Input placeholder="e.g., '1920x1080px' or '1:1 ratio'" {...field} />
+                    <Input placeholder="e.g., '2 bunches' or '500g'" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
