@@ -3,7 +3,7 @@
 
 import { useFirestore, useCollection } from "@/firebase";
 import { UserProfile } from "@/types";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import {
   Table,
   TableHeader,
@@ -14,24 +14,50 @@ import {
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { allAdminRoles } from "@/lib/roles";
-import { doc, updateDoc } from "firebase/firestore";
+import { doc, updateDoc, DocumentData, DocumentSnapshot } from "firebase/firestore";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
 import { Label } from "@/components/ui/label";
 import { Eye } from "lucide-react";
+import { useState } from "react";
+import { Pagination, PaginationContent, PaginationItem, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
+
+const PAGE_SIZE = 10;
 
 export default function AdminUsersPage() {
   const db = useFirestore();
   const { toast } = useToast();
-  const { data: users, loading, error } = useCollection<UserProfile>(
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageHistory, setPageHistory] = useState<(DocumentSnapshot<DocumentData> | null)[]>([null]);
+  
+  const { data: users, loading, error, lastDoc } = useCollection<UserProfile>(
     db,
     "users",
     {
       orderBy: ["firstName", "asc"],
+      limit: PAGE_SIZE,
+      startAfter: pageHistory[currentPage - 1]
     }
   );
+
+  const handleNextPage = () => {
+    if (lastDoc) {
+      const newHistory = [...pageHistory, lastDoc];
+      setPageHistory(newHistory);
+      setCurrentPage(currentPage + 1);
+    }
+  };
+
+  const handlePreviousPage = () => {
+    if (currentPage > 1) {
+      setPageHistory(pageHistory.slice(0, -1));
+      setCurrentPage(currentPage - 1);
+    }
+  };
+
+  const canGoNext = users && users.length === PAGE_SIZE;
 
   const handleRoleChange = async (
     userId: string,
@@ -93,10 +119,10 @@ export default function AdminUsersPage() {
         </CardHeader>
         <CardContent>
           {loading && (
-            <div className="space-y-4">
-              <Skeleton className="h-10 w-full" />
-              <Skeleton className="h-10 w-full" />
-              <Skeleton className="h-10 w-full" />
+            <div className="space-y-2">
+              {[...Array(PAGE_SIZE)].map((_, i) => (
+                <Skeleton key={i} className="h-16 w-full" />
+              ))}
             </div>
           )}
           {error && (
@@ -162,6 +188,21 @@ export default function AdminUsersPage() {
             </Table>
           )}
         </CardContent>
+         <CardFooter>
+            <Pagination>
+                <PaginationContent>
+                    <PaginationItem>
+                        <PaginationPrevious onClick={handlePreviousPage} aria-disabled={currentPage === 1} className={currentPage === 1 ? "pointer-events-none opacity-50" : undefined} />
+                    </PaginationItem>
+                    <PaginationItem>
+                       <span className="p-2 text-sm">Page {currentPage}</span>
+                    </PaginationItem>
+                    <PaginationItem>
+                        <PaginationNext onClick={handleNextPage} aria-disabled={!canGoNext} className={!canGoNext ? "pointer-events-none opacity-50" : undefined} />
+                    </PaginationItem>
+                </PaginationContent>
+            </Pagination>
+        </CardFooter>
       </Card>
     </div>
   );

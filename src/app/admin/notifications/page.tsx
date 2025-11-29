@@ -2,18 +2,43 @@
 
 import { useFirestore, useCollectionGroup } from "@/firebase";
 import { Notification } from "@/types";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { useState } from "react";
+import { DocumentData, DocumentSnapshot } from "firebase/firestore";
+import { Pagination, PaginationContent, PaginationItem, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
+
+const PAGE_SIZE = 20;
 
 export default function AdminNotificationsPage() {
   const db = useFirestore();
-  // Using collectionGroup to get notifications from all users
-  const { data: notifications, loading } = useCollectionGroup<Notification>(db, `notifications`, {
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageHistory, setPageHistory] = useState<(DocumentSnapshot<DocumentData> | null)[]>([null]);
+  
+  const { data: notifications, loading, lastDoc } = useCollectionGroup<Notification>(db, `notifications`, {
       orderBy: ["createdAt", "desc"],
-      limit: 50 // To avoid fetching too many documents at once
+      limit: PAGE_SIZE,
+      startAfter: pageHistory[currentPage - 1]
   });
+
+  const handleNextPage = () => {
+    if (lastDoc) {
+      const newHistory = [...pageHistory, lastDoc];
+      setPageHistory(newHistory);
+      setCurrentPage(currentPage + 1);
+    }
+  };
+
+  const handlePreviousPage = () => {
+    if (currentPage > 1) {
+      setPageHistory(pageHistory.slice(0, -1));
+      setCurrentPage(currentPage - 1);
+    }
+  };
+
+  const canGoNext = notifications && notifications.length === PAGE_SIZE;
 
   return (
     <div className="space-y-6">
@@ -31,9 +56,9 @@ export default function AdminNotificationsPage() {
         <CardContent>
           {loading && (
             <div className="space-y-4">
-              <Skeleton className="h-12 w-full" />
-              <Skeleton className="h-12 w-full" />
-              <Skeleton className="h-12 w-full" />
+              {[...Array(PAGE_SIZE)].map((_, i) => (
+                <Skeleton key={i} className="h-12 w-full" />
+              ))}
             </div>
           )}
           {!loading && notifications && notifications.length > 0 && (
@@ -44,7 +69,7 @@ export default function AdminNotificationsPage() {
                     <p className="font-semibold">{notif.title}</p>
                     <p className="text-sm text-muted-foreground">{notif.description}</p>
                     <p className="text-xs text-muted-foreground mt-1">
-                      User: ...{notif.userId.slice(-6)} | {new Date(notif.createdAt?.seconds * 1000).toLocaleString()}
+                      User: ...{notif.userId.slice(-6)} | {notif.createdAt?.seconds ? new Date(notif.createdAt.seconds * 1000).toLocaleString() : 'Just now'}
                     </p>
                   </div>
                   {notif.href && (
@@ -60,6 +85,21 @@ export default function AdminNotificationsPage() {
             <p className="text-muted-foreground">No notifications to display.</p>
           )}
         </CardContent>
+        <CardFooter>
+            <Pagination>
+                <PaginationContent>
+                    <PaginationItem>
+                        <PaginationPrevious onClick={handlePreviousPage} aria-disabled={currentPage === 1} className={currentPage === 1 ? "pointer-events-none opacity-50" : undefined} />
+                    </PaginationItem>
+                    <PaginationItem>
+                       <span className="p-2 text-sm">Page {currentPage}</span>
+                    </PaginationItem>
+                    <PaginationItem>
+                        <PaginationNext onClick={handleNextPage} aria-disabled={!canGoNext} className={!canGoNext ? "pointer-events-none opacity-50" : undefined} />
+                    </PaginationItem>
+                </PaginationContent>
+            </Pagination>
+        </CardFooter>
       </Card>
     </div>
   )

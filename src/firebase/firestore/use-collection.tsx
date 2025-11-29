@@ -1,18 +1,17 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { onSnapshot, query, collection, where, orderBy, limit, startAfter, endBefore, Query, DocumentData, collectionGroup } from 'firebase/firestore';
+import { onSnapshot, query, collection, where, orderBy, limit, startAfter, endBefore, Query, DocumentData, collectionGroup, getDocs, DocumentSnapshot, QueryConstraint } from 'firebase/firestore';
 import type { Firestore } from 'firebase/firestore';
 
-interface UseCollectionOptions {
+export interface UseCollectionOptions {
     where?: [string, any, any];
     orderBy?: [string, 'asc' | 'desc'];
     limit?: number;
-    startAfter?: any;
-    endBefore?: any;
+    startAfter?: DocumentSnapshot<DocumentData> | null;
+    endBefore?: DocumentSnapshot<DocumentData> | null;
 }
 
-// A memoization utility for Firestore queries
 const useMemoFirebase = <T,>(factory: () => T | null, deps: any[]): T | null => {
   return useMemo(factory, deps);
 };
@@ -25,39 +24,40 @@ export const useCollection = <T,>(
   const [data, setData] = useState<T[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
+  const [firstDoc, setFirstDoc] = useState<DocumentSnapshot<DocumentData> | null>(null);
+  const [lastDoc, setLastDoc] = useState<DocumentSnapshot<DocumentData> | null>(null);
 
   const queryRef = useMemoFirebase(() => {
     if (!db || !path) return null;
     
-    let q: Query<DocumentData> = collection(db, path);
+    const constraints: QueryConstraint[] = [];
 
     if (options.where) {
-      // Ensure we don't try to query with an empty value, which Firestore doesn't allow for certain queries.
       if (options.where[2] === '' || options.where[2] === undefined) {
           return null; 
       }
-      q = query(q, where(options.where[0], options.where[1], options.where[2]));
+      constraints.push(where(options.where[0], options.where[1], options.where[2]));
     }
     if (options.orderBy) {
-      q = query(q, orderBy(options.orderBy[0], options.orderBy[1]));
+        constraints.push(orderBy(options.orderBy[0], options.orderBy[1]));
     }
     if (options.limit) {
-      q = query(q, limit(options.limit));
+        constraints.push(limit(options.limit));
     }
     if (options.startAfter) {
-      q = query(q, startAfter(options.startAfter));
+        constraints.push(startAfter(options.startAfter));
     }
-    if (options.endBefore) {
-        q = query(q, endBefore(options.endBefore));
+     if (options.endBefore) {
+        constraints.push(endBefore(options.endBefore));
     }
 
-    return q;
-  }, [db, path, JSON.stringify(options)]); // Deep dependency check
+    return query(collection(db, path), ...constraints);
+  }, [db, path, JSON.stringify(options)]); // Simple deep dependency check
 
 
   useEffect(() => {
     if (!queryRef) {
-      setData([]); // Return empty array instead of null for consistency
+      setData([]);
       setLoading(false);
       return;
     };
@@ -67,6 +67,8 @@ export const useCollection = <T,>(
     const unsubscribe = onSnapshot(queryRef, (querySnapshot) => {
       const docs = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as unknown as T));
       setData(docs);
+      setFirstDoc(querySnapshot.docs[0] || null);
+      setLastDoc(querySnapshot.docs[querySnapshot.docs.length - 1] || null);
       setLoading(false);
     }, (err) => {
       setError(err);
@@ -77,7 +79,7 @@ export const useCollection = <T,>(
     return () => unsubscribe();
   }, [queryRef]);
 
-  return { data, loading, error };
+  return { data, loading, error, firstDoc, lastDoc };
 };
 
 export const useCollectionGroup = <T,>(
@@ -88,23 +90,31 @@ export const useCollectionGroup = <T,>(
     const [data, setData] = useState<T[] | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<Error | null>(null);
+    const [firstDoc, setFirstDoc] = useState<DocumentSnapshot<DocumentData> | null>(null);
+    const [lastDoc, setLastDoc] = useState<DocumentSnapshot<DocumentData> | null>(null);
 
     const queryRef = useMemoFirebase(() => {
         if (!db || !path) return null;
 
-        let q: Query<DocumentData> = collectionGroup(db, path);
+        const constraints: QueryConstraint[] = [];
 
         if (options.where) {
-            q = query(q, where(options.where[0], options.where[1], options.where[2]));
+            constraints.push(where(options.where[0], options.where[1], options.where[2]));
         }
         if (options.orderBy) {
-            q = query(q, orderBy(options.orderBy[0], options.orderBy[1]));
+            constraints.push(orderBy(options.orderBy[0], options.orderBy[1]));
         }
         if (options.limit) {
-            q = query(q, limit(options.limit));
+            constraints.push(limit(options.limit));
+        }
+         if (options.startAfter) {
+            constraints.push(startAfter(options.startAfter));
+        }
+        if (options.endBefore) {
+            constraints.push(endBefore(options.endBefore));
         }
         
-        return q;
+        return query(collectionGroup(db, path), ...constraints);
     }, [db, path, JSON.stringify(options)]);
 
     useEffect(() => {
@@ -119,6 +129,8 @@ export const useCollectionGroup = <T,>(
         const unsubscribe = onSnapshot(queryRef, (querySnapshot) => {
             const docs = querySnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as unknown as T));
             setData(docs);
+            setFirstDoc(querySnapshot.docs[0] || null);
+            setLastDoc(querySnapshot.docs[querySnapshot.docs.length - 1] || null);
             setLoading(false);
         }, (err) => {
             setError(err);
@@ -129,5 +141,5 @@ export const useCollectionGroup = <T,>(
         return () => unsubscribe();
     }, [queryRef]);
     
-    return { data, loading, error };
+    return { data, loading, error, firstDoc, lastDoc };
 };

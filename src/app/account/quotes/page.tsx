@@ -3,18 +3,46 @@
 import { useFirestore, useCollection } from "@/firebase";
 import { useAuth } from "@/hooks/use-auth";
 import { Quote } from "@/types";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useState } from "react";
+import { DocumentData, DocumentSnapshot } from "firebase/firestore";
+import { Pagination, PaginationContent, PaginationItem, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
+
+const PAGE_SIZE = 10;
 
 export default function QuotesPage() {
     const { user } = useAuth();
     const db = useFirestore();
-    const { data: quotes, loading } = useCollection<Quote>(db, "quotes", {
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pageHistory, setPageHistory] = useState<(DocumentSnapshot<DocumentData> | null)[]>([null]);
+
+
+    const { data: quotes, loading, lastDoc } = useCollection<Quote>(db, "quotes", {
         where: ["userId", "==", user?.uid || ""],
-        orderBy: ["createdAt", "desc"]
+        orderBy: ["createdAt", "desc"],
+        limit: PAGE_SIZE,
+        startAfter: pageHistory[currentPage - 1]
     });
+
+    const handleNextPage = () => {
+        if (lastDoc) {
+          const newHistory = [...pageHistory, lastDoc];
+          setPageHistory(newHistory);
+          setCurrentPage(currentPage + 1);
+        }
+      };
+    
+      const handlePreviousPage = () => {
+        if (currentPage > 1) {
+          setPageHistory(pageHistory.slice(0, -1));
+          setCurrentPage(currentPage - 1);
+        }
+      };
+    
+      const canGoNext = quotes && quotes.length === PAGE_SIZE;
 
 
   return (
@@ -33,9 +61,9 @@ export default function QuotesPage() {
         <CardContent>
           {loading && (
              <div className="space-y-2">
-                <Skeleton className="h-12 w-full" />
-                <Skeleton className="h-12 w-full" />
-                <Skeleton className="h-12 w-full" />
+                {[...Array(PAGE_SIZE)].map((_, i) => (
+                    <Skeleton key={i} className="h-12 w-full" />
+                ))}
               </div>
           )}
           {!loading && quotes && (
@@ -65,6 +93,21 @@ export default function QuotesPage() {
               </Table>
           )}
         </CardContent>
+        <CardFooter>
+            <Pagination>
+                <PaginationContent>
+                    <PaginationItem>
+                        <PaginationPrevious onClick={handlePreviousPage} aria-disabled={currentPage === 1} className={currentPage === 1 ? "pointer-events-none opacity-50" : undefined} />
+                    </PaginationItem>
+                    <PaginationItem>
+                       <span className="p-2 text-sm">Page {currentPage}</span>
+                    </PaginationItem>
+                    <PaginationItem>
+                        <PaginationNext onClick={handleNextPage} aria-disabled={!canGoNext} className={!canGoNext ? "pointer-events-none opacity-50" : undefined} />
+                    </PaginationItem>
+                </PaginationContent>
+            </Pagination>
+        </CardFooter>
       </Card>
     </div>
   )
