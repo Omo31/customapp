@@ -1,3 +1,4 @@
+
 export type User = {
   uid: string;
   email: string | null;
@@ -57,9 +58,11 @@ export type Order = {
 };
 
 export type UserProfile = {
+  id?: string;
   firstName: string;
   lastName: string;
   email: string;
+  photoURL?: string;
   roles: string[];
 };
 
