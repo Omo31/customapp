@@ -2,10 +2,9 @@
 
 import { Sidebar, SidebarHeader, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter } from "@/components/ui/sidebar"
 import { Logo } from "@/components/logo"
-import { Button } from "@/components/ui/button"
 import { useAuth } from "@/hooks/use-auth"
 import { usePathname } from "next/navigation"
-import { Home, Palette, LayoutDashboard, User as UserIcon, LogOut, LogIn, UserPlus, FileText } from "lucide-react"
+import { Home, Palette, LayoutDashboard, User as UserIcon, LogOut, FileText } from "lucide-react"
 import Link from "next/link"
 
 export default function AppSidebar() {
@@ -45,7 +44,7 @@ export default function AppSidebar() {
                 </SidebarMenu>
             </SidebarContent>
             <SidebarFooter>
-                {user ? (
+                {user && (
                     <SidebarMenu>
                         <SidebarMenuItem>
                             <SidebarMenuButton asChild isActive={pathname.startsWith('/account')}>
@@ -62,21 +61,6 @@ export default function AppSidebar() {
                             </SidebarMenuButton>
                         </SidebarMenuItem>
                     </SidebarMenu>
-                ) : (
-                    <div className="flex flex-col gap-2">
-                        <Button asChild>
-                            <Link href="/login">
-                                <LogIn className="mr-2" />
-                                Login
-                            </Link>
-                        </Button>
-                         <Button asChild variant="secondary">
-                            <Link href="/signup">
-                                <UserPlus className="mr-2" />
-                                Sign Up
-                            </Link>
-                        </Button>
-                    </div>
                 )}
             </SidebarFooter>
         </Sidebar>
