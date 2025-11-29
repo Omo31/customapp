@@ -29,13 +29,13 @@
     --chart-3: 197 37% 24%;
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
-    --sidebar-background: 120 25% 97%;
-    --sidebar-foreground: 120 5% 25%;
+    --sidebar-background: 142 80% 96%;
+    --sidebar-foreground: 142 25% 25%;
     --sidebar-primary: 142.1 76.2% 36.3%;
     --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 130 30% 92%;
-    --sidebar-accent-foreground: 120 5% 15%;
-    --sidebar-border: 120 10% 88%;
+    --sidebar-accent: 142 80% 88%;
+    --sidebar-accent-foreground: 142 30% 15%;
+    --sidebar-border: 142 50% 88%;
     --sidebar-ring: 142.1 76.2% 36.3%;
   }
 
@@ -64,13 +64,13 @@
     --chart-3: 30 80% 55%;
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
-    --sidebar-background: 140 20% 12%;
-    --sidebar-foreground: 140 5% 95%;
+    --sidebar-background: 142 90% 10%;
+    --sidebar-foreground: 142 15% 95%;
     --sidebar-primary: 142.1 76.2% 36.3%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 140 20% 18%;
-    --sidebar-accent-foreground: 140 5% 95%;
-    --sidebar-border: 140 10% 20%;
+    --sidebar-accent: 142 70% 20%;
+    --sidebar-accent-foreground: 142 15% 95%;
+    --sidebar-border: 142 50% 20%;
     --sidebar-ring: 142.1 76.2% 36.3%;
   }
 }
