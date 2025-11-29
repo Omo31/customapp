@@ -43,10 +43,10 @@ export default function Home() {
               <div className="flex flex-col justify-center space-y-4">
                 <div className="space-y-2">
                   <h1 className="text-3xl font-bold tracking-tighter sm:text-5xl xl:text-6xl/none font-headline">
-                    Unleash Your Imagination with VisionVerseAI
+                    Unleash Your Inner Chef with BeautifulSoup&Foods
                   </h1>
                   <p className="max-w-[600px] text-muted-foreground md:text-xl">
-                    Turn text into breathtaking images. Our advanced AI-powered platform helps you create unique visuals, enhance your prompts, and manage your creations effortlessly.
+                    Turn text into breathtaking images of food. Our advanced AI-powered platform helps you create unique visuals, enhance your prompts, and manage your creations effortlessly.
                   </p>
                 </div>
                 <div className="flex flex-col gap-2 min-[400px]:flex-row">
@@ -85,7 +85,7 @@ export default function Home() {
                 <div className="inline-block rounded-lg bg-secondary px-3 py-1 text-sm">Key Features</div>
                 <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl font-headline">Craft Worlds with Words</h2>
                 <p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-                  VisionVerseAI provides a powerful suite of tools designed for creators, artists, and innovators. Explore what you can do.
+                  BeautifulSoup&Foods provides a powerful suite of tools designed for creators, artists, and innovators. Explore what you can do.
                 </p>
               </div>
             </div>
@@ -136,7 +136,7 @@ export default function Home() {
             <div className="space-y-3">
               <h2 className="text-3xl font-bold tracking-tighter md:text-4xl/tight font-headline">What Our Users Say</h2>
               <p className="mx-auto max-w-[600px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-                Hear from creative professionals who are using VisionVerseAI to push the boundaries of their work.
+                Hear from creative professionals who are using BeautifulSoup&Foods to push the boundaries of their work.
               </p>
             </div>
             <div className="mx-auto w-full max-w-sm space-y-2">
@@ -153,7 +153,7 @@ export default function Home() {
                             </div>
                         </div>
                         <blockquote className="mt-4 text-lg font-semibold leading-snug">
-                            “VisionVerseAI has completely transformed my workflow. The quality of the generated images is unparalleled.”
+                            “BeautifulSoup&Foods has completely transformed my workflow. The quality of the generated images is unparalleled.”
                         </blockquote>
                     </CardContent>
                 </Card>
@@ -161,7 +161,7 @@ export default function Home() {
              <div className="mt-8 text-center">
                 <Button asChild size="lg">
                     <Link href="/signup">
-                        Join VisionVerseAI Today
+                        Join BeautifulSoup&Foods Today
                         <Sparkles className="ml-2 h-5 w-5" />
                     </Link>
                 </Button>

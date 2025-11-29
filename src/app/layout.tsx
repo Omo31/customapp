@@ -12,8 +12,8 @@ const spaceGrotesk = Space_Grotesk({
 });
 
 export const metadata: Metadata = {
-  title: 'VisionVerseAI',
-  description: 'Generate unique images with the power of AI',
+  title: 'BeautifulSoup&Foods',
+  description: 'Discover delicious recipes and foods',
 };
 
 export default function RootLayout({
