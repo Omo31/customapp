@@ -1,3 +1,4 @@
+
 "use client";
 import { useUser } from "@/firebase";
 import { 
@@ -5,11 +6,15 @@ import {
     createUserWithEmailAndPassword,
     signOut as firebaseSignOut,
     updateProfile,
-    getAuth
+    type User as FirebaseUser,
 } from "firebase/auth";
+import { doc, setDoc } from 'firebase/firestore';
 import { useToast } from "./use-toast";
 import { useState } from "react";
-import { app } from "@/firebase/config";
+import { auth, db } from "@/firebase";
+import type { UserProfile } from "@/types";
+import { errorEmitter } from "@/firebase/error-emitter";
+import { FirestorePermissionError } from "@/firebase/errors";
 
 // This hook is now a wrapper around the core Firebase user state
 // to provide login/signup/logout functions with loading states.
@@ -17,9 +22,28 @@ export const useAuth = () => {
   const { user, loading: userLoading, isAdmin } = useUser();
   const [actionLoading, setActionLoading] = useState(false);
   const { toast } = useToast();
-  const auth = getAuth(app);
 
   const loading = userLoading || actionLoading;
+
+  const saveUserProfile = (firebaseUser: FirebaseUser, firstName: string, lastName: string) => {
+    const userRef = doc(db, 'users', firebaseUser.uid);
+    const userProfile: UserProfile = {
+      firstName,
+      lastName,
+      email: firebaseUser.email || "",
+      // Set isAdmin to true if the email matches the superadmin email
+      isAdmin: firebaseUser.email === "oluwagbengwumi@gmail.com",
+    };
+
+    setDoc(userRef, userProfile, { merge: true }).catch(async (serverError) => {
+        const permissionError = new FirestorePermissionError({
+            path: userRef.path,
+            operation: 'create',
+            requestResourceData: userProfile
+        });
+        errorEmitter.emit('permission-error', permissionError);
+    });
+  }
 
   const login = async (email: string, pass: string) => {
     setActionLoading(true);
@@ -45,8 +69,9 @@ export const useAuth = () => {
       await updateProfile(userCredential.user, {
         displayName: `${firstName} ${lastName}`
       });
-      // You might want to create a user profile document in Firestore here as well
-    } catch (error: any) {
+      // Create the user profile document in Firestore
+      saveUserProfile(userCredential.user, firstName, lastName);
+    } catch (error: any)       {
        toast({
         title: 'Sign Up Failed',
         description: error.message || 'An unexpected error occurred.',
