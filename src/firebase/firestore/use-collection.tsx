@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { onSnapshot, query, collection, where, orderBy, limit, startAfter, endBefore, Query, DocumentData, collectionGroup, getDocs, DocumentSnapshot, QueryConstraint } from 'firebase/firestore';
+import { onSnapshot, query, collection, where, orderBy, limit, startAfter, endBefore, Query, DocumentData, collectionGroup, getDocs, DocumentSnapshot, QueryConstraint, QueryDocumentSnapshot } from 'firebase/firestore';
 import type { Firestore } from 'firebase/firestore';
 import { errorEmitter } from '../error-emitter';
 import { FirestorePermissionError } from '../errors';
@@ -15,6 +15,10 @@ export interface UseCollectionOptions {
     endBefore?: DocumentSnapshot<DocumentData> | null;
 }
 
+// Add a 'doc' property to the generic type T to hold the snapshot
+type WithDoc<T> = T & { doc: QueryDocumentSnapshot<DocumentData> };
+
+
 const useMemoFirebase = <T,>(factory: () => T | null, deps: any[]): T | null => {
   return useMemo(factory, deps);
 };
@@ -24,12 +28,10 @@ export const useCollection = <T,>(
   path: string,
   options: UseCollectionOptions = {}
 ) => {
-  const [data, setData] = useState<T[] | null>(null);
+  const [data, setData] = useState<WithDoc<T>[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
-  const [firstDoc, setFirstDoc] = useState<DocumentSnapshot<DocumentData> | null>(null);
-  const [lastDoc, setLastDoc] = useState<DocumentSnapshot<DocumentData> | null>(null);
-
+  
   const queryRef = useMemoFirebase(() => {
     if (!db || !path) return null;
     
@@ -44,14 +46,14 @@ export const useCollection = <T,>(
     if (options.orderBy) {
         constraints.push(orderBy(options.orderBy[0], options.orderBy[1]));
     }
-    if (options.limit) {
-        constraints.push(limit(options.limit));
-    }
     if (options.startAfter) {
         constraints.push(startAfter(options.startAfter));
     }
      if (options.endBefore) {
         constraints.push(endBefore(options.endBefore));
+    }
+    if (options.limit) {
+        constraints.push(limit(options.limit));
     }
 
     return query(collection(db, path), ...constraints);
@@ -68,10 +70,8 @@ export const useCollection = <T,>(
     setLoading(true);
 
     const unsubscribe = onSnapshot(queryRef, (querySnapshot) => {
-      const docs = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as unknown as T));
+      const docs = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), doc } as unknown as WithDoc<T>));
       setData(docs);
-      setFirstDoc(querySnapshot.docs[0] || null);
-      setLastDoc(querySnapshot.docs[querySnapshot.docs.length - 1] || null);
       setLoading(false);
     }, (err) => {
       setError(err);
@@ -86,7 +86,7 @@ export const useCollection = <T,>(
     return () => unsubscribe();
   }, [queryRef, path]);
 
-  return { data, loading, error, firstDoc, lastDoc };
+  return { data, loading, error };
 };
 
 export const useCollectionGroup = <T,>(
@@ -94,11 +94,9 @@ export const useCollectionGroup = <T,>(
     path: string,
     options: UseCollectionOptions = {}
 ) => {
-    const [data, setData] = useState<T[] | null>(null);
+    const [data, setData] = useState<WithDoc<T>[] | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<Error | null>(null);
-    const [firstDoc, setFirstDoc] = useState<DocumentSnapshot<DocumentData> | null>(null);
-    const [lastDoc, setLastDoc] = useState<DocumentSnapshot<DocumentData> | null>(null);
 
     const queryRef = useMemoFirebase(() => {
         if (!db || !path) return null;
@@ -111,14 +109,14 @@ export const useCollectionGroup = <T,>(
         if (options.orderBy) {
             constraints.push(orderBy(options.orderBy[0], options.orderBy[1]));
         }
-        if (options.limit) {
-            constraints.push(limit(options.limit));
-        }
-         if (options.startAfter) {
+        if (options.startAfter) {
             constraints.push(startAfter(options.startAfter));
         }
         if (options.endBefore) {
             constraints.push(endBefore(options.endBefore));
+        }
+        if (options.limit) {
+            constraints.push(limit(options.limit));
         }
         
         return query(collectionGroup(db, path), ...constraints);
@@ -134,10 +132,8 @@ export const useCollectionGroup = <T,>(
         setLoading(true);
 
         const unsubscribe = onSnapshot(queryRef, (querySnapshot) => {
-            const docs = querySnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as unknown as T));
+            const docs = querySnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id, doc } as unknown as WithDoc<T>));
             setData(docs);
-            setFirstDoc(querySnapshot.docs[0] || null);
-            setLastDoc(querySnapshot.docs[querySnapshot.docs.length - 1] || null);
             setLoading(false);
         }, (err) => {
             setError(err);
@@ -152,5 +148,5 @@ export const useCollectionGroup = <T,>(
         return () => unsubscribe();
     }, [queryRef, path]);
     
-    return { data, loading, error, firstDoc, lastDoc };
+    return { data, loading, error };
 };

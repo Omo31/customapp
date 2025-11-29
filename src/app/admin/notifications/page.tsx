@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useFirestore, useCollectionGroup } from "@/firebase";
@@ -9,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { DocumentData, DocumentSnapshot } from "firebase/firestore";
 import { Pagination, PaginationContent, PaginationItem, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
+import { BellRing } from "lucide-react";
 
 const PAGE_SIZE = 20;
 
@@ -17,19 +19,23 @@ export default function AdminNotificationsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageHistory, setPageHistory] = useState<(DocumentSnapshot<DocumentData> | null)[]>([null]);
   
-  const { data: notifications, loading, lastDoc } = useCollectionGroup<Notification>(db, `notifications`, {
+  const { data: notifications, loading } = useCollectionGroup<Notification>(db, `notifications`, {
       orderBy: ["createdAt", "desc"],
       limit: PAGE_SIZE,
       startAfter: pageHistory[currentPage - 1]
   });
 
+  const { data: allNotifications } = useCollectionGroup<Notification>(db, 'notifications');
+
+
   const handleNextPage = () => {
-    if (lastDoc) {
-      const newHistory = [...pageHistory, lastDoc];
+    if (allNotifications && (currentPage * PAGE_SIZE < allNotifications.length)) {
+      const newHistory = [...pageHistory, allNotifications[currentPage*PAGE_SIZE -1].doc as DocumentSnapshot<DocumentData>];
       setPageHistory(newHistory);
       setCurrentPage(currentPage + 1);
     }
   };
+
 
   const handlePreviousPage = () => {
     if (currentPage > 1) {
@@ -38,7 +44,8 @@ export default function AdminNotificationsPage() {
     }
   };
 
-  const canGoNext = notifications && notifications.length === PAGE_SIZE;
+  const canGoNext = allNotifications && (currentPage * PAGE_SIZE < allNotifications.length);
+
 
   return (
     <div className="space-y-6">
@@ -50,27 +57,37 @@ export default function AdminNotificationsPage() {
       </div>
       <Card>
         <CardHeader>
-          <CardTitle>All Notifications</CardTitle>
-          <CardDescription>A live feed of all user notifications.</CardDescription>
+          <CardTitle>All System Notifications</CardTitle>
+          <CardDescription>A live feed of all user notifications. Unread notifications are marked with a blue dot.</CardDescription>
         </CardHeader>
         <CardContent>
           {loading && (
-            <div className="space-y-4">
-              {[...Array(PAGE_SIZE)].map((_, i) => (
-                <Skeleton key={i} className="h-12 w-full" />
+             <div className="space-y-4">
+              {[...Array(10)].map((_, i) => (
+                <div key={i} className="flex items-center space-x-4">
+                  <Skeleton className="h-8 w-8 rounded-full" />
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-[250px]" />
+                    <Skeleton className="h-4 w-[200px]" />
+                  </div>
+                </div>
               ))}
             </div>
           )}
           {!loading && notifications && notifications.length > 0 && (
-            <div className="space-y-4">
+            <div className="space-y-1">
               {notifications.map((notif, index) => (
-                <div key={index} className="flex items-center justify-between p-4 border rounded-lg">
-                  <div>
-                    <p className="font-semibold">{notif.title}</p>
-                    <p className="text-sm text-muted-foreground">{notif.description}</p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      User: ...{notif.userId.slice(-6)} | {notif.createdAt?.seconds ? new Date(notif.createdAt.seconds * 1000).toLocaleString() : 'Just now'}
-                    </p>
+                <div key={index} className="flex items-center justify-between p-3 hover:bg-secondary rounded-lg transition-colors">
+                  <div className="flex items-center gap-4">
+                     {!notif.isRead && <div className="h-2.5 w-2.5 rounded-full bg-blue-500" />}
+                     {notif.isRead && <div className="h-2.5 w-2.5 rounded-full bg-transparent" />}
+                     <div className="grid gap-1">
+                        <p className="font-semibold">{notif.title}</p>
+                        <p className="text-sm text-muted-foreground">{notif.description}</p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                        User: ...{notif.userId.slice(-6)} | {notif.createdAt?.seconds ? new Date(notif.createdAt.seconds * 1000).toLocaleString() : 'Just now'}
+                        </p>
+                    </div>
                   </div>
                   {notif.href && (
                     <Button asChild variant="outline" size="sm">
@@ -82,24 +99,30 @@ export default function AdminNotificationsPage() {
             </div>
           )}
           {!loading && (!notifications || notifications.length === 0) && (
-            <p className="text-muted-foreground">No notifications to display.</p>
+            <div className="text-center py-12">
+                <BellRing className="mx-auto h-12 w-12 text-muted-foreground" />
+                <h3 className="mt-4 text-lg font-semibold">No Notifications</h3>
+                <p className="mt-2 text-sm text-muted-foreground">The system hasn't generated any notifications yet.</p>
+            </div>
           )}
         </CardContent>
-        <CardFooter>
-            <Pagination>
-                <PaginationContent>
-                    <PaginationItem>
-                        <PaginationPrevious onClick={handlePreviousPage} aria-disabled={currentPage === 1} className={currentPage === 1 ? "pointer-events-none opacity-50" : undefined} />
-                    </PaginationItem>
-                    <PaginationItem>
-                       <span className="p-2 text-sm">Page {currentPage}</span>
-                    </PaginationItem>
-                    <PaginationItem>
-                        <PaginationNext onClick={handleNextPage} aria-disabled={!canGoNext} className={!canGoNext ? "pointer-events-none opacity-50" : undefined} />
-                    </PaginationItem>
-                </PaginationContent>
-            </Pagination>
-        </CardFooter>
+        {notifications && notifications.length > 0 && (
+            <CardFooter>
+                <Pagination>
+                    <PaginationContent>
+                        <PaginationItem>
+                            <PaginationPrevious onClick={handlePreviousPage} aria-disabled={currentPage === 1} className={currentPage === 1 ? "pointer-events-none opacity-50" : undefined} />
+                        </PaginationItem>
+                        <PaginationItem>
+                        <span className="p-2 text-sm">Page {currentPage}</span>
+                        </PaginationItem>
+                        <PaginationItem>
+                            <PaginationNext onClick={handleNextPage} aria-disabled={!canGoNext} className={!canGoNext ? "pointer-events-none opacity-50" : undefined} />
+                        </PaginationItem>
+                    </PaginationContent>
+                </Pagination>
+            </CardFooter>
+        )}
       </Card>
     </div>
   )
