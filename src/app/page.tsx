@@ -5,8 +5,6 @@ import { ArrowRight, Bot, Image as ImageIcon, Sparkles } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import Footer from '@/components/layout/footer';
-import Header from '@/components/layout/header';
 
 const features = [
   {
@@ -37,7 +35,6 @@ export default function Home() {
 
   return (
     <>
-      <Header />
       <main className="flex-1">
         <section className="relative w-full pt-12 md:pt-24 lg:pt-32">
           <div className="container px-4 md:px-6">
@@ -154,7 +151,6 @@ export default function Home() {
           </div>
         </section>
       </main>
-      <Footer />
     </>
   );
 }
