@@ -4,7 +4,7 @@ import { Sidebar, SidebarHeader, SidebarContent, SidebarMenu, SidebarMenuItem, S
 import { Logo } from "@/components/logo"
 import { useAuth } from "@/hooks/use-auth.tsx"
 import { usePathname } from "next/navigation"
-import { Home, User as UserIcon, LogOut, FileText, Package } from "lucide-react"
+import { Home, User as UserIcon, LogOut, FileText } from "lucide-react"
 import Link from "next/link"
 
 export default function AppSidebar() {
@@ -40,13 +40,12 @@ export default function AppSidebar() {
             </SidebarContent>
             <SidebarFooter>
                  <SidebarMenu>
-                    {loading && (
+                    {loading ? (
                         <>
                             <SidebarMenuSkeleton showIcon={true} />
                             <SidebarMenuSkeleton showIcon={true} />
                         </>
-                    )}
-                    {!loading && user && (
+                    ) : user ? (
                         <>
                             <SidebarMenuItem>
                                 <SidebarMenuButton asChild isActive={pathname.startsWith('/account')}>
@@ -63,7 +62,7 @@ export default function AppSidebar() {
                                 </SidebarMenuButton>
                             </SidebarMenuItem>
                         </>
-                    )}
+                    ) : null}
                 </SidebarMenu>
             </SidebarFooter>
         </Sidebar>
