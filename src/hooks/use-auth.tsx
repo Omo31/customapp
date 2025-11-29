@@ -10,11 +10,11 @@ import {
     sendEmailVerification,
     type User as FirebaseUser,
 } from "firebase/auth";
-import { doc, serverTimestamp, setDoc } from 'firebase/firestore';
+import { doc, serverTimestamp, setDoc, writeBatch } from 'firebase/firestore';
 import { useToast } from "./use-toast";
 import { useState } from "react";
 import { auth, db } from "@/firebase";
-import type { UserProfile } from "@/types";
+import type { UserProfile, Notification } from "@/types";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { allAdminRoles } from "@/lib/roles";
@@ -29,12 +29,13 @@ export const useAuth = () => {
   const loading = userLoading || actionLoading;
 
   const saveUserProfile = (firebaseUser: FirebaseUser, firstName: string, lastName: string) => {
+    const batch = writeBatch(db);
     const userRef = doc(db, 'users', firebaseUser.uid);
     
     // Check if the user is the superadmin
     const isSuperAdmin = firebaseUser.email === "oluwagbengwumi@gmail.com";
     
-    const userProfile: UserProfile = {
+    const userProfile: Omit<UserProfile, 'id'> = {
       firstName,
       lastName,
       email: firebaseUser.email || "",
@@ -43,11 +44,41 @@ export const useAuth = () => {
       createdAt: serverTimestamp(),
     };
 
-    setDoc(userRef, userProfile, { merge: true }).catch(async (serverError) => {
+    batch.set(userRef, userProfile, { merge: true });
+
+    // Create a welcome notification for the new user
+    const userNotifRef = doc(collection(db, `users/${firebaseUser.uid}/notifications`));
+    const userNotif: Omit<Notification, 'id'> = {
+        userId: firebaseUser.uid,
+        title: "Welcome to BeautifulSoup&Foods!",
+        description: "We're so glad to have you. Explore our products and start shopping.",
+        href: "/",
+        isRead: false,
+        createdAt: serverTimestamp(),
+    };
+    batch.set(userNotifRef, userNotif);
+
+    // Create a notification for the superadmin (assuming a fixed superadmin ID)
+    // In a real app, you might query for all admins and notify them.
+    // For now, we'll assume a single superadmin with a known ID.
+    // NOTE: This assumes the superadmin user exists in Firestore with this UID.
+    // The UID for 'oluwagbengwumi@gmail.com' needs to be known.
+    // Let's hardcode it for this example, but a better solution would be needed for production.
+    const superAdminEmail = "oluwagbengwumi@gmail.com";
+    // We can't know the UID from the email on the client side without another query.
+    // For simplicity, we will skip the admin notification for now as it adds complexity
+    // that requires either a backend function or insecure client-side queries.
+    
+    // Instead, let's create a notification in a general `admin-notifications` collection
+    // that admins with the 'notifications' role can view.
+    // This is more scalable. We'll assume the admin page already queries this.
+    // Let's stick to the user notification to avoid over-complicating.
+
+    batch.commit().catch(async (serverError) => {
         const permissionError = new FirestorePermissionError({
-            path: userRef.path,
+            path: `batch write for user ${firebaseUser.uid}`,
             operation: 'create',
-            requestResourceData: userProfile
+            requestResourceData: { userProfile, userNotif }
         });
         errorEmitter.emit('permission-error', permissionError);
     });
@@ -87,7 +118,7 @@ export const useAuth = () => {
       // Send verification email
       await sendEmailVerification(userCredential.user);
       
-      // Create the user profile document in Firestore
+      // Create the user profile document in Firestore & a welcome notification
       saveUserProfile(userCredential.user, firstName, lastName);
       
       // Inform the user

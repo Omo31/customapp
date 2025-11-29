@@ -32,6 +32,10 @@ export const useCollection = <T,>(
     let q: Query<DocumentData> = collection(db, path);
 
     if (options.where) {
+      // Ensure we don't try to query with an empty value, which Firestore doesn't allow for certain queries.
+      if (options.where[2] === '' || options.where[2] === undefined) {
+          return null; 
+      }
       q = query(q, where(options.where[0], options.where[1], options.where[2]));
     }
     if (options.orderBy) {
@@ -53,6 +57,7 @@ export const useCollection = <T,>(
 
   useEffect(() => {
     if (!queryRef) {
+      setData([]); // Return empty array instead of null for consistency
       setLoading(false);
       return;
     };
@@ -97,13 +102,14 @@ export const useCollectionGroup = <T,>(
         }
         if (options.limit) {
             q = query(q, limit(options.limit));
-s        }
+        }
         
         return q;
     }, [db, path, JSON.stringify(options)]);
 
     useEffect(() => {
         if (!queryRef) {
+            setData([]);
             setLoading(false);
             return;
         }
@@ -111,7 +117,7 @@ s        }
         setLoading(true);
 
         const unsubscribe = onSnapshot(queryRef, (querySnapshot) => {
-            const docs = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as unknown as T));
+            const docs = querySnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as unknown as T));
             setData(docs);
             setLoading(false);
         }, (err) => {
