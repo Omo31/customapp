@@ -76,7 +76,7 @@ export function AdvancedCustomOrderForm() {
 
   const { data: settings, loading: settingsLoading } = useDoc<CustomOrderSettings>(db, 'settings', 'customOrder');
 
-  const unitsOfMeasure = settings?.unitsOfMeasure?.map(u => u.name) || [];
+  const unitsOfMeasure = settings?.unitsOfMeasure || [];
   const optionalServices = settings?.optionalServices || [];
   const shippingZones = settings?.shippingZones || [];
 
@@ -258,7 +258,7 @@ export function AdvancedCustomOrderForm() {
                                         </FormControl>
                                         <SelectContent>
                                         {unitsOfMeasure.map(unit => (
-                                            <SelectItem key={unit} value={unit}>{unit}</SelectItem>
+                                            <SelectItem key={unit.name} value={unit.name}>{unit.name}</SelectItem>
                                         ))}
                                          <SelectItem value="Other">Other</SelectItem>
                                         </SelectContent>
@@ -586,3 +586,5 @@ export function AdvancedCustomOrderForm() {
     </Card>
   )
 }
+
+    
