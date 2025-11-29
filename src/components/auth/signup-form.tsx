@@ -55,13 +55,14 @@ export function SignupForm() {
   async function onSubmit(values: z.infer<typeof formSchema>) {
     try {
       await signup(values.email, values.password, values.firstName, values.lastName);
-      router.push('/');
+      // Don't redirect immediately. The toast from useAuth will inform the user.
+      // The user is signed out automatically after signup to force verification.
+      // We can clear the form.
+      form.reset();
+      router.push('/login'); // Redirect to login page after showing verification message
     } catch (error) {
-      toast({
-        title: 'Sign Up Failed',
-        description: (error as Error).message || 'An unexpected error occurred.',
-        variant: 'destructive',
-      });
+      // The toast is already handled in the useAuth hook,
+      // so we just need to catch the error to prevent it from bubbling up.
     }
   }
 

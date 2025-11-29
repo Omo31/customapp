@@ -7,6 +7,7 @@ import {
     signOut as firebaseSignOut,
     updateProfile,
     sendPasswordResetEmail,
+    sendEmailVerification,
     type User as FirebaseUser,
 } from "firebase/auth";
 import { doc, setDoc } from 'firebase/firestore';
@@ -54,7 +55,13 @@ export const useAuth = () => {
   const login = async (email: string, pass: string) => {
     setActionLoading(true);
     try {
-      await signInWithEmailAndPassword(auth, email, pass);
+      const userCredential = await signInWithEmailAndPassword(auth, email, pass);
+      if (!userCredential.user.emailVerified) {
+        // Log the user out immediately
+        await firebaseSignOut(auth);
+        // Throw a specific error for the form to catch
+        throw new Error("Please verify your email before logging in. Check your inbox (and spam folder).");
+      }
     } catch (error: any) {
        toast({
         title: 'Login Failed',
@@ -75,8 +82,23 @@ export const useAuth = () => {
       await updateProfile(userCredential.user, {
         displayName: `${firstName} ${lastName}`
       });
+      
+      // Send verification email
+      await sendEmailVerification(userCredential.user);
+      
       // Create the user profile document in Firestore
       saveUserProfile(userCredential.user, firstName, lastName);
+      
+      // Inform the user
+      toast({
+          title: "Verification Email Sent",
+          description: "Please check your inbox (and spam folder) to verify your email before logging in.",
+          duration: 8000,
+      });
+
+      // Sign the user out so they have to verify before logging in
+      await firebaseSignOut(auth);
+
     } catch (error: any)       {
        toast({
         title: 'Sign Up Failed',
