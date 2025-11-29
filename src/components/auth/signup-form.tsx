@@ -28,12 +28,17 @@ import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Eye, EyeOff } from 'lucide-react';
 import React, { useState } from 'react';
+import { Checkbox } from '../ui/checkbox';
+import { Label } from '../ui/label';
 
 const formSchema = z.object({
   firstName: z.string().min(1, { message: 'First name is required.' }),
   lastName: z.string().min(1, { message: 'Last name is required.' }),
   email: z.string().email({ message: 'Invalid email address.' }),
   password: z.string().min(6, { message: 'Password must be at least 6 characters.' }),
+  terms: z.boolean().refine((val) => val === true, {
+    message: "You must accept the terms and conditions.",
+  }),
 });
 
 export function SignupForm() {
@@ -49,6 +54,7 @@ export function SignupForm() {
       lastName: '',
       email: '',
       password: '',
+      terms: false,
     },
   });
 
@@ -80,7 +86,7 @@ export function SignupForm() {
       <CardHeader>
         <CardTitle className="text-2xl font-headline">Sign Up</CardTitle>
         <CardDescription>
-          Create an account to start generating images.
+          Create an account to start your journey with us.
         </CardDescription>
       </CardHeader>
       <Form {...form}>
@@ -149,6 +155,29 @@ export function SignupForm() {
                     </div>
                   </FormControl>
                   <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="terms"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md py-2">
+                  <FormControl>
+                    <Checkbox
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                  <div className="space-y-1 leading-none">
+                     <Label htmlFor="terms" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                       I accept the{" "}
+                        <Link href="/terms" className="underline hover:text-primary">
+                          Terms and Conditions
+                        </Link>
+                      </Label>
+                    <FormMessage />
+                  </div>
                 </FormItem>
               )}
             />
