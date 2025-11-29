@@ -6,10 +6,16 @@ import { useAuth } from "@/hooks/use-auth.tsx"
 import { usePathname } from "next/navigation"
 import { Home, User as UserIcon, LogOut, FileText } from "lucide-react"
 import Link from "next/link"
+import { useEffect, useState } from "react"
 
 export default function AppSidebar() {
     const { user, loading, logout } = useAuth()
     const pathname = usePathname()
+    const [isClient, setIsClient] = useState(false)
+
+    useEffect(() => {
+        setIsClient(true)
+    }, [])
   
     const navLinks = [
         { href: '/', label: 'Home', icon: <Home />, protected: false },
@@ -40,7 +46,7 @@ export default function AppSidebar() {
             </SidebarContent>
             <SidebarFooter>
                  <SidebarMenu>
-                    {loading ? (
+                    {!isClient || loading ? (
                         <>
                             <SidebarMenuSkeleton showIcon={true} />
                             <SidebarMenuSkeleton showIcon={true} />
