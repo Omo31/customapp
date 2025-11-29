@@ -6,6 +6,7 @@ import {
     createUserWithEmailAndPassword,
     signOut as firebaseSignOut,
     updateProfile,
+    sendPasswordResetEmail,
     type User as FirebaseUser,
 } from "firebase/auth";
 import { doc, setDoc } from 'firebase/firestore';
@@ -104,5 +105,26 @@ export const useAuth = () => {
     }
   };
 
-  return { user, loading, login, signup, logout, roles, hasRole, isAdmin: (roles?.length || 0) > 0 };
+  const resetPassword = async (email: string) => {
+    setActionLoading(true);
+    try {
+      await sendPasswordResetEmail(auth, email);
+      toast({
+        title: 'Password Reset Email Sent',
+        description: 'Check your inbox for instructions to reset your password.',
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Password Reset Failed',
+        description: error.message || 'An unexpected error occurred.',
+        variant: 'destructive',
+      });
+      // Re-throw to be caught by the form
+      throw error;
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  return { user, loading, login, signup, logout, resetPassword, roles, hasRole, isAdmin: (roles?.length || 0) > 0 };
 };

@@ -27,6 +27,19 @@ import { useAuth } from '@/hooks/use-auth';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
+import { useState } from 'react';
+
 
 const formSchema = z.object({
   email: z.string().email({ message: 'Invalid email address.' }),
@@ -34,9 +47,11 @@ const formSchema = z.object({
 });
 
 export function LoginForm() {
-  const { login, loading } = useAuth();
+  const { login, resetPassword, loading } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
+  const [resetEmail, setResetEmail] = useState("");
+  const [isResetting, setIsResetting] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -58,6 +73,25 @@ export function LoginForm() {
       });
     }
   }
+
+  const handlePasswordReset = async () => {
+    if (!resetEmail) {
+      toast({
+        title: "Email required",
+        description: "Please enter your email address to reset your password.",
+        variant: "destructive"
+      });
+      return;
+    }
+    setIsResetting(true);
+    try {
+      await resetPassword(resetEmail);
+    } catch (error) {
+      // Toast is already handled in the useAuth hook
+    } finally {
+      setIsResetting(false);
+    }
+  };
 
   return (
     <Card className="w-full max-w-sm">
@@ -88,7 +122,40 @@ export function LoginForm() {
               name="password"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Password</FormLabel>
+                    <div className="flex items-center">
+                        <FormLabel>Password</FormLabel>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                             <Button variant="link" className="ml-auto inline-block px-0 text-sm">
+                                Forgot password?
+                             </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Reset your password</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Enter your email address and we will send you a link to reset your password.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <div className="space-y-2">
+                               <Label htmlFor="reset-email">Email Address</Label>
+                               <Input 
+                                id="reset-email" 
+                                placeholder="name@example.com" 
+                                value={resetEmail}
+                                onChange={(e) => setResetEmail(e.target.value)}
+                               />
+                            </div>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction onClick={handlePasswordReset} disabled={isResetting}>
+                                {isResetting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                Send Reset Link
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                    </div>
                   <FormControl>
                     <Input type="password" {...field} />
                   </FormControl>
