@@ -3,8 +3,14 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Allow read/write access to all documents for any authenticated user.
-    // This is for development purposes (test mode) and should be secured before production.
+    // Allow public read access for the settings collection
+    match /settings/{settingId} {
+      allow read: if true;
+      allow write: if request.auth != null; // Only authenticated users can write
+    }
+
+    // Secure all other documents to only be accessible by authenticated users.
+    // This rule does not apply to the /settings path because a more specific rule above already matched.
     match /{document=**} {
       allow read, write: if request.auth != null;
     }
