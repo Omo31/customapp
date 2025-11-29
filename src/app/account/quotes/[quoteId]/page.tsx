@@ -8,9 +8,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { usePaystackPayment } from "react-paystack";
+import { useFlutterwave, closePaymentModal } from "flutterwave-react-v3";
 import { useToast } from "@/hooks/use-toast";
-import { addDoc, collection, serverTimestamp, writeBatch } from "firebase/firestore";
+import { collection, doc, serverTimestamp, writeBatch } from "firebase/firestore";
 import { useAuth } from "@/hooks/use-auth";
 import { Separator } from "@/components/ui/separator";
 import { useRouter } from "next/navigation";
@@ -31,24 +31,38 @@ export default function QuoteDetailsPage({ params }: QuoteDetailsPageProps) {
 
     const { data: quote, loading: quoteLoading } = useDoc<Quote>(db, "quotes", quoteId);
 
-    const totalItemsCost = quote?.items.reduce((acc, item) => acc + (item.unitCost || 0) * Number(item.quantity), 0) || 0;
+    const itemsTotal = quote?.items.reduce((acc, item) => acc + (item.unitCost || 0) * Number(item.quantity), 0) || 0;
+    const serviceCharge = itemsTotal * 0.06;
+    const servicesTotal = quote?.pricedServices ? Object.values(quote.pricedServices).reduce((acc, cost) => acc + cost, 0) : 0;
     const shippingCost = quote?.shippingCost || 0;
-    const totalCost = totalItemsCost + shippingCost;
+    const totalCost = itemsTotal + servicesTotal + serviceCharge + shippingCost;
 
-    const paystackConfig = {
-        reference: new Date().getTime().toString(),
-        email: user?.email || '',
-        amount: totalCost * 100, // Amount in kobo
-        publicKey: process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY || '',
+
+    const flutterwaveConfig = {
+        public_key: process.env.NEXT_PUBLIC_FLUTTERWAVE_PUBLIC_KEY || '',
+        tx_ref: new Date().getTime().toString(),
+        amount: totalCost,
+        currency: 'NGN',
+        payment_options: 'card,mobilemoney,ussd',
+        customer: {
+            email: user?.email || '',
+            name: user?.displayName || '',
+        },
+        customizations: {
+            title: 'BeautifulSoup&Foods',
+            description: `Payment for Quote #${quoteId.slice(-6)}`,
+            logo: 'https://www.beautifulsoupandfoods.com/logo.png', // Replace with your logo URL
+        },
     };
 
-    const initializePayment = usePaystackPayment(paystackConfig);
+    const handleFlutterwavePayment = useFlutterwave(flutterwaveConfig);
+
 
     const handlePaymentSuccess = async (response: any) => {
-        // IMPORTANT: In a production app, you would send the reference to your backend
-        // to securely verify the transaction with Paystack's API using your secret key.
+        console.log("Flutterwave response:", response);
+        // IMPORTANT: In a production app, you would send the transaction reference (response.tx_ref) 
+        // to your backend to securely verify the transaction with Flutterwave's API using your secret key.
         // For this prototype, we'll optimistically assume the payment was successful.
-        console.log("Paystack response:", response);
 
         if (!quote || !user) return;
 
@@ -85,7 +99,7 @@ export default function QuoteDetailsPage({ params }: QuoteDetailsPageProps) {
             });
             
             // This is a simplified admin notification. A real app might have a more robust system.
-            const adminNotifRef = doc(collection(db, `notifications`));
+            const adminNotifRef = doc(collection(db, `notifications`)); // A general collection for admins to query
             batch.set(adminNotifRef, {
                  userId: 'admin', // Generic admin user for collection group query
                  title: "New Order Received",
@@ -102,7 +116,8 @@ export default function QuoteDetailsPage({ params }: QuoteDetailsPageProps) {
                 title: "Payment Successful!",
                 description: "Your order has been placed. You can view it in your order history.",
             });
-
+            
+            closePaymentModal(); // This will close the modal
             router.push(`/account/orders`);
 
         } catch (error) {
@@ -115,13 +130,6 @@ export default function QuoteDetailsPage({ params }: QuoteDetailsPageProps) {
         }
     };
 
-    const onPaymentClose = () => {
-        toast({
-            title: "Payment Modal Closed",
-            description: "You can complete your payment at any time.",
-            variant: "default",
-        })
-    }
 
     if (quoteLoading) {
         return (
@@ -138,6 +146,13 @@ export default function QuoteDetailsPage({ params }: QuoteDetailsPageProps) {
     }
 
     const canPay = quote.status === 'Quote Ready' && totalCost > 0;
+    
+    const serviceLabels = quote.services?.map(serviceId => {
+        // This is a placeholder. In a real app, you'd fetch service labels from settings.
+        // For now, we just format the ID.
+        return serviceId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    });
+
 
     return (
         <div className="space-y-6">
@@ -201,22 +216,45 @@ export default function QuoteDetailsPage({ params }: QuoteDetailsPageProps) {
                 <CardContent className="space-y-4">
                      <div className="flex justify-between text-sm">
                         <span className="text-muted-foreground">Items Subtotal</span>
-                        <span>₦{totalItemsCost.toLocaleString()}</span>
+                        <span>₦{itemsTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                    </div>
+                    {servicesTotal > 0 && (
+                        <div className="flex justify-between text-sm">
+                            <span className="text-muted-foreground">Services Total</span>
+                            <span>₦{servicesTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                        </div>
+                    )}
+                    <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Service Charge (6%)</span>
+                        <span>₦{serviceCharge.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                     </div>
                     <div className="flex justify-between text-sm">
                         <span className="text-muted-foreground">Shipping Cost</span>
-                        <span>₦{shippingCost.toLocaleString()}</span>
+                        <span>₦{shippingCost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                     </div>
                     <Separator />
                     <div className="flex justify-between text-lg font-bold">
                         <span>Total Amount</span>
-                        <span>₦{totalCost.toLocaleString()}</span>
+                        <span>₦{totalCost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                     </div>
                 </CardContent>
                 {canPay && (
                     <CardFooter>
-                        <Button className="w-full" size="lg" onClick={() => initializePayment({onSuccess: handlePaymentSuccess, onClose: onPaymentClose})}>
-                            Pay with Paystack
+                         <Button className="w-full" size="lg" onClick={() => {
+                            handleFlutterwavePayment({
+                                callback: (response) => {
+                                   handlePaymentSuccess(response);
+                                },
+                                onClose: () => {
+                                    toast({
+                                        title: "Payment Cancelled",
+                                        description: "You can complete your payment at any time.",
+                                        variant: "default",
+                                    })
+                                },
+                            });
+                        }}>
+                            Pay with Flutterwave
                         </Button>
                     </CardFooter>
                 )}

@@ -1,6 +1,7 @@
 
 
 
+
 import type { Auth } from "firebase/auth";
 
 
@@ -40,6 +41,7 @@ export type Quote = {
   customerPhone: string;
   items: QuoteItem[];
   services: string[];
+  pricedServices?: Record<string, number>;
   additionalNotes?: string;
   deliveryOption: 'pickup' | 'delivery-lagos' | 'quote';
   lagosLga?: string;
