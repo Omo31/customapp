@@ -1,8 +1,11 @@
+
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
 import { onSnapshot, query, collection, where, orderBy, limit, startAfter, endBefore, Query, DocumentData, collectionGroup, getDocs, DocumentSnapshot, QueryConstraint } from 'firebase/firestore';
 import type { Firestore } from 'firebase/firestore';
+import { errorEmitter } from '../error-emitter';
+import { FirestorePermissionError } from '../errors';
 
 export interface UseCollectionOptions {
     where?: [string, any, any];
@@ -73,11 +76,15 @@ export const useCollection = <T,>(
     }, (err) => {
       setError(err);
       setLoading(false);
-      console.error(err);
+      const permissionError = new FirestorePermissionError({
+        path: path,
+        operation: 'list'
+      });
+      errorEmitter.emit('permission-error', permissionError);
     });
 
     return () => unsubscribe();
-  }, [queryRef]);
+  }, [queryRef, path]);
 
   return { data, loading, error, firstDoc, lastDoc };
 };
@@ -135,11 +142,15 @@ export const useCollectionGroup = <T,>(
         }, (err) => {
             setError(err);
             setLoading(false);
-            console.error(err);
+            const permissionError = new FirestorePermissionError({
+                path: path,
+                operation: 'list'
+            });
+            errorEmitter.emit('permission-error', permissionError);
         });
 
         return () => unsubscribe();
-    }, [queryRef]);
+    }, [queryRef, path]);
     
     return { data, loading, error, firstDoc, lastDoc };
 };

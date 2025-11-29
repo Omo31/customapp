@@ -1,8 +1,11 @@
+
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
 import { onSnapshot, doc, DocumentReference, DocumentData } from 'firebase/firestore';
 import type { Firestore } from 'firebase/firestore';
+import { errorEmitter } from '../error-emitter';
+import { FirestorePermissionError } from '../errors';
 
 // A memoization utility for Firestore references
 const useMemoFirebase = <T,>(factory: () => T | null, deps: any[]): T | null => {
@@ -38,7 +41,11 @@ export const useDoc = <T,>(db: Firestore, path: string, docId?: string) => {
     }, (err) => {
       setError(err);
       setLoading(false);
-      console.error(`Error fetching doc: ${err}`);
+      const permissionError = new FirestorePermissionError({
+        path: docRef.path,
+        operation: 'get'
+      });
+      errorEmitter.emit('permission-error', permissionError);
     });
 
     return () => unsubscribe();
