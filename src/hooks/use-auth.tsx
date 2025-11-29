@@ -7,7 +7,7 @@ type AuthContextType = {
   user: User | null;
   loading: boolean;
   login: (email: string, pass: string) => Promise<void>;
-  signup: (email: string, pass: string) => Promise<void>;
+  signup: (email: string, pass: string, firstName: string, lastName: string) => Promise<void>;
   logout: () => Promise<void>;
 };
 
@@ -31,11 +31,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 1000));
     if (email === 'admin@visionverse.ai' && pass === 'admin123') {
-        const adminUser: User = { uid: 'admin-uid', email, displayName: 'Admin User', photoURL: 'https://picsum.photos/seed/admin/40/40', isAdmin: true };
+        const adminUser: User = { uid: 'admin-uid', email, firstName: 'Admin', lastName: 'User', displayName: 'Admin User', photoURL: 'https://picsum.photos/seed/admin/40/40', isAdmin: true };
         setUser(adminUser);
         sessionStorage.setItem('user', JSON.stringify(adminUser));
     } else if (email && pass) {
-        const mockUser: User = { uid: 'mock-uid-123', email, displayName: email.split('@')[0], photoURL: 'https://picsum.photos/seed/user/40/40' };
+        const mockUser: User = { uid: 'mock-uid-123', email, firstName: email.split('@')[0], lastName: '', displayName: email.split('@')[0], photoURL: 'https://picsum.photos/seed/user/40/40' };
         setUser(mockUser);
         sessionStorage.setItem('user', JSON.stringify(mockUser));
     } else {
@@ -44,12 +44,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setLoading(false);
   };
 
-  const signup = async (email: string, pass: string) => {
+  const signup = async (email: string, pass: string, firstName: string, lastName: string) => {
     setLoading(true);
     // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 1000));
     if (email && pass) {
-        const mockUser: User = { uid: 'mock-uid-123', email, displayName: email.split('@')[0], photoURL: null };
+        const mockUser: User = { uid: 'mock-uid-123', email, firstName, lastName, displayName: `${firstName} ${lastName}`, photoURL: null };
         setUser(mockUser);
         sessionStorage.setItem('user', JSON.stringify(mockUser));
     } else {
