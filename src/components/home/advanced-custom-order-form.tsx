@@ -25,17 +25,24 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Separator } from "@/components/ui/separator"
+import { addDoc, collection, serverTimestamp } from "firebase/firestore"
+import { useFirestore } from "@/firebase"
+import { errorEmitter } from "@/firebase/error-emitter"
+import { FirestorePermissionError } from "@/firebase/errors"
 
 // Mock data, to be replaced with data from admin settings
-const unitsOfMeasure = ["kg", "grams", "Pieces", "Dozen", "Wraps", "Custom"]
+const unitsOfMeasure = ["kg", "grams", "Pieces", "Dozen", "Wraps", "Other"]
 const optionalServices = [
+    { id: "birthday-party", label: "Birthday Party" },
+    { id: "wedding-ceremony", label: "Wedding Ceremony" },
     { id: "gift-wrapping", label: "Gift Wrapping" },
-    { id: "special-packaging", label: "Special Packaging" },
 ]
 const lagosLgas = [
     { name: "Ikeja", fee: 1500 },
     { name: "Lagos Island", fee: 2000 },
     { name: "Lekki", fee: 2500 },
+    { name: "Surulere", fee: 1800 },
+    { name: "Yaba", fee: 1200 },
 ]
 
 const formSchema = z.object({
@@ -74,14 +81,14 @@ const formSchema = z.object({
 
 export function AdvancedCustomOrderForm() {
   const { user } = useAuth()
+  const db = useFirestore()
   const { toast } = useToast()
   const router = useRouter()
-  const [isSubmitting, setIsSubmitting] = React.useState(false)
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      items: [{ name: "", quantity: "", unit: "", customUnit: "" }],
+      items: [{ name: "", quantity: "1", unit: "", customUnit: "" }],
       services: [],
       deliveryOption: "pickup",
       customerName: user?.displayName || "",
@@ -89,6 +96,8 @@ export function AdvancedCustomOrderForm() {
       customerPhone: "",
     },
   })
+
+  const { isSubmitting } = form.formState;
 
   const { fields, append, remove } = useFieldArray({
     control: form.control,
@@ -99,42 +108,68 @@ export function AdvancedCustomOrderForm() {
   const watchLagosLga = form.watch("lagosLga");
   const selectedLgaFee = lagosLgas.find(lga => lga.name === watchLagosLga)?.fee || 0;
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    setIsSubmitting(true)
-    console.log(values)
-    // Simulate API call to create a quote
-    setTimeout(() => {
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    if (!user) {
       toast({
-        title: "Quote Request Submitted!",
-        description: "We've received your request and will get back to you shortly. You can track its status on your 'My Quotes' page.",
-      })
-      form.reset()
-      setIsSubmitting(false)
-      // Redirect to quotes page after submission
-      // router.push("/account/quotes")
-    }, 1500)
+        title: "Authentication Required",
+        description: "Please log in to submit a quote request.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+        const quotesCollection = collection(db, "quotes");
+        
+        const newQuoteData = {
+          ...values,
+          userId: user.uid,
+          shippingCost: watchDeliveryOption === 'delivery-lagos' ? selectedLgaFee : 0,
+          status: 'Pending Review',
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        };
+
+        const docRef = await addDoc(quotesCollection, newQuoteData);
+
+        toast({
+            title: "Quote Request Submitted!",
+            description: "We've received your request and will get back to you shortly. You can track its status on your 'My Quotes' page.",
+        });
+        
+        router.push(`/account/quotes`);
+
+    } catch (error) {
+        console.error("Error submitting quote:", error);
+         const permissionError = new FirestorePermissionError({
+            path: `quotes`,
+            operation: 'create',
+            requestResourceData: values
+        });
+        errorEmitter.emit('permission-error', permissionError);
+        toast({
+            title: "Submission Failed",
+            description: "Could not submit your quote request. Please try again.",
+            variant: "destructive"
+        });
+    }
   }
 
   return (
     <Card>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)}>
-          <CardHeader>
-            <CardTitle className="font-headline">Create a Custom Order</CardTitle>
-            <CardDescription>
-              Can't find what you're looking for? Fill out this form for a custom quote.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-8">
+          <CardContent className="space-y-8 pt-6">
             
             {/* Items Section */}
             <Card>
                 <CardHeader>
-                    <CardTitle className="text-lg font-medium">Items to Quote</CardTitle>
+                    <CardTitle className="text-lg font-medium">Items for Your Quote</CardTitle>
+                    <CardDescription>Add all the items you need a price for.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                     {fields.map((field, index) => (
-                        <div key={field.id} className="p-4 border rounded-md space-y-4 relative">
+                        <div key={field.id} className="p-4 border rounded-lg space-y-4 relative bg-background/50">
                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                  <FormField
                                     control={form.control}
@@ -156,7 +191,7 @@ export function AdvancedCustomOrderForm() {
                                         <FormItem>
                                         <FormLabel>Quantity</FormLabel>
                                         <FormControl>
-                                            <Input placeholder="e.g., '2'" {...field} />
+                                            <Input type="number" placeholder="e.g., '2'" {...field} />
                                         </FormControl>
                                         <FormMessage />
                                         </FormItem>
@@ -187,7 +222,7 @@ export function AdvancedCustomOrderForm() {
                                 )}
                             />
 
-                            {form.watch(`items.${index}.unit`) === 'Custom' && (
+                            {form.watch(`items.${index}.unit`) === 'Other' && (
                                 <FormField
                                     control={form.control}
                                     name={`items.${index}.customUnit`}
@@ -208,10 +243,11 @@ export function AdvancedCustomOrderForm() {
                                     type="button"
                                     variant="destructive"
                                     size="icon"
-                                    className="absolute top-2 right-2"
+                                    className="absolute top-2 right-2 h-7 w-7"
                                     onClick={() => remove(index)}
                                 >
                                     <Trash2 className="h-4 w-4" />
+                                     <span className="sr-only">Remove Item</span>
                                 </Button>
                             )}
                         </div>
@@ -219,79 +255,75 @@ export function AdvancedCustomOrderForm() {
                     <Button
                         type="button"
                         variant="outline"
-                        onClick={() => append({ name: "", quantity: "", unit: "", customUnit: "" })}
+                        onClick={() => append({ name: "", quantity: "1", unit: "", customUnit: "" })}
                     >
                         Add Another Item
                     </Button>
                 </CardContent>
             </Card>
 
-            {/* Optional Services */}
+            {/* Optional Services & Notes */}
             <Card>
                 <CardHeader>
-                    <CardTitle className="text-lg font-medium">Optional Services</CardTitle>
+                    <CardTitle className="text-lg font-medium">Optional Services & Notes</CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="space-y-6">
                     <FormField
                         control={form.control}
                         name="services"
                         render={() => (
-                            <FormItem className="space-y-3">
-                            {optionalServices.map((service) => (
-                                <FormField
-                                key={service.id}
-                                control={form.control}
-                                name="services"
-                                render={({ field }) => {
-                                    return (
-                                    <FormItem
+                            <FormItem>
+                                <FormLabel>Select any additional services you require.</FormLabel>
+                                <div className="space-y-2">
+                                    {optionalServices.map((service) => (
+                                        <FormField
                                         key={service.id}
-                                        className="flex flex-row items-start space-x-3 space-y-0"
-                                    >
-                                        <FormControl>
-                                        <Checkbox
-                                            checked={field.value?.includes(service.id)}
-                                            onCheckedChange={(checked) => {
-                                            return checked
-                                                ? field.onChange([...(field.value || []), service.id])
-                                                : field.onChange(
-                                                    field.value?.filter(
-                                                    (value) => value !== service.id
-                                                    )
-                                                )
-                                            }}
+                                        control={form.control}
+                                        name="services"
+                                        render={({ field }) => {
+                                            return (
+                                            <FormItem
+                                                key={service.id}
+                                                className="flex flex-row items-center space-x-3 space-y-0"
+                                            >
+                                                <FormControl>
+                                                <Checkbox
+                                                    checked={field.value?.includes(service.id)}
+                                                    onCheckedChange={(checked) => {
+                                                    return checked
+                                                        ? field.onChange([...(field.value || []), service.id])
+                                                        : field.onChange(
+                                                            field.value?.filter(
+                                                            (value) => value !== service.id
+                                                            )
+                                                        )
+                                                    }}
+                                                />
+                                                </FormControl>
+                                                <FormLabel className="font-normal">
+                                                    {service.label}
+                                                </FormLabel>
+                                            </FormItem>
+                                            )
+                                        }}
                                         />
-                                        </FormControl>
-                                        <FormLabel className="font-normal">
-                                            {service.label}
-                                        </FormLabel>
-                                    </FormItem>
-                                    )
-                                }}
-                                />
-                            ))}
-                            <FormMessage />
+                                    ))}
+                                </div>
+                                <FormMessage />
                             </FormItem>
                         )}
                     />
-                </CardContent>
-            </Card>
-            
-            {/* Additional Notes */}
-            <Card>
-                <CardHeader>
-                    <CardTitle className="text-lg font-medium">Additional Notes</CardTitle>
-                </CardHeader>
-                 <CardContent>
+                    <Separator />
                     <FormField
                     control={form.control}
                     name="additionalNotes"
                     render={({ field }) => (
                         <FormItem>
-                        <FormLabel>Preferences or Instructions</FormLabel>
+                        <FormLabel>Preferences or Instructions (Optional)</FormLabel>
+                         <FormDescription>Describe how you want services rendered or any other specific details.</FormDescription>
                         <FormControl>
                             <Textarea
-                            placeholder="Any specific brand, preparation, or other details..."
+                            placeholder="e.g., 'Please gift wrap the snail separately.' or 'I need the birthday party service for 20 people.'"
                             rows={4}
                             {...field}
                             />
@@ -307,6 +339,7 @@ export function AdvancedCustomOrderForm() {
             <Card>
                 <CardHeader>
                     <CardTitle className="text-lg font-medium">Delivery & Pickup</CardTitle>
+                    <CardDescription>How would you like to receive your order?</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                     <FormField
@@ -314,14 +347,13 @@ export function AdvancedCustomOrderForm() {
                         name="deliveryOption"
                         render={({ field }) => (
                             <FormItem className="space-y-3">
-                                <FormLabel>How would you like to receive your order?</FormLabel>
                                 <FormControl>
                                     <RadioGroup
                                     onValueChange={field.onChange}
                                     defaultValue={field.value}
-                                    className="flex flex-col space-y-1"
+                                    className="flex flex-col space-y-2"
                                     >
-                                    <FormItem className="flex items-center space-x-3 space-y-0">
+                                    <FormItem className="flex items-center space-x-3 space-y-0 rounded-md border p-4">
                                         <FormControl>
                                         <RadioGroupItem value="pickup" />
                                         </FormControl>
@@ -329,7 +361,7 @@ export function AdvancedCustomOrderForm() {
                                         In-Store Pickup
                                         </FormLabel>
                                     </FormItem>
-                                    <FormItem className="flex items-center space-x-3 space-y-0">
+                                    <FormItem className="flex items-center space-x-3 space-y-0 rounded-md border p-4">
                                         <FormControl>
                                         <RadioGroupItem value="delivery-lagos" />
                                         </FormControl>
@@ -337,7 +369,7 @@ export function AdvancedCustomOrderForm() {
                                         Delivery within Lagos
                                         </FormLabel>
                                     </FormItem>
-                                    <FormItem className="flex items-center space-x-3 space-y-0">
+                                    <FormItem className="flex items-center space-x-3 space-y-0 rounded-md border p-4">
                                         <FormControl>
                                         <RadioGroupItem value="quote" />
                                         </FormControl>
@@ -353,7 +385,7 @@ export function AdvancedCustomOrderForm() {
                     />
                     
                     {watchDeliveryOption === 'delivery-lagos' && (
-                        <div className="space-y-4 p-4 border rounded-md">
+                        <div className="space-y-4 p-4 border rounded-md bg-background/50">
                             <FormField
                                 control={form.control}
                                 name="lagosLga"
@@ -368,7 +400,7 @@ export function AdvancedCustomOrderForm() {
                                     </FormControl>
                                     <SelectContent>
                                         {lagosLgas.map(lga => (
-                                        <SelectItem key={lga.name} value={lga.name}>{lga.name} (₦{lga.fee})</SelectItem>
+                                        <SelectItem key={lga.name} value={lga.name}>{lga.name} (₦{lga.fee.toLocaleString()})</SelectItem>
                                         ))}
                                     </SelectContent>
                                     </Select>
@@ -383,7 +415,7 @@ export function AdvancedCustomOrderForm() {
                                     <FormItem>
                                     <FormLabel>Full Shipping Address</FormLabel>
                                     <FormControl>
-                                        <Textarea placeholder="Your detailed address" {...field} />
+                                        <Textarea placeholder="Your detailed address, including building number and street." {...field} />
                                     </FormControl>
                                     <FormMessage />
                                     </FormItem>
@@ -393,7 +425,7 @@ export function AdvancedCustomOrderForm() {
                     )}
 
                     {watchDeliveryOption === 'quote' && (
-                         <div className="space-y-4 p-4 border rounded-md">
+                         <div className="space-y-4 p-4 border rounded-md bg-background/50">
                             <FormField
                                 control={form.control}
                                 name="shippingAddress"
@@ -401,7 +433,7 @@ export function AdvancedCustomOrderForm() {
                                     <FormItem>
                                     <FormLabel>Full Shipping Address</FormLabel>
                                     <FormControl>
-                                        <Textarea placeholder="Enter your full address for a shipping quote" {...field} />
+                                        <Textarea placeholder="Enter your full address for a shipping quote (City, State, etc.)" {...field} />
                                     </FormControl>
                                     <FormMessage />
                                     </FormItem>
@@ -411,47 +443,11 @@ export function AdvancedCustomOrderForm() {
                     )}
                 </CardContent>
             </Card>
-            
-            {/* Cost Summary */}
-             <Card>
-                <CardHeader>
-                    <CardTitle className="text-lg font-medium">Cost Summary</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                        <span className="text-muted-foreground">Items Total</span>
-                        <span>To be quoted</span>
-                    </div>
-                     <div className="flex justify-between">
-                        <span className="text-muted-foreground">Services Total</span>
-                        <span>To be quoted</span>
-                    </div>
-                     <Separator />
-                     <div className="flex justify-between font-medium">
-                        <span>Subtotal</span>
-                        <span>To be quoted</span>
-                    </div>
-                    <div className="flex justify-between">
-                        <span className="text-muted-foreground">Shipping</span>
-                         <span>
-                            {watchDeliveryOption === 'pickup' && 'No charge (Pickup)'}
-                            {watchDeliveryOption === 'quote' && 'To be quoted'}
-                            {watchDeliveryOption === 'delivery-lagos' && (selectedLgaFee > 0 ? `₦${selectedLgaFee.toLocaleString()}` : 'Select LGA')}
-                        </span>
-                    </div>
-                    <Separator />
-                    <div className="flex justify-between text-base font-bold">
-                        <span>Estimated Total</span>
-                        <span>To be quoted</span>
-                    </div>
-                </CardContent>
-            </Card>
-
 
             {/* Customer Info */}
             <Card>
                 <CardHeader>
-                    <CardTitle className="text-lg font-medium">Your Information</CardTitle>
+                    <CardTitle className="text-lg font-medium">Your Contact Information</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                      <FormField
@@ -474,7 +470,7 @@ export function AdvancedCustomOrderForm() {
                             <FormItem>
                             <FormLabel>Email Address</FormLabel>
                             <FormControl>
-                                <Input type="email" {...field} />
+                                <Input type="email" {...field} disabled={!!user?.email} />
                             </FormControl>
                             <FormMessage />
                             </FormItem>
@@ -497,7 +493,27 @@ export function AdvancedCustomOrderForm() {
             </Card>
 
           </CardContent>
-          <CardFooter>
+          <CardFooter className="flex flex-col gap-4">
+             <div className="w-full p-4 rounded-lg bg-secondary text-secondary-foreground space-y-2 text-sm">
+                    <div className="flex justify-between">
+                        <span className="text-muted-foreground">Items & Services</span>
+                        <span>To be quoted by admin</span>
+                    </div>
+                    <Separator />
+                     <div className="flex justify-between">
+                        <span className="text-muted-foreground">Shipping</span>
+                         <span>
+                            {watchDeliveryOption === 'pickup' && 'No charge (Pickup)'}
+                            {watchDeliveryOption === 'quote' && 'To be quoted'}
+                            {watchDeliveryOption === 'delivery-lagos' && (selectedLgaFee > 0 ? `₦${selectedLgaFee.toLocaleString()}` : 'Select LGA')}
+                        </span>
+                    </div>
+                    <Separator />
+                    <div className="flex justify-between text-base font-bold">
+                        <span>Estimated Total</span>
+                        <span>To be quoted</span>
+                    </div>
+                </div>
             <Button type="submit" className="w-full" disabled={isSubmitting} size="lg">
               {isSubmitting ? (
                 <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Submitting for Quote...</>

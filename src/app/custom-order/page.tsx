@@ -1,18 +1,18 @@
 import ProtectedRoute from '@/components/auth/protected-route';
-import { CustomOrderForm } from '@/components/home/custom-order-form';
+import { AdvancedCustomOrderForm } from '@/components/home/advanced-custom-order-form';
 
 export default function CustomOrderPage() {
   return (
     <ProtectedRoute>
       <div className="container py-8">
-        <div className="mx-auto max-w-2xl">
+        <div className="mx-auto max-w-4xl">
             <div className="space-y-2 mb-8 text-center">
-                <h1 className="text-3xl font-bold font-headline">Make a Special Request</h1>
+                <h1 className="text-3xl font-bold font-headline">Create a Custom Quote</h1>
                 <p className="text-muted-foreground">
-                    Looking for a specific item you can't find in our store? Fill out the form below, and we’ll do our best to source it for you.
+                    Looking for specific items or services? Fill out the form below, and we’ll get back to you with a detailed quote.
                 </p>
             </div>
-            <CustomOrderForm />
+            <AdvancedCustomOrderForm />
         </div>
       </div>
     </ProtectedRoute>

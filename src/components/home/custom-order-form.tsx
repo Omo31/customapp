@@ -20,6 +20,10 @@ import { useAuth } from "@/hooks/use-auth.tsx"
 import { useToast } from "@/hooks/use-toast"
 import { useRouter } from "next/navigation"
 import { Loader2 } from "lucide-react"
+import { collection, addDoc, serverTimestamp } from "firebase/firestore"
+import { useFirestore } from "@/firebase"
+import { errorEmitter } from "@/firebase/error-emitter"
+import { FirestorePermissionError } from "@/firebase/errors"
 
 const formSchema = z.object({
   itemName: z.string().min(2, { message: "Item name must be at least 2 characters." }),
@@ -29,6 +33,7 @@ const formSchema = z.object({
 
 export function CustomOrderForm() {
   const { user } = useAuth()
+  const db = useFirestore()
   const { toast } = useToast()
   const router = useRouter()
   const [isSubmitting, setIsSubmitting] = React.useState(false)
@@ -42,7 +47,7 @@ export function CustomOrderForm() {
     },
   })
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
+  async function onSubmit(values: z.infer<typeof formSchema>) {
     if (!user) {
       toast({
         title: "Authentication Required",
@@ -56,16 +61,50 @@ export function CustomOrderForm() {
     }
 
     setIsSubmitting(true)
-    console.log(values)
-    // Simulate API call
-    setTimeout(() => {
+
+    try {
+      const quotesCollection = collection(db, "quotes");
+      const newQuote = {
+        userId: user.uid,
+        customerName: user.displayName || 'N/A',
+        customerEmail: user.email || 'N/A',
+        customerPhone: '', // This will be part of the advanced form
+        items: [
+            { name: values.itemName, quantity: values.quantity || '1', unit: 'Custom' , customUnit: values.description }
+        ],
+        services: [],
+        additionalNotes: values.description,
+        deliveryOption: 'quote',
+        status: 'Pending Review',
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      };
+      
+      const docRef = await addDoc(quotesCollection, newQuote);
+
       toast({
         title: "Request Submitted!",
         description: "We've received your special request and will get back to you shortly.",
       })
       form.reset()
-      setIsSubmitting(false)
-    }, 1500)
+      router.push(`/account/quotes/${docRef.id}`);
+
+    } catch (error) {
+        console.error("Error submitting quote:", error);
+        const permissionError = new FirestorePermissionError({
+            path: `quotes`,
+            operation: 'create',
+            requestResourceData: values
+        });
+        errorEmitter.emit('permission-error', permissionError);
+        toast({
+            title: "Submission Failed",
+            description: "Could not submit your request. Please try again.",
+            variant: 'destructive',
+        });
+    } finally {
+        setIsSubmitting(false)
+    }
   }
 
   return (
