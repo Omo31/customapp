@@ -13,7 +13,7 @@ import {
   DropdownMenuTrigger,
 } from '../ui/dropdown-menu';
 import { Logo } from '../logo';
-import { LayoutDashboard, LogOut, User as UserIcon } from 'lucide-react';
+import { LayoutDashboard, LogOut, User as UserIcon, Bell } from 'lucide-react';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 
 export default function Header() {
@@ -28,46 +28,54 @@ export default function Header() {
         <div className="hidden md:flex">
           <Logo />
         </div>
-        <div className="flex flex-1 items-center justify-end space-x-4">
+        <div className="flex flex-1 items-center justify-end space-x-2">
           {user ? (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-                  <Avatar className="h-8 w-8">
-                    <AvatarImage src={user.photoURL || ''} alt={user.displayName || 'User'} data-ai-hint="person face" />
-                    <AvatarFallback>{user.displayName?.charAt(0).toUpperCase()}</AvatarFallback>
-                  </Avatar>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-56" align="end" forceMount>
-                <DropdownMenuLabel className="font-normal">
-                  <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium leading-none">{user.displayName}</p>
-                    <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
-                  </div>
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                  <Link href="/account/profile">
-                    <UserIcon className="mr-2 h-4 w-4" />
-                    <span>Account</span>
-                  </Link>
-                </DropdownMenuItem>
-                {user.isAdmin && (
-                    <DropdownMenuItem asChild>
-                        <Link href="/admin/dashboard">
-                            <LayoutDashboard className="mr-2 h-4 w-4" />
-                            <span>Admin</span>
-                        </Link>
-                    </DropdownMenuItem>
-                )}
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={logout}>
-                  <LogOut className="mr-2 h-4 w-4" />
-                  <span>Log out</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <>
+              <Button variant="ghost" size="icon" asChild>
+                <Link href={user.isAdmin ? "/admin/notifications" : "/account/notifications"}>
+                  <Bell className="h-5 w-5" />
+                  <span className="sr-only">Notifications</span>
+                </Link>
+              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage src={user.photoURL || ''} alt={user.displayName || 'User'} data-ai-hint="person face" />
+                      <AvatarFallback>{user.displayName?.charAt(0).toUpperCase()}</AvatarFallback>
+                    </Avatar>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-56" align="end" forceMount>
+                  <DropdownMenuLabel className="font-normal">
+                    <div className="flex flex-col space-y-1">
+                      <p className="text-sm font-medium leading-none">{user.displayName}</p>
+                      <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
+                    </div>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link href="/account/profile">
+                      <UserIcon className="mr-2 h-4 w-4" />
+                      <span>Account</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  {user.isAdmin && (
+                      <DropdownMenuItem asChild>
+                          <Link href="/admin/dashboard">
+                              <LayoutDashboard className="mr-2 h-4 w-4" />
+                              <span>Admin</span>
+                          </Link>
+                      </DropdownMenuItem>
+                  )}
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={logout}>
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>Log out</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </>
           ) : (
             <div className="space-x-2">
               <Button asChild variant="ghost">
