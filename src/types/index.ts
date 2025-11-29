@@ -1,5 +1,6 @@
 
 
+
 import type { Auth } from "firebase/auth";
 
 
@@ -91,4 +92,27 @@ export type StoreItem = {
 export type StoreSettings = {
   id?: string;
   items: StoreItem[];
+};
+
+
+// Custom Order Settings Types
+export type UnitOfMeasure = {
+  name: string;
+};
+
+export type OptionalService = {
+  id: string;
+  label: string;
+};
+
+export type ShippingZone = {
+  name: string;
+  fee: number;
+};
+
+export type CustomOrderSettings = {
+    id?: string;
+    unitsOfMeasure: UnitOfMeasure[];
+    optionalServices: OptionalService[];
+    shippingZones: ShippingZone[];
 };

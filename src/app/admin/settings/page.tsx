@@ -2,6 +2,11 @@
 'use client';
 
 import { StoreSettingsManager } from '@/components/admin/store-settings-manager';
+import { UnitSettingsManager } from '@/components/admin/unit-settings-manager';
+import { ServiceSettingsManager } from '@/components/admin/service-settings-manager';
+import { ShippingSettingsManager } from '@/components/admin/shipping-settings-manager';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export default function AdminSettingsPage() {
   return (
@@ -9,10 +14,30 @@ export default function AdminSettingsPage() {
       <div>
         <h3 className="text-lg font-medium font-headline">Settings</h3>
         <p className="text-sm text-muted-foreground">
-          Configure various aspects of your store's homepage, footer, and other features.
+          Configure various aspects of your store and custom order forms.
         </p>
       </div>
-      <StoreSettingsManager />
+
+      <Tabs defaultValue="store-items">
+        <TabsList className="grid w-full grid-cols-2 md:grid-cols-4">
+          <TabsTrigger value="store-items">Store Products</TabsTrigger>
+          <TabsTrigger value="units">Units of Measure</TabsTrigger>
+          <TabsTrigger value="services">Optional Services</TabsTrigger>
+          <TabsTrigger value="shipping">Shipping Zones</TabsTrigger>
+        </TabsList>
+        <TabsContent value="store-items">
+          <StoreSettingsManager />
+        </TabsContent>
+        <TabsContent value="units">
+          <UnitSettingsManager />
+        </TabsContent>
+        <TabsContent value="services">
+          <ServiceSettingsManager />
+        </TabsContent>
+        <TabsContent value="shipping">
+          <ShippingSettingsManager />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

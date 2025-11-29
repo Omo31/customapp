@@ -180,6 +180,54 @@
                 }
             }
         }
+    },
+    "UnitOfMeasure": {
+      "title": "Unit of Measure",
+      "description": "A unit of measure for custom quote items.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" }
+      },
+      "required": ["name"]
+    },
+    "OptionalService": {
+      "title": "Optional Service",
+      "description": "An optional service for custom quotes.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "label": { "type": "string" }
+      },
+      "required": ["id", "label"]
+    },
+    "ShippingZone": {
+      "title": "Shipping Zone",
+      "description": "A shipping zone with a set fee.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "fee": { "type": "number" }
+      },
+      "required": ["name", "fee"]
+    },
+    "CustomOrderSettings": {
+      "title": "Custom Order Settings",
+      "description": "Contains settings for the custom order form.",
+      "type": "object",
+      "properties": {
+        "unitsOfMeasure": {
+          "type": "array",
+          "items": { "$ref": "#/entities/UnitOfMeasure" }
+        },
+        "optionalServices": {
+          "type": "array",
+          "items": { "$ref": "#/entities/OptionalService" }
+        },
+        "shippingZones": {
+          "type": "array",
+          "items": { "$ref": "#/entities/ShippingZone" }
+        }
+      }
     }
   },
   "auth": {
@@ -205,6 +253,10 @@
     "/settings/store": {
         "schema": { "$ref": "#/entities/StoreSettings" },
         "description": "Stores the settings and product list for the store showcase. This is a single document."
+    },
+    "/settings/customOrder": {
+      "schema": { "$ref": "#/entities/CustomOrderSettings" },
+      "description": "Stores settings for the custom order form, such as units, services, and shipping zones. This is a single document."
     }
   }
 }
