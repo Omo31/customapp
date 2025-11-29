@@ -27,25 +27,12 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Separator } from "@/components/ui/separator"
 import { addDoc, collection, serverTimestamp } from "firebase/firestore"
-import { useFirestore } from "@/firebase"
+import { useFirestore, useDoc } from "@/firebase"
 import { errorEmitter } from "@/firebase/error-emitter"
 import { FirestorePermissionError } from "@/firebase/errors"
 import Link from "next/link"
-
-// Mock data, to be replaced with data from admin settings
-const unitsOfMeasure = ["kg", "grams", "Pieces", "Dozen", "Wraps", "Other"]
-const optionalServices = [
-    { id: "birthday-party", label: "Birthday Party" },
-    { id: "wedding-ceremony", label: "Wedding Ceremony" },
-    { id: "gift-wrapping", label: "Gift Wrapping" },
-]
-const lagosLgas = [
-    { name: "Ikeja", fee: 1500 },
-    { name: "Lagos Island", fee: 2000 },
-    { name: "Lekki", fee: 2500 },
-    { name: "Surulere", fee: 1800 },
-    { name: "Yaba", fee: 1200 },
-]
+import { type CustomOrderSettings } from "@/types"
+import { Skeleton } from "@/components/ui/skeleton"
 
 const formSchema = z.object({
   items: z.array(z.object({
@@ -87,6 +74,13 @@ export function AdvancedCustomOrderForm() {
   const { toast } = useToast()
   const router = useRouter()
 
+  const { data: settings, loading: settingsLoading } = useDoc<CustomOrderSettings>(db, 'settings', 'customOrder');
+
+  const unitsOfMeasure = settings?.unitsOfMeasure?.map(u => u.name) || [];
+  const optionalServices = settings?.optionalServices || [];
+  const shippingZones = settings?.shippingZones || [];
+
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -115,7 +109,7 @@ export function AdvancedCustomOrderForm() {
 
   const watchDeliveryOption = form.watch("deliveryOption");
   const watchLagosLga = form.watch("lagosLga");
-  const selectedLgaFee = lagosLgas.find(lga => lga.name === watchLagosLga)?.fee || 0;
+  const selectedLgaFee = shippingZones.find(lga => lga.name === watchLagosLga)?.fee || 0;
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     if (!user) {
@@ -162,6 +156,23 @@ export function AdvancedCustomOrderForm() {
             variant: "destructive"
         });
     }
+  }
+
+  if (settingsLoading) {
+    return (
+        <Card>
+            <CardContent className="space-y-8 pt-6">
+                <Skeleton className="h-48 w-full" />
+                <Skeleton className="h-32 w-full" />
+                <Skeleton className="h-64 w-full" />
+                <Skeleton className="h-48 w-full" />
+            </CardContent>
+            <CardFooter className="flex flex-col gap-4">
+                 <Skeleton className="h-24 w-full" />
+                 <Skeleton className="h-12 w-full" />
+            </CardFooter>
+        </Card>
+    )
   }
 
   return (
@@ -224,6 +235,7 @@ export function AdvancedCustomOrderForm() {
                                         {unitsOfMeasure.map(unit => (
                                             <SelectItem key={unit} value={unit}>{unit}</SelectItem>
                                         ))}
+                                         <SelectItem value="Other">Other</SelectItem>
                                         </SelectContent>
                                     </Select>
                                     <FormMessage />
@@ -408,7 +420,7 @@ export function AdvancedCustomOrderForm() {
                                         </SelectTrigger>
                                     </FormControl>
                                     <SelectContent>
-                                        {lagosLgas.map(lga => (
+                                        {shippingZones.map(lga => (
                                         <SelectItem key={lga.name} value={lga.name}>{lga.name} (₦{lga.fee.toLocaleString()})</SelectItem>
                                         ))}
                                     </SelectContent>
@@ -549,3 +561,5 @@ export function AdvancedCustomOrderForm() {
     </Card>
   )
 }
+
+    
