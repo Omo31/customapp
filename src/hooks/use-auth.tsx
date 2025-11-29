@@ -30,7 +30,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setLoading(true);
     // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 1000));
-    if (email === 'admin@visionverse.ai' && pass === 'admin123') {
+    if (email === 'admin@beautifulsoupandfoods.com' && pass === 'admin123') {
         const adminUser: User = { uid: 'admin-uid', email, firstName: 'Admin', lastName: 'User', displayName: 'Admin User', photoURL: 'https://picsum.photos/seed/admin/40/40', isAdmin: true };
         setUser(adminUser);
         sessionStorage.setItem('user', JSON.stringify(adminUser));
