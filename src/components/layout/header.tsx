@@ -13,37 +13,21 @@ import {
   DropdownMenuTrigger,
 } from '../ui/dropdown-menu';
 import { Logo } from '../logo';
-import { LayoutDashboard, LogOut, Palette, User as UserIcon } from 'lucide-react';
-import { usePathname } from 'next/navigation';
-import { cn } from '@/lib/utils';
+import { LayoutDashboard, LogOut, User as UserIcon } from 'lucide-react';
+import { SidebarTrigger } from '@/components/ui/sidebar';
 
 export default function Header() {
   const { user, logout } = useAuth();
-  const pathname = usePathname();
-
-  const navLinks = [
-    { href: '/generate', label: 'Generate', icon: <Palette className="w-4 h-4 mr-2" /> },
-    { href: '/gallery', label: 'Gallery', icon: <LayoutDashboard className="w-4 h-4 mr-2" /> },
-  ];
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-14 items-center">
-        <Logo />
-        <nav className="ml-6 hidden md:flex items-center space-x-4 lg:space-x-6">
-           {user && navLinks.map(link => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className={cn(
-                  "text-sm font-medium transition-colors hover:text-primary",
-                  pathname === link.href ? "text-primary" : "text-muted-foreground"
-                )}
-              >
-                {link.label}
-              </Link>
-            ))}
-        </nav>
+        <div className="md:hidden">
+          <SidebarTrigger />
+        </div>
+        <div className="hidden md:flex">
+          <Logo />
+        </div>
         <div className="flex flex-1 items-center justify-end space-x-4">
           {user ? (
             <DropdownMenu>
