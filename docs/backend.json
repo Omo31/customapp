@@ -25,9 +25,14 @@
             "type": "string",
             "enum": ["dashboard", "orders", "quotes", "users", "purchase-orders", "accounting", "analytics", "notifications", "settings"]
           }
+        },
+        "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "The timestamp when the user profile was created."
         }
       },
-      "required": ["firstName", "lastName", "email", "roles"]
+      "required": ["firstName", "lastName", "email", "roles", "createdAt"]
     },
     "Quote": {
       "title": "Quote",

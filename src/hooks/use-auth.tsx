@@ -10,7 +10,7 @@ import {
     sendEmailVerification,
     type User as FirebaseUser,
 } from "firebase/auth";
-import { doc, setDoc } from 'firebase/firestore';
+import { doc, serverTimestamp, setDoc } from 'firebase/firestore';
 import { useToast } from "./use-toast";
 import { useState } from "react";
 import { auth, db } from "@/firebase";
@@ -40,6 +40,7 @@ export const useAuth = () => {
       email: firebaseUser.email || "",
       // Superadmin gets all roles, others get an empty array.
       roles: isSuperAdmin ? allAdminRoles : [],
+      createdAt: serverTimestamp(),
     };
 
     setDoc(userRef, userProfile, { merge: true }).catch(async (serverError) => {

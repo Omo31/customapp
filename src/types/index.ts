@@ -1,4 +1,5 @@
 
+
 export type User = {
   uid: string;
   email: string | null;
@@ -64,6 +65,7 @@ export type UserProfile = {
   email: string;
   photoURL?: string;
   roles: string[];
+  createdAt: any; // Firestore Timestamp
 };
 
 export type Notification = {
