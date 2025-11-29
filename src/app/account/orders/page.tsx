@@ -6,7 +6,7 @@ export default function OrdersPage() {
       <div>
         <h3 className="text-lg font-medium font-headline">Order History</h3>
         <p className="text-sm text-muted-foreground">
-          View your past orders and their statuses.
+          View details of all your past and current orders.
         </p>
       </div>
       <Card>

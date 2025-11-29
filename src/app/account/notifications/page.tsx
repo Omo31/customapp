@@ -6,7 +6,7 @@ export default function NotificationsPage() {
       <div>
         <h3 className="text-lg font-medium font-headline">Notifications</h3>
         <p className="text-sm text-muted-foreground">
-          Manage your notification settings.
+          View all account-related notifications.
         </p>
       </div>
       <Card>

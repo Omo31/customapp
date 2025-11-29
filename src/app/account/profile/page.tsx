@@ -10,7 +10,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
-import { useAuth } from "@/hooks/use-auth"
+import { useAuth } from "@/hooks/use-auth.tsx"
 
 export default function ProfilePage() {
   const { user } = useAuth()
@@ -20,7 +20,7 @@ export default function ProfilePage() {
       <div>
         <h3 className="text-lg font-medium font-headline">Profile</h3>
         <p className="text-sm text-muted-foreground">
-          This is how others will see you on the site.
+          Manage your personal information, shipping address, and password.
         </p>
       </div>
       <Card>

@@ -6,7 +6,7 @@ export default function QuotesPage() {
       <div>
         <h3 className="text-lg font-medium font-headline">My Quotes</h3>
         <p className="text-sm text-muted-foreground">
-          Review and manage your quotes.
+          Track the status of your custom order requests.
         </p>
       </div>
       <Card>
