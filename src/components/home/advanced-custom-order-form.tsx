@@ -1,3 +1,4 @@
+
 "use client"
 
 import * as React from "react"
@@ -382,7 +383,7 @@ export function AdvancedCustomOrderForm() {
                                         <RadioGroupItem value="quote" />
                                         </FormControl>
                                         <FormLabel className="font-normal">
-                                        Request Shipping Quote (Outside Lagos)
+                                        Request Shipping Quote
                                         </FormLabel>
                                     </FormItem>
                                     </RadioGroup>
