@@ -122,6 +122,23 @@
         }
       },
       "required": ["userId", "quoteId", "totalCost", "status", "createdAt"]
+    },
+    "Notification": {
+      "title": "Notification",
+      "description": "Represents a notification for a user.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "The ID of the user who this notification is for."
+        },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "href": { "type": "string" },
+        "isRead": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "title", "isRead", "createdAt"]
     }
   },
   "auth": {
@@ -139,6 +156,10 @@
     "/orders/{orderId}": {
       "schema": { "$ref": "#/entities/Order" },
       "description": "Stores finalized orders after payment."
+    },
+    "/users/{userId}/notifications/{notificationId}": {
+      "schema": { "$ref": "#/entities/Notification" },
+      "description": "Stores notifications for a specific user."
     }
   }
 }

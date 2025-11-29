@@ -62,3 +62,13 @@ export type UserProfile = {
   email: string;
   roles: string[];
 };
+
+export type Notification = {
+    id?: string;
+    userId: string;
+    title: string;
+    description: string;
+    href?: string;
+    isRead: boolean;
+    createdAt: any; // Firestore Timestamp
+};

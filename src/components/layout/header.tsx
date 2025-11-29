@@ -15,9 +15,25 @@ import {
 import { Logo } from '../logo';
 import { LayoutDashboard, LogOut, User as UserIcon, Bell } from 'lucide-react';
 import { SidebarTrigger } from '@/components/ui/sidebar';
+import { useFirestore, useCollection } from '@/firebase';
+import { type Notification } from '@/types';
+import { Badge } from '../ui/badge';
 
 export default function Header() {
   const { user, logout, isAdmin } = useAuth();
+  const db = useFirestore();
+
+  // Listen to unread notifications for the current user
+  const { data: notifications } = useCollection<Notification>(
+    db,
+    user ? `users/${user.uid}/notifications` : '',
+    {
+      where: ["isRead", "==", false],
+    }
+  );
+
+  const unreadCount = notifications?.length || 0;
+
 
   return (
     <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -31,9 +47,14 @@ export default function Header() {
         <div className="flex flex-1 items-center justify-end space-x-2">
           {user ? (
             <>
-              <Button variant="ghost" size="icon" asChild>
+              <Button variant="ghost" size="icon" asChild className="relative">
                 <Link href={isAdmin ? "/admin/notifications" : "/account/notifications"}>
                   <Bell className="h-5 w-5" />
+                  {unreadCount > 0 && (
+                    <Badge variant="destructive" className="absolute -top-1 -right-1 h-4 w-4 justify-center rounded-full p-0 text-xs">
+                      {unreadCount}
+                    </Badge>
+                  )}
                   <span className="sr-only">Notifications</span>
                 </Link>
               </Button>
