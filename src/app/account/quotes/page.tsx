@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useFirestore, useCollection } from "@/firebase";
@@ -10,6 +11,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useState } from "react";
 import { DocumentData, DocumentSnapshot } from "firebase/firestore";
 import { Pagination, PaginationContent, PaginationItem, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Eye } from "lucide-react";
 
 const PAGE_SIZE = 10;
 
@@ -73,16 +77,23 @@ export default function QuotesPage() {
                     <TableHead>Quote ID</TableHead>
                     <TableHead>Date</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Items</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {quotes.length > 0 ? quotes.map(quote => (
                     <TableRow key={quote.id}>
                       <TableCell className="font-medium">#...{quote.id?.slice(-6)}</TableCell>
-                      <TableCell>{new Date(quote.createdAt?.seconds * 1000).toLocaleDateString()}</TableCell>
+                      <TableCell>{quote.createdAt?.seconds ? new Date(quote.createdAt.seconds * 1000).toLocaleDateString() : 'N/A'}</TableCell>
                       <TableCell><Badge>{quote.status}</Badge></TableCell>
-                      <TableCell className="text-right">{quote.items.length}</TableCell>
+                      <TableCell className="text-right">
+                        <Button asChild variant="outline" size="sm">
+                          <Link href={`/account/quotes/${quote.id}`}>
+                            <Eye className="mr-0 h-4 w-4 sm:mr-2" />
+                            <span className="hidden sm:inline">View</span>
+                          </Link>
+                        </Button>
+                      </TableCell>
                     </TableRow>
                   )) : (
                     <TableRow>
