@@ -3,7 +3,8 @@ export type User = {
   email: string | null;
   displayName: string | null;
   photoURL: string | null;
-  isAdmin?: boolean;
+  roles?: string[];
+  isAdmin?: boolean; // For backwards compatibility during transition
 };
 
 export type Product = {
@@ -59,5 +60,5 @@ export type UserProfile = {
   firstName: string;
   lastName: string;
   email: string;
-  isAdmin: boolean;
+  roles: string[];
 };

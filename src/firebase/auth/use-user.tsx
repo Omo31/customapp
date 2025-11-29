@@ -2,69 +2,68 @@
 
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
-import { doc, onSnapshot, Firestore } from 'firebase/firestore';
-import { useFirebase } from '../provider';
+import { doc, onSnapshot } from 'firebase/firestore';
 import type { User, UserProfile } from '@/types';
 import { auth, db } from '..';
 
 interface AuthUserContextValue {
   user: User | null;
   loading: boolean;
-  isAdmin: boolean;
+  roles: string[];
+  hasRole: (role: string) => boolean;
 }
 
 const AuthUserContext = createContext<AuthUserContextValue>({
   user: null,
   loading: true,
-  isAdmin: false,
+  roles: [],
+  hasRole: () => false,
 });
 
 export const AuthUserProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [roles, setRoles] = useState<string[]>([]);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser: FirebaseUser | null) => {
       if (firebaseUser) {
-        // User is signed in, now listen to their profile document
         const userRef = doc(db, 'users', firebaseUser.uid);
         const unsubProfile = onSnapshot(userRef, (docSnap) => {
           if (docSnap.exists()) {
             const userProfile = docSnap.data() as UserProfile;
+            const userRoles = userProfile.roles || [];
             const combinedUser: User = {
               uid: firebaseUser.uid,
               email: firebaseUser.email,
               displayName: firebaseUser.displayName,
               photoURL: firebaseUser.photoURL,
-              isAdmin: userProfile.isAdmin || false,
+              roles: userRoles,
             };
             setUser(combinedUser);
-            setIsAdmin(userProfile.isAdmin || false);
+            setRoles(userRoles);
           } else {
-             // Profile doesn't exist yet, create a basic user object
-             // This can happen during sign up
             const basicUser: User = {
-                uid: firebaseUser.uid,
-                email: firebaseUser.email,
-                displayName: firebaseUser.displayName,
-                photoURL: firebaseUser.photoURL,
-                isAdmin: false,
+              uid: firebaseUser.uid,
+              email: firebaseUser.email,
+              displayName: firebaseUser.displayName,
+              photoURL: firebaseUser.photoURL,
+              roles: [],
             };
             setUser(basicUser);
-            setIsAdmin(false);
+            setRoles([]);
           }
           setLoading(false);
         }, (error) => {
             console.error("Error fetching user profile:", error);
             setUser(null);
+            setRoles([]);
             setLoading(false);
         });
         return () => unsubProfile();
       } else {
-        // User is signed out
         setUser(null);
-        setIsAdmin(false);
+        setRoles([]);
         setLoading(false);
       }
     });
@@ -72,8 +71,14 @@ export const AuthUserProvider = ({ children }: { children: ReactNode }) => {
     return () => unsubscribe();
   }, []);
 
+  const hasRole = (role: string) => {
+    // Superadmin has all roles
+    if (user?.email === 'oluwagbengwumi@gmail.com') return true;
+    return roles.includes(role);
+  };
+
   return (
-    <AuthUserContext.Provider value={{ user, loading, isAdmin }}>
+    <AuthUserContext.Provider value={{ user, loading, roles, hasRole }}>
       {children}
     </AuthUserContext.Provider>
   );

@@ -17,7 +17,7 @@ import { LayoutDashboard, LogOut, User as UserIcon, Bell } from 'lucide-react';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 
 export default function Header() {
-  const { user, logout } = useAuth();
+  const { user, logout, isAdmin } = useAuth();
 
   return (
     <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -32,7 +32,7 @@ export default function Header() {
           {user ? (
             <>
               <Button variant="ghost" size="icon" asChild>
-                <Link href={user.isAdmin ? "/admin/notifications" : "/account/notifications"}>
+                <Link href={isAdmin ? "/admin/notifications" : "/account/notifications"}>
                   <Bell className="h-5 w-5" />
                   <span className="sr-only">Notifications</span>
                 </Link>
@@ -60,7 +60,7 @@ export default function Header() {
                       <span>Account</span>
                     </Link>
                   </DropdownMenuItem>
-                  {user.isAdmin && (
+                  {isAdmin && (
                       <DropdownMenuItem asChild>
                           <Link href="/admin/dashboard">
                               <LayoutDashboard className="mr-2 h-4 w-4" />
