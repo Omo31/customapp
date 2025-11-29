@@ -12,7 +12,7 @@ export default function AdminDashboardPage() {
       <div>
         <h3 className="text-lg font-medium font-headline">Dashboard</h3>
         <p className="text-sm text-muted-foreground">
-          An overview of your application's activity.
+          An overview of key metrics and recent activity.
         </p>
       </div>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">

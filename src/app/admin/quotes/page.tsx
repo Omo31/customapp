@@ -5,7 +5,7 @@ export default function AdminQuotesPage() {
     <div className="space-y-6">
       <div>
         <h3 className="text-lg font-medium font-headline">Quotes</h3>
-        <p className="text-sm text-muted-foreground">Manage user quotes.</p>
+        <p className="text-sm text-muted-foreground">Review and price custom order requests from customers.</p>
       </div>
        <Card>
         <CardHeader>

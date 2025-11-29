@@ -5,7 +5,7 @@ export default function AdminNotificationsPage() {
     <div className="space-y-6">
       <div>
         <h3 className="text-lg font-medium font-headline">Notifications</h3>
-        <p className="text-sm text-muted-foreground">Manage system-wide notifications.</p>
+        <p className="text-sm text-muted-foreground">See all admin-related notifications.</p>
       </div>
        <Card>
         <CardHeader>

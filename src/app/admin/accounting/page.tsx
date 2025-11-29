@@ -5,7 +5,7 @@ export default function AdminAccountingPage() {
     <div className="space-y-6">
       <div>
         <h3 className="text-lg font-medium font-headline">Accounting</h3>
-        <p className="text-sm text-muted-foreground">Manage financial data.</p>
+        <p className="text-sm text-muted-foreground">Log and view all financial transactions, including sales and expenses.</p>
       </div>
        <Card>
         <CardHeader>

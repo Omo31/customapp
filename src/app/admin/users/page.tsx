@@ -5,7 +5,7 @@ export default function AdminUsersPage() {
     <div className="space-y-6">
       <div>
         <h3 className="text-lg font-medium font-headline">Users</h3>
-        <p className="text-sm text-muted-foreground">Manage application users.</p>
+        <p className="text-sm text-muted-foreground">Manage all registered users and their roles/permissions.</p>
       </div>
        <Card>
         <CardHeader>

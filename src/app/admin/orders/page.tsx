@@ -5,7 +5,7 @@ export default function AdminOrdersPage() {
     <div className="space-y-6">
       <div>
         <h3 className="text-lg font-medium font-headline">Orders</h3>
-        <p className="text-sm text-muted-foreground">Manage customer orders.</p>
+        <p className="text-sm text-muted-foreground">Manage all customer orders from custom purchases.</p>
       </div>
        <Card>
         <CardHeader>
