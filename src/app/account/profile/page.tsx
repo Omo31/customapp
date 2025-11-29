@@ -1,3 +1,4 @@
+
 "use client"
 
 import {
@@ -28,7 +29,6 @@ import { updateProfile } from "firebase/auth"
 import { useToast } from "@/hooks/use-toast"
 import { Loader2 } from "lucide-react"
 import { useEffect } from "react"
-import { useUser } from "@/firebase"
 import { useDoc } from "@/firebase/firestore/use-doc"
 import { UserProfile } from "@/types"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -77,8 +77,8 @@ export default function ProfilePage() {
             lastName: values.lastName,
         });
 
-        if (authUser) {
-            await updateProfile(authUser, {
+        if (authUser.auth) { // useAuth from provider returns auth instance now
+            await updateProfile(authUser.auth.currentUser, { // so we use authUser.auth.currentUser
                 displayName: `${values.firstName} ${values.lastName}`
             })
         }
@@ -105,7 +105,7 @@ export default function ProfilePage() {
       <div>
         <h3 className="text-lg font-medium font-headline">Profile</h3>
         <p className="text-sm text-muted-foreground">
-          Manage your personal information, shipping address, and password.
+          Manage your personal information.
         </p>
       </div>
        <Form {...form}>

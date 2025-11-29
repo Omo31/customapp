@@ -1,5 +1,7 @@
 
 
+import type { Auth } from "firebase/auth";
+
 
 export type User = {
   uid: string;
@@ -8,6 +10,7 @@ export type User = {
   photoURL: string | null;
   roles?: string[];
   isAdmin?: boolean; // For backwards compatibility during transition
+  auth?: Auth;
 };
 
 export type Product = {

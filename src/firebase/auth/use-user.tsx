@@ -1,3 +1,4 @@
+
 'use client';
 
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
@@ -39,6 +40,7 @@ export const AuthUserProvider = ({ children }: { children: ReactNode }) => {
               displayName: firebaseUser.displayName,
               photoURL: firebaseUser.photoURL,
               roles: userRoles,
+              auth: auth,
             };
             setUser(combinedUser);
             setRoles(userRoles);
@@ -49,6 +51,7 @@ export const AuthUserProvider = ({ children }: { children: ReactNode }) => {
               displayName: firebaseUser.displayName,
               photoURL: firebaseUser.photoURL,
               roles: [],
+              auth: auth,
             };
             setUser(basicUser);
             setRoles([]);
