@@ -131,61 +131,64 @@ export default function AdminUsersPage() {
             </p>
           )}
           {!loading && !error && (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Manage Roles</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {users && users.length > 0 ? (
-                  users.map((user) => (
-                    <TableRow key={user.id}>
-                      <TableCell className="font-medium">
-                        {user.firstName} {user.lastName}
-                      </TableCell>
-                      <TableCell>{user.email}</TableCell>
-                      <TableCell>
-                        <div className="flex flex-wrap gap-x-4 gap-y-2">
-                          {allAdminRoles.map((role) => (
-                            <div key={role} className="flex items-center space-x-2">
-                               <Checkbox
-                                id={`${user.id}-${role}`}
-                                checked={user.roles?.includes(role)}
-                                onCheckedChange={(isChecked) =>
-                                  handleRoleChange(user.id!, role, isChecked)
-                                }
-                                disabled={user.email === 'oluwagbengwumi@gmail.com'}
-                              />
-                              <Label htmlFor={`${user.id}-${role}`} className="text-sm font-medium capitalize leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                                {role.replace('-', ' ')}
-                              </Label>
-                            </div>
-                          ))}
-                        </div>
-                      </TableCell>
-                       <TableCell>
-                        <Button asChild variant="outline" size="sm">
-                          <Link href={`/admin/users/${user.id}`}>
-                            <Eye className="mr-2 h-4 w-4" />
-                            View
-                          </Link>
-                        </Button>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead className="hidden md:table-cell">Email</TableHead>
+                    <TableHead>Manage Roles</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {users && users.length > 0 ? (
+                    users.map((user) => (
+                      <TableRow key={user.id}>
+                        <TableCell className="font-medium">
+                          <div className="font-medium">{user.firstName} {user.lastName}</div>
+                          <div className="text-sm text-muted-foreground md:hidden">{user.email}</div>
+                        </TableCell>
+                        <TableCell className="hidden md:table-cell">{user.email}</TableCell>
+                        <TableCell>
+                          <div className="flex flex-col md:flex-row md:flex-wrap gap-x-4 gap-y-2">
+                            {allAdminRoles.map((role) => (
+                              <div key={role} className="flex items-center space-x-2">
+                                <Checkbox
+                                  id={`${user.id}-${role}`}
+                                  checked={user.roles?.includes(role)}
+                                  onCheckedChange={(isChecked) =>
+                                    handleRoleChange(user.id!, role, isChecked)
+                                  }
+                                  disabled={user.email === 'oluwagbengwumi@gmail.com'}
+                                />
+                                <Label htmlFor={`${user.id}-${role}`} className="text-sm font-medium capitalize leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                                  {role.replace('-', ' ')}
+                                </Label>
+                              </div>
+                            ))}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button asChild variant="outline" size="sm">
+                            <Link href={`/admin/users/${user.id}`}>
+                              <Eye className="mr-0 h-4 w-4 md:mr-2" />
+                              <span className="hidden md:inline">View</span>
+                            </Link>
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={4} className="text-center">
+                        No users to display.
                       </TableCell>
                     </TableRow>
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell colSpan={4} className="text-center">
-                      No users to display.
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
           )}
         </CardContent>
          <CardFooter>
