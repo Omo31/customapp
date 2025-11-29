@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useFirestore, useCollection } from "@/firebase";
@@ -9,6 +10,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useState } from "react";
 import { DocumentData, DocumentSnapshot } from "firebase/firestore";
 import { Pagination, PaginationContent, PaginationItem, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
+import { Eye } from "lucide-react";
 
 const PAGE_SIZE = 10;
 
@@ -66,7 +70,8 @@ export default function AdminQuotesPage() {
                     <TableHead>Customer</TableHead>
                     <TableHead>Date</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Items</TableHead>
+                    <TableHead>Items</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -75,11 +80,19 @@ export default function AdminQuotesPage() {
                       <TableCell className="font-medium">{quote.customerName}</TableCell>
                       <TableCell>{new Date(quote.createdAt?.seconds * 1000).toLocaleDateString()}</TableCell>
                       <TableCell><Badge>{quote.status}</Badge></TableCell>
-                      <TableCell className="text-right">{quote.items.length}</TableCell>
+                      <TableCell>{quote.items.length}</TableCell>
+                      <TableCell className="text-right">
+                          <Button asChild variant="outline" size="sm">
+                              <Link href={`/admin/quotes/${quote.id}`}>
+                                  <Eye className="mr-0 h-4 w-4 md:mr-2" />
+                                  <span className="hidden md:inline">Review</span>
+                              </Link>
+                          </Button>
+                      </TableCell>
                     </TableRow>
                   )) : (
                     <TableRow>
-                        <TableCell colSpan={4} className="text-center">No quotes to display.</TableCell>
+                        <TableCell colSpan={5} className="text-center">No quotes to display.</TableCell>
                     </TableRow>
                   )}
                 </TableBody>
