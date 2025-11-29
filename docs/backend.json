@@ -1,0 +1,140 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "User Profile",
+      "description": "Represents a user's profile in the system.",
+      "type": "object",
+      "properties": {
+        "firstName": {
+          "type": "string",
+          "description": "The user's first name."
+        },
+        "lastName": {
+          "type": "string",
+          "description": "The user's last name."
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "The user's email address."
+        },
+        "isAdmin": {
+          "type": "boolean",
+          "description": "Flag indicating if the user is an administrator."
+        }
+      },
+      "required": ["firstName", "lastName", "email"]
+    },
+    "Quote": {
+      "title": "Quote",
+      "description": "Represents a customer's request for a quote on custom items.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "The ID of the user who created the quote."
+        },
+        "customerName": {
+          "type": "string"
+        },
+        "customerEmail": {
+          "type": "string",
+          "format": "email"
+        },
+        "customerPhone": {
+          "type": "string"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": { "type": "string" },
+              "quantity": { "type": "string" },
+              "unit": { "type": "string" },
+              "customUnit": { "type": "string" },
+              "unitCost": { "type": "number" }
+            },
+            "required": ["name", "quantity", "unit"]
+          }
+        },
+        "services": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "additionalNotes": { "type": "string" },
+        "deliveryOption": {
+          "type": "string",
+          "enum": ["pickup", "delivery-lagos", "quote"]
+        },
+        "lagosLga": { "type": "string" },
+        "shippingAddress": { "type": "string" },
+        "shippingCost": { "type": "number" },
+        "status": {
+          "type": "string",
+          "enum": ["Pending Review", "Quote Ready", "Accepted", "Rejected", "Paid"]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["userId", "customerName", "customerEmail", "items", "deliveryOption", "status", "createdAt"]
+    },
+    "Order": {
+      "title": "Order",
+      "description": "Represents a finalized and paid order.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "quoteId": { "type": "string" },
+        "customerName": { "type": "string" },
+        "customerEmail": { "type": "string" },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": { "type": "string" },
+              "quantity": { "type": "string" },
+              "unit": { "type": "string" },
+              "unitCost": { "type": "number" }
+            }
+          }
+        },
+        "totalCost": { "type": "number" },
+        "shippingAddress": { "type": "string" },
+        "status": {
+          "type": "string",
+          "enum": ["Pending", "Processing", "Shipped", "Delivered", "Cancelled"]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["userId", "quoteId", "totalCost", "status", "createdAt"]
+    }
+  },
+  "auth": {
+    "providers": ["email"]
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "Stores public profile information for each user."
+    },
+    "/quotes/{quoteId}": {
+      "schema": { "$ref": "#/entities/Quote" },
+      "description": "Stores custom quote requests from users."
+    },
+    "/orders/{orderId}": {
+      "schema": { "$ref": "#/entities/Order" },
+      "description": "Stores finalized orders after payment."
+    }
+  }
+}
