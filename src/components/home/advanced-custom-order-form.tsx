@@ -26,7 +26,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Separator } from "@/components/ui/separator"
-import { addDoc, collection, serverTimestamp } from "firebase/firestore"
+import { addDoc, collection, serverTimestamp, writeBatch } from "firebase/firestore"
 import { useFirestore, useDoc } from "@/firebase"
 import { errorEmitter } from "@/firebase/error-emitter"
 import { FirestorePermissionError } from "@/firebase/errors"
@@ -122,8 +122,10 @@ export function AdvancedCustomOrderForm() {
     }
 
     try {
-        const quotesCollection = collection(db, "quotes");
-        
+        const batch = writeBatch(db);
+
+        // 1. Create the new quote
+        const quoteRef = doc(collection(db, "quotes"));
         const newQuoteData = {
           ...values,
           userId: user.uid,
@@ -132,12 +134,35 @@ export function AdvancedCustomOrderForm() {
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
         };
+        batch.set(quoteRef, newQuoteData);
 
-        const docRef = await addDoc(quotesCollection, newQuoteData);
+        // 2. Create notification for the user
+        const userNotifRef = doc(collection(db, `users/${user.uid}/notifications`));
+        batch.set(userNotifRef, {
+            userId: user.uid,
+            title: "Quote Request Received",
+            description: `We've received your request #${quoteRef.id.slice(-6)} and will review it shortly.`,
+            href: `/account/quotes/${quoteRef.id}`,
+            isRead: false,
+            createdAt: serverTimestamp(),
+        });
+        
+        // 3. Create notification for admins
+        const adminNotifRef = doc(collection(db, `notifications`));
+        batch.set(adminNotifRef, {
+            userId: 'admin', // Generic ID for admin-facing notifications
+            title: "New Quote Request",
+            description: `A new quote #${quoteRef.id.slice(-6)} was submitted by ${values.customerName}.`,
+            href: `/admin/quotes/${quoteRef.id}`,
+            isRead: false,
+            createdAt: serverTimestamp(),
+        });
+
+        await batch.commit();
 
         toast({
             title: "Quote Request Submitted!",
-            description: "We've received your request and will get back to you shortly. You can track its status on your 'My Quotes' page.",
+            description: "We've received your request. You can track its status on your 'My Quotes' page.",
         });
         
         router.push(`/account/quotes`);
@@ -561,5 +586,3 @@ export function AdvancedCustomOrderForm() {
     </Card>
   )
 }
-
-    
