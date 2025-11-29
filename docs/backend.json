@@ -210,6 +210,19 @@
       },
       "required": ["name", "fee"]
     },
+    "Supplier": {
+      "title": "Supplier",
+      "description": "Represents a supplier of goods or services.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "phone": { "type": "string" },
+        "address": { "type": "string" }
+      },
+      "required": ["id", "name", "email"]
+    },
     "CustomOrderSettings": {
       "title": "Custom Order Settings",
       "description": "Contains settings for the custom order form.",
@@ -226,8 +239,46 @@
         "shippingZones": {
           "type": "array",
           "items": { "$ref": "#/entities/ShippingZone" }
+        },
+        "suppliers": {
+            "type": "array",
+            "items": { "$ref": "#/entities/Supplier" }
         }
       }
+    },
+    "PurchaseOrder": {
+      "title": "Purchase Order",
+      "description": "Represents an order placed with a supplier.",
+      "type": "object",
+      "properties": {
+        "poNumber": { "type": "string" },
+        "supplier": { "$ref": "#/entities/Supplier" },
+        "issueDate": { "type": "string", "format": "date-time" },
+        "deliveryDate": { "type": "string", "format": "date-time" },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "description": { "type": "string" },
+              "quantity": { "type": "number" },
+              "unitCost": { "type": "number" },
+              "total": { "type": "number" }
+            },
+            "required": ["description", "quantity", "unitCost", "total"]
+          }
+        },
+        "subtotal": { "type": "number" },
+        "tax": { "type": "number" },
+        "shipping": { "type": "number" },
+        "total": { "type": "number" },
+        "status": {
+          "type": "string",
+          "enum": ["Draft", "Issued", "Completed", "Cancelled"]
+        },
+        "notes": { "type": "string" }
+      },
+      "required": ["poNumber", "supplier", "issueDate", "items", "subtotal", "total", "status"]
     }
   },
   "auth": {
@@ -245,6 +296,10 @@
     "/orders/{orderId}": {
       "schema": { "$ref": "#/entities/Order" },
       "description": "Stores finalized orders after payment."
+    },
+     "/purchaseOrders/{poId}": {
+      "schema": { "$ref": "#/entities/PurchaseOrder" },
+      "description": "Stores purchase orders placed with suppliers."
     },
     "/users/{userId}/notifications/{notificationId}": {
       "schema": { "$ref": "#/entities/Notification" },

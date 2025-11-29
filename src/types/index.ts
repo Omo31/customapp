@@ -2,6 +2,7 @@
 
 
 
+
 import type { Auth } from "firebase/auth";
 
 
@@ -117,4 +118,37 @@ export type CustomOrderSettings = {
     unitsOfMeasure: UnitOfMeasure[];
     optionalServices: OptionalService[];
     shippingZones: ShippingZone[];
+    suppliers: Supplier[];
+};
+
+// Purchase Order Types
+export type Supplier = {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  address: string;
+};
+
+export type PurchaseOrderItem = {
+  description: string;
+  quantity: number;
+  unitCost: number;
+  total: number;
+};
+
+export type PurchaseOrder = {
+  id?: string;
+  poNumber: string;
+  supplier: Supplier;
+  issueDate: any; // Firestore Timestamp
+  deliveryDate: any; // Firestore Timestamp
+  items: PurchaseOrderItem[];
+  subtotal: number;
+  tax: number; // Can be a percentage or a flat amount
+  shipping: number;
+  total: number;
+  status: 'Draft' | 'Issued' | 'Completed' | 'Cancelled';
+  notes?: string;
+  createdAt: any;
 };
