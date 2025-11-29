@@ -13,7 +13,7 @@ export default function AppSidebar() {
   
     const navLinks = [
         { href: '/', label: 'Home', icon: <Home />, protected: false },
-        { href: '/custom-order', label: 'Custom Order', icon: <FileText />, protected: true },
+        { href: '/custom-order', label: 'Custom Order', icon: <FileText />, protected: false },
     ];
     
     return (
