@@ -6,6 +6,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { CustomOrderForm } from '@/components/home/custom-order-form';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 const features = [
   {
@@ -116,18 +117,41 @@ export default function Home() {
 
         <section id="custom-order" className="w-full py-12 md:py-24 lg:py-32">
           <div className="container px-4 md:px-6">
-            <div className="flex flex-col items-center justify-center space-y-4 text-center">
-              <div className="space-y-2">
-                 <div className="inline-block rounded-lg bg-secondary px-3 py-1 text-sm">Have a unique idea?</div>
-                <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl font-headline">Get a Custom Quote</h2>
-                <p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-                    Have a specific vision that requires a special touch? Fill out the form below, and we’ll provide a quote for your custom image generation.
-                </p>
+            <Tabs defaultValue="generate" className="w-full">
+              <div className="flex flex-col items-center justify-center space-y-4 text-center">
+                <TabsList>
+                  <TabsTrigger value="generate">Generate</TabsTrigger>
+                  <TabsTrigger value="custom-order">Custom Order</TabsTrigger>
+                </TabsList>
               </div>
-            </div>
-             <div className="mx-auto max-w-2xl mt-12">
-                <CustomOrderForm />
-            </div>
+              <TabsContent value="generate">
+                <div className="flex flex-col items-center justify-center space-y-4 text-center pt-8">
+                    <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl font-headline">Generate Your Own Images</h2>
+                    <p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
+                        Use our powerful AI to generate images from your own text prompts.
+                    </p>
+                    <Button asChild size="lg">
+                        <Link href="/generate">
+                            Start Creating
+                            <ArrowRight className="ml-2 h-5 w-5" />
+                        </Link>
+                    </Button>
+                </div>
+              </TabsContent>
+              <TabsContent value="custom-order">
+                <div className="flex flex-col items-center justify-center space-y-4 text-center pt-8">
+                  <div className="space-y-2">
+                    <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl font-headline">Get a Custom Quote</h2>
+                    <p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
+                        Have a specific vision that requires a special touch? Fill out the form below, and we’ll provide a quote for your custom image generation.
+                    </p>
+                  </div>
+                </div>
+                 <div className="mx-auto max-w-2xl mt-8">
+                    <CustomOrderForm />
+                </div>
+              </TabsContent>
+            </Tabs>
           </div>
         </section>
 
