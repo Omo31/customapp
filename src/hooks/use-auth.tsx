@@ -10,7 +10,7 @@ import {
     sendEmailVerification,
     type User as FirebaseUser,
 } from "firebase/auth";
-import { doc, serverTimestamp, setDoc, writeBatch } from 'firebase/firestore';
+import { doc, serverTimestamp, writeBatch, collection } from 'firebase/firestore';
 import { useToast } from "./use-toast";
 import { useState } from "react";
 import { auth, db } from "@/firebase";

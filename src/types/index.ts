@@ -1,5 +1,6 @@
 
 
+
 export type User = {
   uid: string;
   email: string | null;
@@ -76,4 +77,15 @@ export type Notification = {
     href?: string;
     isRead: boolean;
     createdAt: any; // Firestore Timestamp
+};
+
+export type StoreItem = {
+  name: string;
+  description: string;
+  imageUrl: string;
+};
+
+export type StoreSettings = {
+  id?: string;
+  items: StoreItem[];
 };

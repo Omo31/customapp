@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useAuth } from '@/hooks/use-auth';
@@ -13,14 +14,15 @@ import {
   DropdownMenuTrigger,
 } from '../ui/dropdown-menu';
 import { Logo } from '../logo';
-import { LayoutDashboard, LogOut, User as UserIcon, Bell } from 'lucide-react';
+import { LayoutDashboard, LogOut, User as UserIcon, Bell, ShoppingCart } from 'lucide-react';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { useFirestore, useCollection } from '@/firebase';
 import { type Notification } from '@/types';
 import { Badge } from '../ui/badge';
+import { allAdminNavItems } from '@/lib/roles';
 
 export default function Header() {
-  const { user, logout, isAdmin } = useAuth();
+  const { user, logout, isAdmin, hasRole } = useAuth();
   const db = useFirestore();
 
   // Listen to unread notifications for the current user
@@ -33,6 +35,8 @@ export default function Header() {
   );
 
   const unreadCount = notifications?.length || 0;
+  
+  const showSettings = hasRole('settings');
 
 
   return (
@@ -44,6 +48,11 @@ export default function Header() {
         <div className="hidden md:flex">
           <Logo />
         </div>
+        <nav className="hidden md:flex items-center space-x-4 ml-6">
+            <Link href="/products" className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary">
+                Products
+            </Link>
+        </nav>
         <div className="flex flex-1 items-center justify-end space-x-2">
           {user ? (
             <>

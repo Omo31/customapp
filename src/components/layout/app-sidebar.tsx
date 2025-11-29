@@ -1,10 +1,11 @@
+
 'use client'
 
 import { Sidebar, SidebarHeader, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter, SidebarMenuSkeleton } from "@/components/ui/sidebar"
 import { Logo } from "@/components/logo"
 import { useAuth } from "@/hooks/use-auth.tsx"
 import { usePathname } from "next/navigation"
-import { Home, User as UserIcon, LogOut, FileText } from "lucide-react"
+import { Home, User as UserIcon, LogOut, FileText, ShoppingCart } from "lucide-react"
 import Link from "next/link"
 import { useEffect, useState } from "react"
 
@@ -19,6 +20,7 @@ export default function AppSidebar() {
   
     const navLinks = [
         { href: '/', label: 'Home', icon: <Home />, protected: false },
+        { href: '/products', label: 'Products', icon: <ShoppingCart />, protected: false },
         { href: '/custom-order', label: 'Custom Order', icon: <FileText />, protected: false },
     ];
     

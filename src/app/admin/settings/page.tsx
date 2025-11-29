@@ -1,20 +1,18 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+
+'use client';
+
+import { StoreSettingsManager } from '@/components/admin/store-settings-manager';
 
 export default function AdminSettingsPage() {
   return (
     <div className="space-y-6">
       <div>
         <h3 className="text-lg font-medium font-headline">Settings</h3>
-        <p className="text-sm text-muted-foreground">Configure various aspects of your store's homepage, footer, and other features.</p>
+        <p className="text-sm text-muted-foreground">
+          Configure various aspects of your store's homepage, footer, and other features.
+        </p>
       </div>
-       <Card>
-        <CardHeader>
-          <CardTitle>Application Settings</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-muted-foreground">No settings to configure yet.</p>
-        </CardContent>
-      </Card>
+      <StoreSettingsManager />
     </div>
-  )
+  );
 }

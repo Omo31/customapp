@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "UserProfile": {
@@ -144,6 +145,41 @@
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["userId", "title", "isRead", "createdAt"]
+    },
+    "StoreItem": {
+        "title": "Store Item",
+        "description": "Represents a single item in the store showcase.",
+        "type": "object",
+        "properties": {
+            "name": {
+                "type": "string",
+                "description": "The name of the product."
+            },
+            "description": {
+                "type": "string",
+                "description": "A brief description of the product."
+            },
+            "imageUrl": {
+                "type": "string",
+                "format": "uri",
+                "description": "The URL for the product image."
+            }
+        },
+        "required": ["name", "description", "imageUrl"]
+    },
+    "StoreSettings": {
+        "title": "Store Settings",
+        "description": "Contains the settings for the product showcase.",
+        "type": "object",
+        "properties": {
+            "items": {
+                "type": "array",
+                "description": "A list of products to display in the store.",
+                "items": {
+                    "$ref": "#/entities/StoreItem"
+                }
+            }
+        }
     }
   },
   "auth": {
@@ -165,6 +201,10 @@
     "/users/{userId}/notifications/{notificationId}": {
       "schema": { "$ref": "#/entities/Notification" },
       "description": "Stores notifications for a specific user."
+    },
+    "/settings/store": {
+        "schema": { "$ref": "#/entities/StoreSettings" },
+        "description": "Stores the settings and product list for the store showcase. This is a single document."
     }
   }
 }
