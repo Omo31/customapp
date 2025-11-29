@@ -54,7 +54,7 @@ export function SignupForm() {
   async function onSubmit(values: z.infer<typeof formSchema>) {
     try {
       await signup(values.email, values.password, values.firstName, values.lastName);
-      router.push('/generate');
+      router.push('/');
     } catch (error) {
       toast({
         title: 'Sign Up Failed',

@@ -49,7 +49,7 @@ export function LoginForm() {
   async function onSubmit(values: z.infer<typeof formSchema>) {
     try {
       await login(values.email, values.password);
-      router.push('/generate');
+      router.push('/');
     } catch (error) {
       toast({
         title: 'Login Failed',
