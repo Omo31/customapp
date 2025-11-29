@@ -29,6 +29,7 @@ import { addDoc, collection, serverTimestamp } from "firebase/firestore"
 import { useFirestore } from "@/firebase"
 import { errorEmitter } from "@/firebase/error-emitter"
 import { FirestorePermissionError } from "@/firebase/errors"
+import Link from "next/link"
 
 // Mock data, to be replaced with data from admin settings
 const unitsOfMeasure = ["kg", "grams", "Pieces", "Dozen", "Wraps", "Other"]
@@ -96,6 +97,13 @@ export function AdvancedCustomOrderForm() {
       customerPhone: "",
     },
   })
+
+  React.useEffect(() => {
+    if (user) {
+        form.setValue('customerName', user.displayName || '');
+        form.setValue('customerEmail', user.email || '');
+    }
+  }, [user, form]);
 
   const { isSubmitting } = form.formState;
 
@@ -514,13 +522,26 @@ export function AdvancedCustomOrderForm() {
                         <span>To be quoted</span>
                     </div>
                 </div>
-            <Button type="submit" className="w-full" disabled={isSubmitting} size="lg">
+            <Button type="submit" className="w-full" disabled={isSubmitting || !user} size="lg">
               {isSubmitting ? (
                 <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Submitting for Quote...</>
               ) : (
                 "Submit Request for Quote"
               )}
             </Button>
+            {!user && (
+              <p className="text-center text-sm text-muted-foreground">
+                Please{" "}
+                <Link href="/login" className="underline hover:text-primary">
+                  log in
+                </Link>{" "}
+                or{" "}
+                <Link href="/signup" className="underline hover:text-primary">
+                  sign up
+                </Link>{" "}
+                to submit a quote.
+              </p>
+            )}
           </CardFooter>
         </form>
       </Form>
