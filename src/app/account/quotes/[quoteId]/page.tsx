@@ -44,6 +44,7 @@ export default function QuoteDetailsPage({ params }: QuoteDetailsPageProps) {
         amount: totalCost,
         currency: 'NGN',
         payment_options: 'card,mobilemoney,ussd',
+        redirect_url: `${window.location.origin}/account/orders`,
         customer: {
             email: user?.email || '',
             name: user?.displayName || '',
@@ -114,10 +115,11 @@ export default function QuoteDetailsPage({ params }: QuoteDetailsPageProps) {
 
             toast({
                 title: "Payment Successful!",
-                description: "Your order has been placed. You can view it in your order history.",
+                description: "Your order has been placed. You will be redirected shortly.",
             });
             
             closePaymentModal(); // This will close the modal
+            // The redirect_url will handle navigation, but we can push here as a fallback
             router.push(`/account/orders`);
 
         } catch (error) {
