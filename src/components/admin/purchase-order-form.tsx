@@ -24,6 +24,7 @@ import { format } from 'date-fns';
 import { Calendar } from '../ui/calendar';
 import { Separator } from '../ui/separator';
 import { useRouter } from 'next/navigation';
+import { Label } from '../ui/label';
 
 const poItemSchema = z.object({
   description: z.string().min(1, 'Description is required.'),
@@ -348,24 +349,22 @@ export function PurchaseOrderForm({ po }: { po?: PurchaseOrder }) {
                         control={form.control}
                         name="tax"
                         render={({ field }) => (
-                            <FormItem className="grid grid-cols-2 items-center gap-4">
-                              <FormLabel>Tax (%)</FormLabel>
-                              <FormControl>
-                                  <Input type="number" id="tax" {...field} />
-                              </FormControl>
-                            </FormItem>
+                            <div className="grid grid-cols-2 items-center gap-4">
+                              <Label htmlFor="tax">Tax (%)</Label>
+                              <Input type="number" id="tax" {...field} />
+                              <div className="col-span-2"><FormMessage>{form.formState.errors.tax?.message}</FormMessage></div>
+                            </div>
                         )}
                     />
                     <FormField
                         control={form.control}
                         name="shipping"
                         render={({ field }) => (
-                            <FormItem className="grid grid-cols-2 items-center gap-4">
-                              <FormLabel>Shipping (₦)</FormLabel>
-                              <FormControl>
-                                  <Input type="number" id="shipping" {...field} />
-                              </FormControl>
-                            </FormItem>
+                            <div className="grid grid-cols-2 items-center gap-4">
+                              <Label htmlFor="shipping">Shipping (₦)</Label>
+                              <Input type="number" id="shipping" {...field} />
+                              <div className="col-span-2"><FormMessage>{form.formState.errors.shipping?.message}</FormMessage></div>
+                            </div>
                         )}
                     />
                     <Separator />
