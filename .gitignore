@@ -6,28 +6,17 @@
 # Build artifacts
 /.next/
 /out/
+/build/
 
-# TypeScript cache
-*.tsbuildinfo
+# Static folder for Next.js 13+
+/public/static
 
-# Test results
-/coverage
-
-# Environment variables
+# Local Environment Variables
 .env
-.env*.local
-
-# Production environment variables
-# This file SHOULD NOT be committed to your repository
-# See https://nextjs.org/docs/basic-features/environment-variables
-.env.production
-
-# Turbopack
-.turbo
-
-# Patch-package
-# You may want to commit this directory if you are patching packages
-# patches/
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
 
 # Logs
 npm-debug.log*
@@ -44,6 +33,9 @@ pnpm-debug.log*
 *.sln
 *.sw?
 
-# System files
+# Operating System files
 .DS_Store
 Thumbs.db
+
+# Test coverage
+/coverage
