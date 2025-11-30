@@ -1,4 +1,5 @@
 
+
 "use client"
 
 import { useFirestore, useDoc } from "@/firebase";
@@ -57,7 +58,7 @@ export default function QuoteDetailsPage({ params }: QuoteDetailsPageProps) {
         amount: totalCost,
         currency: 'NGN',
         payment_options: 'card,mobilemoney,ussd',
-        redirect_url: `${typeof window !== 'undefined' ? window.location.origin : ''}/account/orders?quoteId=${quoteId}`,
+        redirect_url: `${typeof window !== 'undefined' ? window.location.origin : ''}/account/orders`,
         customer: {
             email: user?.email || '',
             name: user?.displayName || '',

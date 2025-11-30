@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import * as React from 'react';
@@ -350,7 +351,7 @@ export function PurchaseOrderForm({ po }: { po?: PurchaseOrder }) {
                             <FormItem className="grid grid-cols-2 items-center gap-4">
                               <FormLabel>Tax (%)</FormLabel>
                               <FormControl>
-                                  <Input type="number" {...field} />
+                                  <Input type="number" id="tax" {...field} />
                               </FormControl>
                             </FormItem>
                         )}
@@ -362,7 +363,7 @@ export function PurchaseOrderForm({ po }: { po?: PurchaseOrder }) {
                             <FormItem className="grid grid-cols-2 items-center gap-4">
                               <FormLabel>Shipping (₦)</FormLabel>
                               <FormControl>
-                                  <Input type="number" {...field} />
+                                  <Input type="number" id="shipping" {...field} />
                               </FormControl>
                             </FormItem>
                         )}

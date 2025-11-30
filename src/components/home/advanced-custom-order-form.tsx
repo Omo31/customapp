@@ -1,4 +1,5 @@
 
+
 "use client"
 
 import * as React from "react"
@@ -26,7 +27,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Separator } from "@/components/ui/separator"
-import { addDoc, collection, serverTimestamp, writeBatch } from "firebase/firestore"
+import { addDoc, collection, doc, serverTimestamp, writeBatch } from "firebase/firestore"
 import { useFirestore, useDoc } from "@/firebase"
 import { errorEmitter } from "@/firebase/error-emitter"
 import { FirestorePermissionError } from "@/firebase/errors"
@@ -147,7 +148,7 @@ export function AdvancedCustomOrderForm() {
             createdAt: serverTimestamp(),
         });
         
-        // 3. Create notification for admins
+        // 3. Create notification for admins by creating a doc in the root `notifications` collection
         const adminNotifRef = doc(collection(db, `notifications`));
         batch.set(adminNotifRef, {
             userId: 'admin', // Generic ID for admin-facing notifications
@@ -586,5 +587,3 @@ export function AdvancedCustomOrderForm() {
     </Card>
   )
 }
-
-    
