@@ -340,21 +340,23 @@ export function PurchaseOrderForm({ po }: { po?: PurchaseOrder }) {
                         <span className="text-muted-foreground">Subtotal</span>
                         <span>₦{subtotal.toLocaleString()}</span>
                     </div>
-                    <div className="grid grid-cols-2 items-center gap-4">
-                        <Label htmlFor="shipping">Shipping (₦)</Label>
-                        <FormField
-                            control={form.control}
-                            name="shipping"
-                            render={({ field }) => (
-                                <FormItem>
-                                <FormControl>
-                                    <Input id="shipping" type="number" {...field} />
-                                </FormControl>
-                                <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                    </div>
+                    
+                    <FormField
+                        control={form.control}
+                        name="shipping"
+                        render={({ field }) => (
+                            <FormItem>
+                                <div className="grid grid-cols-2 items-center gap-4">
+                                    <Label htmlFor="shipping">Shipping (₦)</Label>
+                                    <FormControl>
+                                        <Input id="shipping" type="number" {...field} />
+                                    </FormControl>
+                                </div>
+                                <FormMessage className="col-span-2"/>
+                            </FormItem>
+                        )}
+                    />
+
                     <Separator />
                     <div className="flex justify-between font-bold text-lg">
                         <span>Total</span>
@@ -373,5 +375,3 @@ export function PurchaseOrderForm({ po }: { po?: PurchaseOrder }) {
     </Form>
   );
 }
-
-    
