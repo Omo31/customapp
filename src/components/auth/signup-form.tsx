@@ -29,7 +29,6 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2, Eye, EyeOff } from 'lucide-react';
 import React, { useState } from 'react';
 import { Checkbox } from '../ui/checkbox';
-import { Label } from '../ui/label';
 
 const formSchema = z.object({
   firstName: z.string().min(1, { message: 'First name is required.' }),
@@ -170,12 +169,12 @@ export function SignupForm() {
                     />
                   </FormControl>
                   <div className="space-y-1 leading-none">
-                     <FormLabel>
-                       I accept the{" "}
-                        <Link href="/terms" className="underline hover:text-primary">
-                          Terms and Conditions
-                        </Link>
-                      </FormLabel>
+                    <FormLabel>
+                      I accept the{" "}
+                      <Link href="/terms" className="underline hover:text-primary">
+                        Terms and Conditions
+                      </Link>
+                    </FormLabel>
                     <FormMessage />
                   </div>
                 </FormItem>
