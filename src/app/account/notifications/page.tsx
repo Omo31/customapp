@@ -1,22 +1,32 @@
 
 "use client"
 
-import { useFirestore, useCollection } from "@/firebase";
+import { useFirestore, useCollection, useDoc } from "@/firebase";
 import { useAuth } from "@/hooks/use-auth";
-import { type Notification } from "@/types";
+import { type Notification, type UserProfile } from "@/types";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { DocumentData, DocumentSnapshot, doc, updateDoc } from "firebase/firestore";
 import { Pagination, PaginationContent, PaginationItem, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 import { BellRing, Check, Loader2 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { Form, FormControl, FormField, FormItem } from "@/components/ui/form";
+
 
 const PAGE_SIZE = 10;
+
+const preferencesSchema = z.object({
+    marketingEmails: z.boolean().default(false),
+    quoteAndOrderUpdates: z.boolean().default(true),
+});
 
 export default function NotificationsPage() {
   const { user } = useAuth();
@@ -36,15 +46,29 @@ export default function NotificationsPage() {
       orderBy: ["createdAt", "desc"],
   });
 
+  const { data: userProfile, loading: profileLoading } = useDoc<UserProfile>(db, 'users', user?.uid);
+
+  const form = useForm<z.infer<typeof preferencesSchema>>({
+    resolver: zodResolver(preferencesSchema),
+    defaultValues: {
+      marketingEmails: false,
+      quoteAndOrderUpdates: true,
+    }
+  });
+
+  useEffect(() => {
+    if (userProfile?.notificationPreferences) {
+      form.reset(userProfile.notificationPreferences);
+    }
+  }, [userProfile, form]);
+
+
   const handleMarkAsRead = async (notificationId: string) => {
     if (!user) return;
     setUpdatingId(notificationId);
     try {
         const notifRef = doc(db, `users/${user.uid}/notifications`, notificationId);
         await updateDoc(notifRef, { isRead: true });
-        toast({
-            title: "Notification marked as read.",
-        });
     } catch (error) {
         console.error("Error marking notification as read:", error);
         toast({
@@ -74,6 +98,28 @@ export default function NotificationsPage() {
   };
 
   const canGoNext = allNotifications && (currentPage * PAGE_SIZE < allNotifications.length);
+
+  async function onPreferencesSubmit(values: z.infer<typeof preferencesSchema>) {
+    if (!user) return;
+    try {
+        const userRef = doc(db, 'users', user.uid);
+        await updateDoc(userRef, {
+            notificationPreferences: values
+        });
+        toast({
+            title: 'Preferences Saved',
+            description: 'Your notification settings have been updated.',
+        });
+        form.reset(values); // This will reset the 'dirty' state of the form
+    } catch (error) {
+        console.error("Error saving preferences:", error);
+        toast({
+            title: 'Error',
+            description: 'Could not save your preferences. Please try again.',
+            variant: 'destructive',
+        });
+    }
+  }
 
 
   return (
@@ -167,41 +213,81 @@ export default function NotificationsPage() {
         )}
       </Card>
 
-      <Card>
-          <CardHeader>
-              <CardTitle>Notification Settings</CardTitle>
-              <CardDescription>Manage how you receive notifications.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-              <div className="flex items-center justify-between rounded-lg border p-4">
-                  <div className="space-y-0.5">
-                      <Label htmlFor="marketing-emails" className="text-base">
-                          Marketing Emails
-                      </Label>
-                      <p className="text-sm text-muted-foreground">
-                          Receive emails about new products, special offers, and more.
-                      </p>
-                  </div>
-                  <Switch id="marketing-emails" disabled />
-              </div>
-               <div className="flex items-center justify-between rounded-lg border p-4">
-                  <div className="space-y-0.5">
-                      <Label htmlFor="quote-updates" className="text-base">
-                          Quote & Order Updates
-                      </Label>
-                      <p className="text-sm text-muted-foreground">
-                          Receive email notifications for status changes on your quotes and orders.
-                      </p>
-                  </div>
-                  <Switch id="quote-updates" defaultChecked disabled />
-              </div>
-          </CardContent>
-          <CardFooter>
-            <Button disabled>Save Preferences</Button>
-            <p className="text-xs text-muted-foreground ml-4">Preference management coming soon.</p>
-          </CardFooter>
-      </Card>
-
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onPreferencesSubmit)}>
+            <Card>
+                <CardHeader>
+                    <CardTitle>Notification Settings</CardTitle>
+                    <CardDescription>Manage how you receive notifications.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                     {profileLoading ? (
+                        <div className="space-y-4">
+                            <Skeleton className="h-20 w-full" />
+                            <Skeleton className="h-20 w-full" />
+                        </div>
+                     ) : (
+                        <>
+                            <FormField
+                                control={form.control}
+                                name="marketingEmails"
+                                render={({ field }) => (
+                                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                                        <div className="space-y-0.5">
+                                            <Label htmlFor="marketing-emails" className="text-base">
+                                                Marketing Emails
+                                            </Label>
+                                            <p className="text-sm text-muted-foreground">
+                                                Receive emails about new products, special offers, and more.
+                                            </p>
+                                        </div>
+                                        <FormControl>
+                                            <Switch
+                                                id="marketing-emails"
+                                                checked={field.value}
+                                                onCheckedChange={field.onChange}
+                                            />
+                                        </FormControl>
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name="quoteAndOrderUpdates"
+                                render={({ field }) => (
+                                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                                        <div className="space-y-0.5">
+                                            <Label htmlFor="quote-updates" className="text-base">
+                                                Quote & Order Updates
+                                            </Label>
+                                            <p className="text-sm text-muted-foreground">
+                                                Receive email notifications for status changes on your quotes and orders.
+                                            </p>
+                                        </div>
+                                        <FormControl>
+                                            <Switch
+                                                id="quote-updates"
+                                                checked={field.value}
+                                                onCheckedChange={field.onChange}
+                                            />
+                                        </FormControl>
+                                    </FormItem>
+                                )}
+                            />
+                        </>
+                     )}
+                </CardContent>
+                <CardFooter>
+                    <Button type="submit" disabled={form.formState.isSubmitting || !form.formState.isDirty}>
+                        {form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Save Preferences
+                    </Button>
+                </CardFooter>
+            </Card>
+        </form>
+      </Form>
     </div>
   )
 }
+
+    

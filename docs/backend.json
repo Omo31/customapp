@@ -27,6 +27,20 @@
             "enum": ["dashboard", "orders", "quotes", "users", "purchase-orders", "accounting", "analytics", "notifications", "settings"]
           }
         },
+        "notificationPreferences": {
+            "type": "object",
+            "description": "User's notification preferences.",
+            "properties": {
+                "marketingEmails": {
+                    "type": "boolean",
+                    "description": "Whether the user wants to receive marketing emails."
+                },
+                "quoteAndOrderUpdates": {
+                    "type": "boolean",
+                    "description": "Whether the user wants to receive email notifications for quote and order status changes."
+                }
+            }
+        },
         "createdAt": {
             "type": "string",
             "format": "date-time",

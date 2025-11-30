@@ -68,6 +68,10 @@ export type UserProfile = {
   email: string;
   photoURL?: string;
   roles: string[];
+  notificationPreferences?: {
+    marketingEmails?: boolean;
+    quoteAndOrderUpdates?: boolean;
+  };
   createdAt: any; // Firestore Timestamp
 };
 
