@@ -52,7 +52,6 @@ export function LoginForm() {
   const router = useRouter();
   const { toast } = useToast();
   const [resetEmail, setResetEmail] = useState("");
-  const [isResetting, setIsResetting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -68,11 +67,8 @@ export function LoginForm() {
       await login(values.email, values.password);
       router.push('/');
     } catch (error) {
-      toast({
-        title: 'Login Failed',
-        description: (error as Error).message || 'An unexpected error occurred.',
-        variant: 'destructive',
-      });
+      // Toast is handled in the useAuth hook, so we don't need to show one here.
+      // We just catch the error to prevent it from bubbling up.
     }
   }
 
@@ -85,14 +81,8 @@ export function LoginForm() {
       });
       return;
     }
-    setIsResetting(true);
-    try {
-      await resetPassword(resetEmail);
-    } catch (error) {
-      // Toast is already handled in the useAuth hook
-    } finally {
-      setIsResetting(false);
-    }
+    // The useAuth hook will handle the logic, loading state, and toasts.
+    await resetPassword(resetEmail);
   };
 
   return (
@@ -150,8 +140,8 @@ export function LoginForm() {
                             </div>
                             <AlertDialogFooter>
                               <AlertDialogCancel>Cancel</AlertDialogCancel>
-                              <AlertDialogAction onClick={handlePasswordReset} disabled={isResetting}>
-                                {isResetting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                              <AlertDialogAction onClick={handlePasswordReset} disabled={loading}>
+                                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                 Send Reset Link
                               </AlertDialogAction>
                             </AlertDialogFooter>
