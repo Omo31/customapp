@@ -24,7 +24,6 @@ import { format } from 'date-fns';
 import { Calendar } from '../ui/calendar';
 import { Separator } from '../ui/separator';
 import { useRouter } from 'next/navigation';
-import { Label } from '../ui/label';
 
 const poItemSchema = z.object({
   description: z.string().min(1, 'Description is required.'),
@@ -345,14 +344,14 @@ export function PurchaseOrderForm({ po }: { po?: PurchaseOrder }) {
                         control={form.control}
                         name="shipping"
                         render={({ field }) => (
-                            <FormItem>
-                                <div className="grid grid-cols-2 items-center gap-4">
-                                    <Label htmlFor="shipping">Shipping (₦)</Label>
-                                    <FormControl>
-                                        <Input id="shipping" type="number" {...field} />
-                                    </FormControl>
+                             <FormItem className="grid grid-cols-2 items-center gap-4">
+                                <FormLabel>Shipping (₦)</FormLabel>
+                                <FormControl>
+                                    <Input type="number" {...field} />
+                                </FormControl>
+                                <div className="col-span-2">
+                                  <FormMessage />
                                 </div>
-                                <FormMessage className="col-span-2"/>
                             </FormItem>
                         )}
                     />
