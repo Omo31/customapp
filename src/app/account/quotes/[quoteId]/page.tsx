@@ -10,7 +10,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useFlutterwave, closePaymentModal } from "flutterwave-react-v3";
 import { useToast } from "@/hooks/use-toast";
-import { collection, doc, serverTimestamp, writeBatch } from "firebase/firestore";
 import { useAuth } from "@/hooks/use-auth";
 import { Separator } from "@/components/ui/separator";
 import { useRouter } from "next/navigation";
@@ -38,13 +37,27 @@ export default function QuoteDetailsPage({ params }: QuoteDetailsPageProps) {
     const totalCost = itemsTotal + servicesTotal + serviceCharge + shippingCost;
 
 
+    const handlePaymentSuccess = () => {
+        // The webhook will now handle database updates.
+        // We just need to show a confirmation message and redirect.
+        toast({
+            title: "Payment Processing",
+            description: "Your payment is being confirmed. You will be redirected shortly.",
+        });
+        
+        closePaymentModal(); 
+        
+        // Redirect to the orders page where the new order will appear once the webhook is processed.
+        router.push(`/account/orders`);
+    };
+
     const flutterwaveConfig = {
         public_key: process.env.NEXT_PUBLIC_FLUTTERWAVE_PUBLIC_KEY || '',
-        tx_ref: new Date().getTime().toString(),
+        tx_ref: quoteId, // Use the quote ID as the transaction reference
         amount: totalCost,
         currency: 'NGN',
         payment_options: 'card,mobilemoney,ussd',
-        redirect_url: `${window.location.origin}/account/orders`,
+        redirect_url: `${typeof window !== 'undefined' ? window.location.origin : ''}/account/orders?quoteId=${quoteId}`,
         customer: {
             email: user?.email || '',
             name: user?.displayName || '',
@@ -57,81 +70,6 @@ export default function QuoteDetailsPage({ params }: QuoteDetailsPageProps) {
     };
 
     const handleFlutterwavePayment = useFlutterwave(flutterwaveConfig);
-
-
-    const handlePaymentSuccess = async (response: any) => {
-        console.log("Flutterwave response:", response);
-        // IMPORTANT: In a production app, you would send the transaction reference (response.tx_ref) 
-        // to your backend to securely verify the transaction with Flutterwave's API using your secret key.
-        // For this prototype, we'll optimistically assume the payment was successful.
-
-        if (!quote || !user) return;
-
-        try {
-            const batch = writeBatch(db);
-
-            // 1. Update the quote status
-            const quoteRef = doc(db, "quotes", quoteId);
-            batch.update(quoteRef, { status: "Paid" });
-
-            // 2. Create a new order
-            const orderRef = doc(collection(db, "orders"));
-            batch.set(orderRef, {
-                userId: user.uid,
-                quoteId: quoteId,
-                customerName: quote.customerName,
-                customerEmail: quote.customerEmail,
-                items: quote.items,
-                totalCost: totalCost,
-                shippingAddress: quote.shippingAddress,
-                status: 'Pending',
-                createdAt: serverTimestamp(),
-            });
-
-            // 3. Create notifications
-            const userNotifRef = doc(collection(db, `users/${user.uid}/notifications`));
-            batch.set(userNotifRef, {
-                userId: user.uid,
-                title: "Order Placed Successfully!",
-                description: `Your order #${orderRef.id.slice(-6)} has been received and is now pending.`,
-                href: `/account/orders/${orderRef.id}`,
-                isRead: false,
-                createdAt: serverTimestamp(),
-            });
-            
-            // This is a simplified admin notification. A real app might have a more robust system.
-            const adminNotifRef = doc(collection(db, `notifications`)); // A general collection for admins to query
-            batch.set(adminNotifRef, {
-                 userId: 'admin', // Generic admin user for collection group query
-                 title: "New Order Received",
-                 description: `A new order #${orderRef.id.slice(-6)} was placed by ${quote.customerName}.`,
-                 href: `/admin/orders/${orderRef.id}`,
-                 isRead: false,
-                 createdAt: serverTimestamp()
-            });
-
-
-            await batch.commit();
-
-            toast({
-                title: "Payment Successful!",
-                description: "Your order has been placed. You will be redirected shortly.",
-            });
-            
-            closePaymentModal(); // This will close the modal
-            // The redirect_url will handle navigation, but we can push here as a fallback
-            router.push(`/account/orders`);
-
-        } catch (error) {
-            console.error("Failed to update database after payment:", error);
-            toast({
-                title: "Database Error",
-                description: "Payment was successful, but we couldn't update your order. Please contact support.",
-                variant: "destructive",
-            });
-        }
-    };
-
 
     if (quoteLoading) {
         return (
@@ -244,15 +182,12 @@ export default function QuoteDetailsPage({ params }: QuoteDetailsPageProps) {
                     <CardFooter>
                          <Button className="w-full" size="lg" onClick={() => {
                             handleFlutterwavePayment({
-                                callback: (response) => {
-                                   handlePaymentSuccess(response);
+                                callback: () => {
+                                   handlePaymentSuccess();
                                 },
                                 onClose: () => {
-                                    toast({
-                                        title: "Payment Cancelled",
-                                        description: "You can complete your payment at any time.",
-                                        variant: "default",
-                                    })
+                                    // Don't show a toast on close, it's not an error.
+                                    // The user might just be closing the modal to pay later.
                                 },
                             });
                         }}>
