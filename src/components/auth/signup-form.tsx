@@ -23,7 +23,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import Link from 'next/link';
-import { useAuth } from '@/hooks/use-auth';
+import { useAuth } from '@/hooks/use-auth.tsx';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Eye, EyeOff } from 'lucide-react';
@@ -167,16 +167,15 @@ export function SignupForm() {
                     <Checkbox
                       checked={field.value}
                       onCheckedChange={field.onChange}
-                      id="terms"
                     />
                   </FormControl>
                   <div className="space-y-1 leading-none">
-                     <Label htmlFor="terms" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                     <FormLabel>
                        I accept the{" "}
                         <Link href="/terms" className="underline hover:text-primary">
                           Terms and Conditions
                         </Link>
-                      </Label>
+                      </FormLabel>
                     <FormMessage />
                   </div>
                 </FormItem>
