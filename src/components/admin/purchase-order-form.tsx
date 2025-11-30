@@ -23,7 +23,6 @@ import { format } from 'date-fns';
 import { Calendar } from '../ui/calendar';
 import { Separator } from '../ui/separator';
 import { useRouter } from 'next/navigation';
-import { Label } from '../ui/label';
 
 const poItemSchema = z.object({
   description: z.string().min(1, 'Description is required.'),
@@ -344,34 +343,30 @@ export function PurchaseOrderForm({ po }: { po?: PurchaseOrder }) {
                         <span className="text-muted-foreground">Subtotal</span>
                         <span>₦{subtotal.toLocaleString()}</span>
                     </div>
-                     <div className="grid grid-cols-2 items-center gap-4">
-                         <Label htmlFor="tax">Tax (%)</Label>
-                         <FormField
-                            control={form.control}
-                            name="tax"
-                            render={({ field }) => (
-                                <FormItem>
-                                <FormControl>
-                                    <Input id="tax" type="number" {...field} />
-                                </FormControl>
-                                </FormItem>
-                            )}
-                        />
-                    </div>
-                    <div className="grid grid-cols-2 items-center gap-4">
-                        <Label htmlFor="shipping">Shipping (₦)</Label>
-                         <FormField
-                            control={form.control}
-                            name="shipping"
-                            render={({ field }) => (
-                                <FormItem>
-                                <FormControl>
-                                    <Input id="shipping" type="number" {...field} />
-                                </FormControl>
-                                </FormItem>
-                            )}
-                        />
-                    </div>
+                     <FormField
+                        control={form.control}
+                        name="tax"
+                        render={({ field }) => (
+                            <FormItem className="grid grid-cols-2 items-center gap-4">
+                              <FormLabel>Tax (%)</FormLabel>
+                              <FormControl>
+                                  <Input type="number" {...field} />
+                              </FormControl>
+                            </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={form.control}
+                        name="shipping"
+                        render={({ field }) => (
+                            <FormItem className="grid grid-cols-2 items-center gap-4">
+                              <FormLabel>Shipping (₦)</FormLabel>
+                              <FormControl>
+                                  <Input type="number" {...field} />
+                              </FormControl>
+                            </FormItem>
+                        )}
+                    />
                     <Separator />
                     <div className="flex justify-between font-bold text-lg">
                         <span>Total</span>
