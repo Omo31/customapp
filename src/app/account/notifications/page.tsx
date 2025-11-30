@@ -9,19 +9,22 @@ import { Skeleton } from "@/components/ui/skeleton";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
-import { DocumentData, DocumentSnapshot } from "firebase/firestore";
+import { DocumentData, DocumentSnapshot, doc, updateDoc } from "firebase/firestore";
 import { Pagination, PaginationContent, PaginationItem, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
-import { BellRing, Check } from "lucide-react";
+import { BellRing, Check, Loader2 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
 
 const PAGE_SIZE = 10;
 
 export default function NotificationsPage() {
   const { user } = useAuth();
   const db = useFirestore();
+  const { toast } = useToast();
   const [currentPage, setCurrentPage] = useState(1);
   const [pageHistory, setPageHistory] = useState<(DocumentSnapshot<DocumentData> | null)[]>([null]);
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
 
   const { data: notifications, loading } = useCollection<Notification>(db, `users/${user?.uid}/notifications`, {
       orderBy: ["createdAt", "desc"],
@@ -32,6 +35,27 @@ export default function NotificationsPage() {
   const { data: allNotifications } = useCollection<Notification>(db, `users/${user?.uid}/notifications`, {
       orderBy: ["createdAt", "desc"],
   });
+
+  const handleMarkAsRead = async (notificationId: string) => {
+    if (!user) return;
+    setUpdatingId(notificationId);
+    try {
+        const notifRef = doc(db, `users/${user.uid}/notifications`, notificationId);
+        await updateDoc(notifRef, { isRead: true });
+        toast({
+            title: "Notification marked as read.",
+        });
+    } catch (error) {
+        console.error("Error marking notification as read:", error);
+        toast({
+            title: "Error",
+            description: "Could not update notification. Please try again.",
+            variant: "destructive",
+        });
+    } finally {
+        setUpdatingId(null);
+    }
+  };
 
 
   const handleNextPage = () => {
@@ -102,8 +126,13 @@ export default function NotificationsPage() {
                         </Button>
                       )}
                       {!notif.isRead && (
-                          <Button variant="ghost" size="sm" >
-                              <Check className="h-4 w-4 mr-1" /> Mark as read
+                          <Button variant="ghost" size="sm" onClick={() => handleMarkAsRead(notif.id!)} disabled={updatingId === notif.id}>
+                              {updatingId === notif.id ? (
+                                <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                              ) : (
+                                <Check className="h-4 w-4 mr-1" />
+                              )}
+                               Mark as read
                           </Button>
                       )}
                   </div>
