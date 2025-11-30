@@ -336,6 +336,16 @@
         "price": { "type": "string" }
       }
     },
+    "FeaturedService": {
+      "title": "Featured Service",
+      "description": "A service featured on the homepage.",
+      "type": "object",
+      "properties": {
+        "icon": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" }
+      }
+    },
     "HomePageSettings": {
       "title": "Homepage Settings",
       "description": "Manages all content for the homepage.",
@@ -345,6 +355,10 @@
         "featuredProducts": {
           "type": "array",
           "items": { "$ref": "#/entities/FeaturedProduct" }
+        },
+        "featuredServices": {
+          "type": "array",
+          "items": { "$ref": "#/entities/FeaturedService" }
         },
         "youtubeVideoUrl": { "type": "string", "format": "uri" },
         "youtubeVideoDescription": { "type": "string" },
@@ -422,5 +436,3 @@
     }
   }
 }
-
-    

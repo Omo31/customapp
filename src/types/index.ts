@@ -180,10 +180,17 @@ export type FeaturedProduct = {
   price: string;
 };
 
+export type FeaturedService = {
+  icon: string;
+  title: string;
+  description: string;
+};
+
 export type HomePageSettings = {
   id?: string;
   introMessage?: string;
   featuredProducts?: FeaturedProduct[];
+  featuredServices?: FeaturedService[];
   youtubeVideoUrl?: string;
   youtubeVideoDescription?: string;
   aboutUs?: string;
@@ -202,5 +209,3 @@ export type FooterSettings = {
   address?: string;
   openingHours?: string;
 };
-
-    

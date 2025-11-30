@@ -2,13 +2,14 @@
 'use client';
 
 import { useFirestore, useDoc } from '@/firebase';
-import { type HomePageSettings } from '@/types';
+import { type HomePageSettings, type FeaturedService } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ArrowRight, ShoppingCart } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
+import * as allLucideIcons from 'lucide-react';
 
 function YoutubeEmbed({ url }: { url: string }) {
   const videoId = url.split('v=')[1]?.split('&')[0] || url.split('/').pop();
@@ -27,6 +28,15 @@ function YoutubeEmbed({ url }: { url: string }) {
     </div>
   );
 }
+
+const ServiceIcon = ({ name, ...props }: { name: string, className?: string }) => {
+    const IconComponent = (allLucideIcons as any)[name];
+    if (!IconComponent) {
+        return <allLucideIcons.HelpCircle {...props} />; // Fallback icon
+    }
+    return <IconComponent {...props} />;
+};
+
 
 const HomePageSkeleton = () => (
   <main className="flex-1">
@@ -96,6 +106,27 @@ export default function Home() {
             </div>
           </div>
         </section>
+      )}
+
+      {/* Featured Services */}
+      {settings?.featuredServices && settings.featuredServices.length > 0 && (
+          <section className="w-full py-12 md:py-24 lg:py-32 bg-secondary">
+              <div className="container px-4 md:px-6">
+                  <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                      {settings.featuredServices.map((service, index) => (
+                          <div key={index} className="flex flex-col items-center text-center gap-4">
+                              <div className="bg-primary text-primary-foreground rounded-full p-4">
+                                  <ServiceIcon name={service.icon} className="h-8 w-8" />
+                              </div>
+                              <div className="space-y-2">
+                                  <h3 className="text-xl font-bold font-headline">{service.title}</h3>
+                                  <p className="text-muted-foreground">{service.description}</p>
+                              </div>
+                          </div>
+                      ))}
+                  </div>
+              </div>
+          </section>
       )}
 
       {/* Featured Products */}
