@@ -13,13 +13,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '../ui/dropdown-menu';
-import { Logo } from '../logo';
-import { LayoutDashboard, LogOut, User as UserIcon, Bell, ShoppingCart } from 'lucide-react';
+import { LayoutDashboard, LogOut, User as UserIcon, Bell } from 'lucide-react';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { useFirestore, useCollection } from '@/firebase';
 import { type Notification } from '@/types';
 import { Badge } from '../ui/badge';
-import { allAdminNavItems } from '@/lib/roles';
 
 export default function Header() {
   const { user, logout, isAdmin, hasRole } = useAuth();
@@ -45,10 +43,7 @@ export default function Header() {
         <div className="md:hidden">
           <SidebarTrigger />
         </div>
-        <div className="hidden md:flex">
-          <Logo />
-        </div>
-        <nav className="hidden md:flex items-center space-x-4 ml-6">
+        <nav className="hidden md:flex items-center space-x-4">
             <Link href="/products" className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary">
                 Products
             </Link>
