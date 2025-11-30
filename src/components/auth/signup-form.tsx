@@ -100,7 +100,7 @@ export function SignupForm() {
                   <FormItem>
                     <FormLabel>First Name</FormLabel>
                     <FormControl>
-                      <Input placeholder="John" {...field} onChange={(e) => capitalizeFirstLetter(e, field)} />
+                      <Input placeholder="John" {...field} onChange={(e) => capitalizeFirstLetter(e, field)} autoComplete="given-name" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -113,7 +113,7 @@ export function SignupForm() {
                   <FormItem>
                     <FormLabel>Last Name</FormLabel>
                     <FormControl>
-                      <Input placeholder="Doe" {...field} onChange={(e) => capitalizeFirstLetter(e, field)} />
+                      <Input placeholder="Doe" {...field} onChange={(e) => capitalizeFirstLetter(e, field)} autoComplete="family-name" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -127,7 +127,7 @@ export function SignupForm() {
                 <FormItem>
                   <FormLabel>Email</FormLabel>
                   <FormControl>
-                    <Input placeholder="m@example.com" {...field} />
+                    <Input placeholder="m@example.com" {...field} autoComplete="email" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -141,7 +141,7 @@ export function SignupForm() {
                   <FormLabel>Password</FormLabel>
                   <FormControl>
                     <div className="relative">
-                      <Input type={showPassword ? "text" : "password"} {...field} />
+                      <Input type={showPassword ? "text" : "password"} {...field} autoComplete="new-password" />
                       <Button
                         type="button"
                         variant="ghost"

@@ -462,7 +462,7 @@ export function AdvancedCustomOrderForm() {
                                     <FormItem>
                                     <FormLabel>Full Shipping Address</FormLabel>
                                     <FormControl>
-                                        <Textarea placeholder="Your detailed address, including building number and street." {...field} />
+                                        <Textarea placeholder="Your detailed address, including building number and street." {...field} autoComplete="street-address" />
                                     </FormControl>
                                     <FormMessage />
                                     </FormItem>
@@ -480,7 +480,7 @@ export function AdvancedCustomOrderForm() {
                                     <FormItem>
                                     <FormLabel>Full Shipping Address</FormLabel>
                                     <FormControl>
-                                        <Textarea placeholder="Enter your full address for a shipping quote (City, State, etc.)" {...field} />
+                                        <Textarea placeholder="Enter your full address for a shipping quote (City, State, etc.)" {...field} autoComplete="street-address" />
                                     </FormControl>
                                     <FormMessage />
                                     </FormItem>
@@ -504,7 +504,7 @@ export function AdvancedCustomOrderForm() {
                             <FormItem>
                             <FormLabel>Full Name</FormLabel>
                             <FormControl>
-                                <Input {...field} />
+                                <Input {...field} autoComplete="name" />
                             </FormControl>
                             <FormMessage />
                             </FormItem>
@@ -517,7 +517,7 @@ export function AdvancedCustomOrderForm() {
                             <FormItem>
                             <FormLabel>Email Address</FormLabel>
                             <FormControl>
-                                <Input type="email" {...field} disabled={!!user?.email} />
+                                <Input type="email" {...field} disabled={!!user?.email} autoComplete="email" />
                             </FormControl>
                             <FormMessage />
                             </FormItem>
@@ -530,7 +530,7 @@ export function AdvancedCustomOrderForm() {
                             <FormItem>
                             <FormLabel>Phone Number</FormLabel>
                             <FormControl>
-                                <Input type="tel" {...field} />
+                                <Input type="tel" {...field} autoComplete="tel" />
                             </FormControl>
                             <FormMessage />
                             </FormItem>

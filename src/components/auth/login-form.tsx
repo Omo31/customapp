@@ -103,7 +103,7 @@ export function LoginForm() {
                 <FormItem>
                   <FormLabel>Email</FormLabel>
                   <FormControl>
-                    <Input placeholder="m@example.com" {...field} />
+                    <Input placeholder="m@example.com" {...field} autoComplete="email" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -136,6 +136,7 @@ export function LoginForm() {
                                 placeholder="name@example.com" 
                                 value={resetEmail}
                                 onChange={(e) => setResetEmail(e.target.value)}
+                                autoComplete="email"
                                />
                             </div>
                             <AlertDialogFooter>
@@ -150,7 +151,7 @@ export function LoginForm() {
                     </div>
                   <FormControl>
                     <div className="relative">
-                      <Input type={showPassword ? "text" : "password"} {...field} />
+                      <Input type={showPassword ? "text" : "password"} {...field} autoComplete="current-password" />
                       <Button
                         type="button"
                         variant="ghost"

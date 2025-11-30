@@ -144,7 +144,7 @@ export default function ProfilePage() {
                                     <FormItem>
                                     <FormLabel>First Name</FormLabel>
                                     <FormControl>
-                                        <Input {...field} />
+                                        <Input {...field} autoComplete="given-name" />
                                     </FormControl>
                                     <FormMessage />
                                     </FormItem>
@@ -157,7 +157,7 @@ export default function ProfilePage() {
                                     <FormItem>
                                     <FormLabel>Last Name</FormLabel>
                                     <FormControl>
-                                        <Input {...field} />
+                                        <Input {...field} autoComplete="family-name" />
                                     </FormControl>
                                     <FormMessage />
                                     </FormItem>
@@ -171,7 +171,7 @@ export default function ProfilePage() {
                                 <FormItem>
                                 <FormLabel>Email</FormLabel>
                                 <FormControl>
-                                    <Input type="email" {...field} disabled />
+                                    <Input type="email" {...field} disabled autoComplete="email" />
                                 </FormControl>
                                 <FormMessage />
                                 </FormItem>
