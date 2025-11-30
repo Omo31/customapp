@@ -223,6 +223,23 @@
       },
       "required": ["id", "name", "email"]
     },
+    "AccountingSettings": {
+      "title": "Accounting Settings",
+      "description": "Manages settings for the accounting section.",
+      "type": "object",
+      "properties": {
+        "expenseCategories": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": { "type": "string" }
+            },
+            "required": ["name"]
+          }
+        }
+      }
+    },
     "CustomOrderSettings": {
       "title": "Custom Order Settings",
       "description": "Contains settings for the custom order form.",
@@ -276,9 +293,24 @@
           "type": "string",
           "enum": ["Draft", "Issued", "Completed", "Cancelled"]
         },
-        "notes": { "type": "string" }
+        "notes": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["poNumber", "supplier", "issueDate", "items", "subtotal", "total", "status"]
+    },
+    "Expense": {
+      "title": "Expense",
+      "description": "Represents a single business expense.",
+      "type": "object",
+      "properties": {
+        "description": { "type": "string" },
+        "category": { "type": "string" },
+        "amount": { "type": "number" },
+        "date": { "type": "string", "format": "date-time" },
+        "receiptUrl": { "type": "string", "format": "uri" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["description", "category", "amount", "date", "createdAt"]
     },
     "FeaturedProduct": {
       "title": "Featured Product",
@@ -346,6 +378,10 @@
       "schema": { "$ref": "#/entities/PurchaseOrder" },
       "description": "Stores purchase orders placed with suppliers."
     },
+    "/expenses/{expenseId}": {
+      "schema": { "$ref": "#/entities/Expense" },
+      "description": "Stores individual business expenses."
+    },
     "/users/{userId}/notifications/{notificationId}": {
       "schema": { "$ref": "#/entities/Notification" },
       "description": "Stores notifications for a specific user."
@@ -358,6 +394,10 @@
       "schema": { "$ref": "#/entities/CustomOrderSettings" },
       "description": "Stores settings for the custom order form, such as units, services, and shipping zones. This is a single document."
     },
+    "/settings/accounting": {
+      "schema": { "$ref": "#/entities/AccountingSettings" },
+      "description": "Stores settings for the accounting section, such as expense categories. This is a single document."
+    },
     "/settings/homepage": {
       "schema": { "$ref": "#/entities/HomePageSettings" },
       "description": "Stores all content for the homepage. This is a single document."
@@ -368,3 +408,5 @@
     }
   }
 }
+
+    

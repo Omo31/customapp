@@ -108,6 +108,23 @@ export type ShippingZone = {
   fee: number;
 };
 
+export type Supplier = {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  address: string;
+};
+
+export type ExpenseCategory = {
+    name: string;
+};
+
+export type AccountingSettings = {
+    id?: string;
+    expenseCategories: ExpenseCategory[];
+}
+
 export type CustomOrderSettings = {
     id?: string;
     unitsOfMeasure: UnitOfMeasure[];
@@ -117,14 +134,6 @@ export type CustomOrderSettings = {
 };
 
 // Purchase Order Types
-export type Supplier = {
-  id: string;
-  name: string;
-  email: string;
-  phone: string;
-  address: string;
-};
-
 export type PurchaseOrderItem = {
   description: string;
   quantity: number;
@@ -147,6 +156,18 @@ export type PurchaseOrder = {
   notes?: string;
   createdAt: any;
 };
+
+// New Accounting Types
+export type Expense = {
+    id?: string;
+    description: string;
+    category: string;
+    amount: number;
+    date: any; // Firestore Timestamp
+    receiptUrl?: string;
+    createdAt: any; // Firestore Timestamp
+}
+
 
 // New Homepage and Footer Settings Types
 export type FeaturedProduct = {
@@ -177,3 +198,5 @@ export type FooterSettings = {
   address?: string;
   openingHours?: string;
 };
+
+    

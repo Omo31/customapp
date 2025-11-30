@@ -8,6 +8,7 @@ import { ShippingSettingsManager } from '@/components/admin/shipping-settings-ma
 import { SupplierSettingsManager } from '@/components/admin/supplier-settings-manager';
 import { HomepageSettingsManager } from '@/components/admin/homepage-settings-manager';
 import { FooterSettingsManager } from '@/components/admin/footer-settings-manager';
+import { ExpenseCategoryManager } from '@/components/admin/expense-category-manager';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
@@ -22,7 +23,7 @@ export default function AdminSettingsPage() {
       </div>
 
       <Tabs defaultValue="homepage" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 lg:grid-cols-7 h-auto">
+        <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 lg:grid-cols-8 h-auto">
           <TabsTrigger value="homepage">Homepage</TabsTrigger>
           <TabsTrigger value="footer">Footer</TabsTrigger>
           <TabsTrigger value="store-items">Store Products</TabsTrigger>
@@ -30,6 +31,7 @@ export default function AdminSettingsPage() {
           <TabsTrigger value="units">Units of Measure</TabsTrigger>
           <TabsTrigger value="services">Optional Services</TabsTrigger>
           <TabsTrigger value="shipping">Shipping Zones</TabsTrigger>
+          <TabsTrigger value="expense-categories">Expense Categories</TabsTrigger>
         </TabsList>
          <TabsContent value="homepage">
           <HomepageSettingsManager />
@@ -52,7 +54,12 @@ export default function AdminSettingsPage() {
         <TabsContent value="shipping">
           <ShippingSettingsManager />
         </TabsContent>
+        <TabsContent value="expense-categories">
+            <ExpenseCategoryManager />
+        </TabsContent>
       </Tabs>
     </div>
   );
 }
+
+    

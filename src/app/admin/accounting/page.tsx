@@ -1,20 +1,34 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+
+'use client';
+
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { TransactionsLedger } from '@/components/admin/transactions-ledger';
+import { ExpensesManager } from '@/components/admin/expenses-manager';
 
 export default function AdminAccountingPage() {
   return (
     <div className="space-y-6">
       <div>
         <h3 className="text-lg font-medium font-headline">Accounting</h3>
-        <p className="text-sm text-muted-foreground">Log and view all financial transactions, including sales and expenses.</p>
+        <p className="text-sm text-muted-foreground">
+          View your transaction ledger and manage business expenses.
+        </p>
       </div>
-       <Card>
-        <CardHeader>
-          <CardTitle>Financial Overview</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-muted-foreground">No accounting data to display.</p>
-        </CardContent>
-      </Card>
+
+      <Tabs defaultValue="transactions" className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="transactions">Transactions Ledger</TabsTrigger>
+          <TabsTrigger value="expenses">Manage Expenses</TabsTrigger>
+        </TabsList>
+        <TabsContent value="transactions">
+          <TransactionsLedger />
+        </TabsContent>
+        <TabsContent value="expenses">
+          <ExpensesManager />
+        </TabsContent>
+      </Tabs>
     </div>
-  )
+  );
 }
+
+    
