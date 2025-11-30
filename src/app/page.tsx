@@ -1,110 +1,122 @@
+
+'use client';
+
+import { useFirestore, useDoc } from '@/firebase';
+import { type HomePageSettings } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
-import { ArrowRight, ShoppingCart, Package, Sprout } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
+import { ArrowRight, ShoppingCart } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
-const features = [
-  {
-    icon: <ShoppingCart className="w-8 h-8 text-primary" />,
-    title: 'Authentic Nigerian Foods',
-    description: 'Explore a wide variety of authentic Nigerian foodstuffs, from grains and spices to fresh produce, all sourced to bring the taste of home to you.',
-    image: PlaceHolderImages.find(p => p.id === 'feature-foods'),
-    dataAiHint: 'nigerian food'
-  },
-  {
-    icon: <Sprout className="w-8 h-8 text-primary" />,
-    title: 'Freshness Guaranteed',
-    description: 'We prioritize quality and freshness. Our products are carefully selected and packaged to ensure they arrive at your doorstep in perfect condition.',
-    image: PlaceHolderImages.find(p => p.id === 'feature-fresh'),
-    dataAiHint: 'fresh vegetables'
-  },
-  {
-    icon: <Package className="w-8 h-8 text-primary" />,
-    title: 'Fast & Reliable Delivery',
-    description: 'Get your favorite Nigerian foods delivered quickly and reliably. We offer convenient shipping options to meet your needs.',
-    image: PlaceHolderImages.find(p => p.id === 'feature-delivery'),
-    dataAiHint: 'delivery box'
-  },
-];
+function YoutubeEmbed({ url }: { url: string }) {
+  const videoId = url.split('v=')[1]?.split('&')[0] || url.split('/').pop();
+  if (!videoId) return <p>Invalid YouTube URL</p>;
+  const embedUrl = `https://www.youtube.com/embed/${videoId}`;
+  return (
+    <div className="aspect-video w-full">
+      <iframe
+        src={embedUrl}
+        title="YouTube video player"
+        frameBorder="0"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        allowFullScreen
+        className="h-full w-full rounded-lg"
+      ></iframe>
+    </div>
+  );
+}
+
+const HomePageSkeleton = () => (
+  <main className="flex-1">
+    <section className="w-full py-12 md:py-24 lg:py-32">
+      <div className="container px-4 md:px-6">
+        <div className="space-y-4 text-center">
+          <Skeleton className="h-12 w-2/3 mx-auto" />
+          <Skeleton className="h-6 w-full max-w-2xl mx-auto" />
+          <Skeleton className="h-6 w-full max-w-lg mx-auto" />
+        </div>
+      </div>
+    </section>
+    <section className="w-full py-12 md:py-24 lg:py-32 bg-secondary">
+      <div className="container px-4 md:px-6">
+        <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+          {[...Array(3)].map((_, i) => (
+            <Card key={i}>
+              <CardHeader>
+                <Skeleton className="h-48 w-full" />
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <Skeleton className="h-6 w-3/4" />
+                <Skeleton className="h-4 w-1/2" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    </section>
+    <section className="w-full py-12 md:py-24 lg:py-32">
+      <div className="container grid items-center justify-center gap-8 px-4 md:px-6">
+        <Skeleton className="h-72 w-full max-w-4xl" />
+        <Skeleton className="h-6 w-full max-w-2xl" />
+      </div>
+    </section>
+    <section className="w-full py-12 md:py-24 lg:py-32 bg-secondary">
+       <div className="container px-4 md:px-6">
+          <Skeleton className="h-40 w-full max-w-3xl mx-auto" />
+       </div>
+    </section>
+  </main>
+);
 
 export default function Home() {
-  const heroImage = PlaceHolderImages.find(p => p.id === 'hero-background');
+  const db = useFirestore();
+  const { data: settings, loading } = useDoc<HomePageSettings>(db, 'settings', 'homepage');
+
+  if (loading) {
+    return <HomePageSkeleton />;
+  }
 
   return (
-    <>
-      <main className="flex-1">
-        <section className="relative w-full pt-12 md:pt-24 lg:pt-32">
+    <main className="flex-1">
+      {/* Intro Message */}
+      {settings?.introMessage && (
+        <section className="w-full py-12 md:py-24 lg:py-32">
           <div className="container px-4 md:px-6">
-            <div className="grid gap-6 lg:grid-cols-[1fr_400px] lg:gap-12 xl:grid-cols-[1fr_600px]">
-              <div className="flex flex-col justify-center space-y-4">
-                <div className="space-y-2">
-                  <h1 className="text-3xl font-bold tracking-tighter sm:text-5xl xl:text-6xl/none font-headline">
-                    Authentic Nigerian Foods, Delivered to You
-                  </h1>
-                  <p className="max-w-[600px] text-muted-foreground md:text-xl">
-                    Shop for your favorite Nigerian ingredients and products. We make it easy to find the tastes of home, no matter where you are.
-                  </p>
-                </div>
-                <div className="flex flex-col gap-2 min-[400px]:flex-row">
-                  <Button asChild size="lg">
-                    <Link href="/products">
-                      Start Shopping
-                      <ArrowRight className="ml-2 h-5 w-5" />
-                    </Link>
-                  </Button>
-                  <Button asChild size="lg" variant="outline">
-                    <Link href="#features">
-                      Learn More
-                    </Link>
-                  </Button>
-                </div>
-              </div>
-              <div className="relative w-full h-64 sm:h-80 md:h-96 lg:h-full rounded-xl overflow-hidden shadow-2xl">
-                 <Image
-                  src={heroImage?.imageUrl || "https://picsum.photos/seed/1/600/400"}
-                  alt={heroImage?.description || "Nigerian food"}
-                  data-ai-hint={heroImage?.imageHint || 'nigerian food jollof'}
-                  fill
-                  style={{ objectFit: 'cover' }}
-                  className="transition-transform duration-300 ease-in-out hover:scale-105"
-                 />
-                 <div className="absolute inset-0 bg-gradient-to-t from-background to-transparent" />
-              </div>
+            <div className="flex flex-col items-center space-y-4 text-center">
+              <h1 className="text-3xl font-bold tracking-tighter sm:text-5xl xl:text-6xl/none font-headline">
+                {settings.introMessage.split('\n')[0]}
+              </h1>
+              {settings.introMessage.includes('\n') && (
+                 <p className="max-w-[700px] text-muted-foreground md:text-xl whitespace-pre-line">
+                    {settings.introMessage.split('\n').slice(1).join('\n')}
+                 </p>
+              )}
             </div>
           </div>
         </section>
+      )}
 
+      {/* Featured Products */}
+      {settings?.featuredProducts && settings.featuredProducts.length > 0 && (
         <section id="features" className="w-full py-12 md:py-24 lg:py-32 bg-white dark:bg-card">
           <div className="container px-4 md:px-6">
-            <div className="flex flex-col items-center justify-center space-y-4 text-center">
-              <div className="space-y-2">
-                <div className="inline-block rounded-lg bg-secondary px-3 py-1 text-sm">Why Choose Us</div>
-                <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl font-headline">Your Connection to Nigerian Cuisine</h2>
-                <p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-                  BeautifulSoup&Foods is dedicated to providing high-quality, authentic Nigerian foodstuffs to our community. Explore what makes us special.
-                </p>
-              </div>
-            </div>
-            <div className="mx-auto grid max-w-5xl items-start gap-8 sm:grid-cols-2 md:gap-12 lg:max-w-none lg:grid-cols-3 mt-12">
-              {features.map((feature, index) => (
-                <Card key={index} className="transform transition-transform duration-300 hover:scale-105 hover:shadow-xl">
-                  <CardHeader className="flex flex-row items-center gap-4">
-                    {feature.icon}
-                    <CardTitle className="font-headline">{feature.title}</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-muted-foreground">{feature.description}</p>
-                    <div className="mt-4 relative h-48 w-full rounded-md overflow-hidden">
+            <div className="mx-auto grid max-w-5xl items-start gap-8 sm:grid-cols-2 md:gap-12 lg:max-w-none lg:grid-cols-3">
+              {settings.featuredProducts.map((product, index) => (
+                <Card key={index} className="transform transition-transform duration-300 hover:scale-105 hover:shadow-xl overflow-hidden">
+                  <CardContent className="p-0">
+                    <div className="relative h-64 w-full">
                       <Image
-                        src={feature.image?.imageUrl || `https://picsum.photos/seed/${10+index}/400/300`}
-                        alt={feature.image?.description || feature.title}
-                        data-ai-hint={feature.image?.imageHint || ''}
+                        src={product.imageUrl || `https://picsum.photos/seed/${10 + index}/400/300`}
+                        alt={product.description || 'Featured Product'}
                         fill
                         style={{ objectFit: 'cover' }}
                       />
+                    </div>
+                    <div className="p-4">
+                        <p className="text-muted-foreground text-sm">{product.description}</p>
+                        {product.price && <p className="font-bold text-lg mt-2">{product.price}</p>}
                     </div>
                   </CardContent>
                 </Card>
@@ -112,8 +124,43 @@ export default function Home() {
             </div>
           </div>
         </section>
+      )}
 
-        <section id="cta" className="w-full py-12 md:py-24 lg:py-32">
+      {/* YouTube Video */}
+      {settings?.youtubeVideoUrl && (
+        <section className="w-full py-12 md:py-24 lg:py-32">
+          <div className="container grid items-center justify-center gap-4 px-4 text-center md:px-6">
+            <div className="space-y-3">
+              <div className="max-w-4xl mx-auto">
+                 <YoutubeEmbed url={settings.youtubeVideoUrl} />
+              </div>
+              {settings.youtubeVideoDescription && (
+                <p className="mx-auto max-w-[700px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
+                  {settings.youtubeVideoDescription}
+                </p>
+              )}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* About Us */}
+       {settings?.aboutUs && (
+        <section className="w-full py-12 md:py-24 lg:py-32 bg-white dark:bg-card">
+          <div className="container px-4 md:px-6">
+            <div className="flex flex-col items-center justify-center space-y-4 text-center">
+              <div className="space-y-2">
+                <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl font-headline">About Us</h2>
+                <p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed whitespace-pre-line">
+                  {settings.aboutUs}
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+       )}
+       
+       <section id="cta" className="w-full py-12 md:py-24 lg:py-32">
           <div className="container px-4 md:px-6">
             <div className="flex flex-col items-center justify-center space-y-4 text-center">
                 <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl font-headline">Explore Our Products</h2>
@@ -129,45 +176,6 @@ export default function Home() {
             </div>
           </div>
         </section>
-
-        <section className="w-full py-12 md:py-24 lg:py-32 bg-white dark:bg-card">
-          <div className="container grid items-center justify-center gap-4 px-4 text-center md:px-6">
-            <div className="space-y-3">
-              <h2 className="text-3xl font-bold tracking-tighter md:text-4xl/tight font-headline">What Our Customers Say</h2>
-              <p className="mx-auto max-w-[600px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-                Hear from fellow food lovers who trust BeautifulSoup&Foods for their Nigerian cooking needs.
-              </p>
-            </div>
-            <div className="mx-auto w-full max-w-sm space-y-2">
-                <Card>
-                    <CardContent className="p-6">
-                        <div className="flex items-center space-x-4">
-                           <Avatar>
-                                <AvatarImage src="https://picsum.photos/seed/avatar1/40/40" data-ai-hint="person face" />
-                                <AvatarFallback>JD</AvatarFallback>
-                            </Avatar>
-                            <div>
-                                <p className="text-sm font-medium leading-none">Jane Doe</p>
-                                <p className="text-sm text-muted-foreground">Food Enthusiast</p>
-                            </div>
-                        </div>
-                        <blockquote className="mt-4 text-lg font-semibold leading-snug">
-                            “Finding authentic Nigerian ingredients was always a challenge until I found BeautifulSoup&Foods. The quality is amazing!”
-                        </blockquote>
-                    </CardContent>
-                </Card>
-            </div>
-             <div className="mt-8 text-center">
-                <Button asChild size="lg">
-                    <Link href="/signup">
-                        Join BeautifulSoup&Foods Today
-                        <ArrowRight className="ml-2 h-5 w-5" />
-                    </Link>
-                </Button>
-            </div>
-          </div>
-        </section>
-      </main>
-    </>
+    </main>
   );
 }

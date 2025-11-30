@@ -1,10 +1,5 @@
 
-
-
-
-
 import type { Auth } from "firebase/auth";
-
 
 export type User = {
   uid: string;
@@ -151,4 +146,34 @@ export type PurchaseOrder = {
   status: 'Draft' | 'Issued' | 'Completed' | 'Cancelled';
   notes?: string;
   createdAt: any;
+};
+
+// New Homepage and Footer Settings Types
+export type FeaturedProduct = {
+  imageUrl: string;
+  description: string;
+  price: string;
+};
+
+export type HomePageSettings = {
+  id?: string;
+  introMessage?: string;
+  featuredProducts?: FeaturedProduct[];
+  youtubeVideoUrl?: string;
+  youtubeVideoDescription?: string;
+  aboutUs?: string;
+};
+
+export type FooterSettings = {
+  id?: string;
+  socialLinks?: {
+    facebook?: string;
+    instagram?: string;
+    youtube?: string;
+  };
+  privacyPolicyLink?: string;
+  termsLink?: string;
+  cookiesPolicyLink?: string;
+  address?: string;
+  openingHours?: string;
 };

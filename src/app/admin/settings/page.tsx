@@ -6,6 +6,8 @@ import { UnitSettingsManager } from '@/components/admin/unit-settings-manager';
 import { ServiceSettingsManager } from '@/components/admin/service-settings-manager';
 import { ShippingSettingsManager } from '@/components/admin/shipping-settings-manager';
 import { SupplierSettingsManager } from '@/components/admin/supplier-settings-manager';
+import { HomepageSettingsManager } from '@/components/admin/homepage-settings-manager';
+import { FooterSettingsManager } from '@/components/admin/footer-settings-manager';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
@@ -19,14 +21,22 @@ export default function AdminSettingsPage() {
         </p>
       </div>
 
-      <Tabs defaultValue="store-items">
-        <TabsList className="grid w-full grid-cols-2 md:grid-cols-5">
+      <Tabs defaultValue="homepage" className="w-full">
+        <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 lg:grid-cols-7 h-auto">
+          <TabsTrigger value="homepage">Homepage</TabsTrigger>
+          <TabsTrigger value="footer">Footer</TabsTrigger>
           <TabsTrigger value="store-items">Store Products</TabsTrigger>
           <TabsTrigger value="suppliers">Suppliers</TabsTrigger>
           <TabsTrigger value="units">Units of Measure</TabsTrigger>
           <TabsTrigger value="services">Optional Services</TabsTrigger>
           <TabsTrigger value="shipping">Shipping Zones</TabsTrigger>
         </TabsList>
+         <TabsContent value="homepage">
+          <HomepageSettingsManager />
+        </TabsContent>
+         <TabsContent value="footer">
+          <FooterSettingsManager />
+        </TabsContent>
         <TabsContent value="store-items">
           <StoreSettingsManager />
         </TabsContent>

@@ -279,6 +279,51 @@
         "notes": { "type": "string" }
       },
       "required": ["poNumber", "supplier", "issueDate", "items", "subtotal", "total", "status"]
+    },
+    "FeaturedProduct": {
+      "title": "Featured Product",
+      "description": "A product featured on the homepage.",
+      "type": "object",
+      "properties": {
+        "imageUrl": { "type": "string", "format": "uri" },
+        "description": { "type": "string" },
+        "price": { "type": "string" }
+      }
+    },
+    "HomePageSettings": {
+      "title": "Homepage Settings",
+      "description": "Manages all content for the homepage.",
+      "type": "object",
+      "properties": {
+        "introMessage": { "type": "string" },
+        "featuredProducts": {
+          "type": "array",
+          "items": { "$ref": "#/entities/FeaturedProduct" }
+        },
+        "youtubeVideoUrl": { "type": "string", "format": "uri" },
+        "youtubeVideoDescription": { "type": "string" },
+        "aboutUs": { "type": "string" }
+      }
+    },
+    "FooterSettings": {
+      "title": "Footer Settings",
+      "description": "Manages all content for the site footer.",
+      "type": "object",
+      "properties": {
+        "socialLinks": {
+          "type": "object",
+          "properties": {
+            "facebook": { "type": "string", "format": "uri" },
+            "instagram": { "type": "string", "format": "uri" },
+            "youtube": { "type": "string", "format": "uri" }
+          }
+        },
+        "privacyPolicyLink": { "type": "string", "format": "uri" },
+        "termsLink": { "type": "string", "format": "uri" },
+        "cookiesPolicyLink": { "type": "string", "format": "uri" },
+        "address": { "type": "string" },
+        "openingHours": { "type": "string" }
+      }
     }
   },
   "auth": {
@@ -312,6 +357,14 @@
     "/settings/customOrder": {
       "schema": { "$ref": "#/entities/CustomOrderSettings" },
       "description": "Stores settings for the custom order form, such as units, services, and shipping zones. This is a single document."
+    },
+    "/settings/homepage": {
+      "schema": { "$ref": "#/entities/HomePageSettings" },
+      "description": "Stores all content for the homepage. This is a single document."
+    },
+    "/settings/footer": {
+      "schema": { "$ref": "#/entities/FooterSettings" },
+      "description": "Stores all content for the site footer. This is a single document."
     }
   }
 }
