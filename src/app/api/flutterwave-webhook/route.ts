@@ -103,15 +103,15 @@ export async function POST(req: NextRequest) {
                     userId: quote.userId,
                     title: "Order Placed Successfully!",
                     description: `Your order #${orderRef.id.slice(-6)} has been received.`,
-                    href: `/account/orders`,
+                    href: `/account/orders/${orderRef.id}`,
                     isRead: false,
                     createdAt: serverTimestamp(),
                 });
                 
-                // Create admin notification
+                // Create admin notification in the central notifications collection
                 const adminNotifRef = doc(collection(db, `notifications`));
                 batch.set(adminNotifRef, {
-                     userId: 'admin',
+                     userId: 'admin', // Keep a generic user ID for system-wide notifications
                      title: "New Order Received",
                      description: `A new order #${orderRef.id.slice(-6)} was placed by ${quote.customerName}.`,
                      href: `/admin/orders/${orderRef.id}`,
