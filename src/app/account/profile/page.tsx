@@ -32,6 +32,7 @@ import { useEffect } from "react"
 import { useDoc } from "@/firebase/firestore/use-doc"
 import { UserProfile } from "@/types"
 import { Skeleton } from "@/components/ui/skeleton"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
 const profileFormSchema = z.object({
   firstName: z.string().min(1, "First name is required."),
@@ -77,8 +78,8 @@ export default function ProfilePage() {
             lastName: values.lastName,
         });
 
-        if (authUser.auth) { // useAuth from provider returns auth instance now
-            await updateProfile(authUser.auth.currentUser, { // so we use authUser.auth.currentUser
+        if (authUser.auth && authUser.auth.currentUser) {
+            await updateProfile(authUser.auth.currentUser, { 
                 displayName: `${values.firstName} ${values.lastName}`
             })
         }
@@ -111,9 +112,20 @@ export default function ProfilePage() {
        <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)}>
             <Card>
-                <CardHeader>
-                <CardTitle>Account Information</CardTitle>
-                <CardDescription>Update your account details here.</CardDescription>
+                <CardHeader className="items-center">
+                  {isLoading ? (
+                    <Skeleton className="h-24 w-24 rounded-full" />
+                  ) : (
+                    <Avatar className="h-24 w-24">
+                      <AvatarImage src={authUser?.photoURL ?? undefined} alt="User avatar" data-ai-hint="person face" />
+                      <AvatarFallback>
+                        {userProfile?.firstName?.[0]}
+                        {userProfile?.lastName?.[0]}
+                      </AvatarFallback>
+                    </Avatar>
+                  )}
+                  <CardTitle>{userProfile?.firstName} {userProfile?.lastName}</CardTitle>
+                  <CardDescription>Update your account details below.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                  {isLoading ? (
