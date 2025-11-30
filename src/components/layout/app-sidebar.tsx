@@ -1,7 +1,7 @@
 
 'use client'
 
-import { Sidebar, SidebarHeader, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter, SidebarMenuSkeleton } from "@/components/ui/sidebar"
+import { Sidebar, SidebarHeader, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter, SidebarMenuSkeleton, useSidebar } from "@/components/ui/sidebar"
 import { Logo } from "@/components/logo"
 import { useAuth } from "@/hooks/use-auth.tsx"
 import { usePathname } from "next/navigation"
@@ -11,12 +11,19 @@ import { useEffect, useState } from "react"
 
 export default function AppSidebar() {
     const { user, loading, logout } = useAuth()
+    const { isMobile, setOpenMobile } = useSidebar()
     const pathname = usePathname()
     const [isClient, setIsClient] = useState(false)
 
     useEffect(() => {
         setIsClient(true)
     }, [])
+
+    const handleLinkClick = () => {
+        if (isMobile) {
+            setOpenMobile(false)
+        }
+    }
   
     const navLinks = [
         { href: '/', label: 'Home', icon: <Home />, protected: false },
@@ -36,6 +43,7 @@ export default function AppSidebar() {
                             <SidebarMenuButton
                                 asChild
                                 isActive={pathname === link.href}
+                                onClick={handleLinkClick}
                             >
                                 <Link href={link.href}>
                                     {link.icon}
@@ -56,7 +64,7 @@ export default function AppSidebar() {
                     ) : user ? (
                         <>
                             <SidebarMenuItem>
-                                <SidebarMenuButton asChild isActive={pathname.startsWith('/account')}>
+                                <SidebarMenuButton asChild isActive={pathname.startsWith('/account')} onClick={handleLinkClick}>
                                     <Link href="/account/profile">
                                         <UserIcon />
                                         <span>Account</span>
@@ -64,7 +72,10 @@ export default function AppSidebar() {
                                 </SidebarMenuButton>
                             </SidebarMenuItem>
                              <SidebarMenuItem>
-                                <SidebarMenuButton onClick={logout}>
+                                <SidebarMenuButton onClick={() => {
+                                    logout();
+                                    handleLinkClick();
+                                }}>
                                     <LogOut />
                                     <span>Logout</span>
                                 </SidebarMenuButton>
