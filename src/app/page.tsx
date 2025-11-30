@@ -10,6 +10,7 @@ import { ArrowRight, ShoppingCart } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import * as allLucideIcons from 'lucide-react';
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 
 function YoutubeEmbed({ url }: { url: string }) {
   const videoId = url.split('v=')[1]?.split('&')[0] || url.split('/').pop();
@@ -133,26 +134,46 @@ export default function Home() {
       {settings?.featuredProducts && settings.featuredProducts.length > 0 && (
         <section id="features" className="w-full py-12 md:py-24 lg:py-32 bg-white dark:bg-card">
           <div className="container px-4 md:px-6">
-            <div className="mx-auto grid max-w-5xl items-start gap-8 sm:grid-cols-2 md:gap-12 lg:max-w-none lg:grid-cols-3">
-              {settings.featuredProducts.map((product, index) => (
-                <Card key={index} className="transform transition-transform duration-300 hover:scale-105 hover:shadow-xl overflow-hidden">
-                  <CardContent className="p-0">
-                    <div className="relative h-64 w-full">
-                      <Image
-                        src={product.imageUrl || `https://picsum.photos/seed/${10 + index}/400/300`}
-                        alt={product.description || 'Featured Product'}
-                        fill
-                        style={{ objectFit: 'cover' }}
-                      />
-                    </div>
-                    <div className="p-4">
-                        <p className="text-muted-foreground text-sm">{product.description}</p>
-                        {product.price && <p className="font-bold text-lg mt-2">{product.price}</p>}
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+            <div className="flex flex-col items-center space-y-4 text-center mb-12">
+                <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl font-headline">Featured Products</h2>
+                <p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed">
+                    A selection of our finest products, curated just for you.
+                </p>
             </div>
+            <Carousel
+              opts={{
+                align: "start",
+                loop: true,
+              }}
+              className="w-full max-w-6xl mx-auto"
+            >
+              <CarouselContent>
+                {settings.featuredProducts.map((product, index) => (
+                  <CarouselItem key={index} className="md:basis-1/2 lg:basis-1/3">
+                    <div className="p-1">
+                      <Card className="transform transition-transform duration-300 hover:scale-105 hover:shadow-xl overflow-hidden h-full flex flex-col">
+                        <CardContent className="p-0 flex-grow flex flex-col">
+                          <div className="relative h-64 w-full">
+                            <Image
+                              src={product.imageUrl || `https://picsum.photos/seed/${10 + index}/400/300`}
+                              alt={product.description || 'Featured Product'}
+                              fill
+                              style={{ objectFit: 'cover' }}
+                            />
+                          </div>
+                          <div className="p-4 flex flex-col flex-grow">
+                              <p className="text-muted-foreground text-sm flex-grow">{product.description}</p>
+                              {product.price && <p className="font-bold text-lg mt-2">{product.price}</p>}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </div>
+                  </CarouselItem>
+                ))}
+              </CarouselContent>
+              <CarouselPrevious />
+              <CarouselNext />
+            </Carousel>
           </div>
         </section>
       )}
