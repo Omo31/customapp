@@ -3,7 +3,7 @@
 
 import { useFirestore, useCollection } from "@/firebase";
 import { UserProfile } from "@/types";
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription } from "@/components/ui/card";
 import {
   Table,
   TableHeader,
@@ -20,7 +20,7 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
 import { Label } from "@/components/ui/label";
-import { Eye } from "lucide-react";
+import { Eye, Download } from "lucide-react";
 import { useState } from "react";
 import { Pagination, PaginationContent, PaginationItem, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 
@@ -32,7 +32,7 @@ export default function AdminUsersPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageHistory, setPageHistory] = useState<(DocumentSnapshot<DocumentData> | null)[]>([null]);
   
-  const { data: users, loading, error, lastDoc } = useCollection<UserProfile>(
+  const { data: paginatedUsers, loading, error, lastDoc } = useCollection<UserProfile>(
     db,
     "users",
     {
@@ -41,6 +41,12 @@ export default function AdminUsersPage() {
       startAfter: pageHistory[currentPage - 1]
     }
   );
+  
+  // Fetch all users for CSV export, without pagination
+  const { data: allUsers, loading: allUsersLoading } = useCollection<UserProfile>(db, "users", {
+    orderBy: ["createdAt", "desc"]
+  });
+
 
   const handleNextPage = () => {
     if (lastDoc) {
@@ -57,7 +63,7 @@ export default function AdminUsersPage() {
     }
   };
 
-  const canGoNext = users && users.length === PAGE_SIZE;
+  const canGoNext = paginatedUsers && paginatedUsers.length === PAGE_SIZE;
 
   const handleRoleChange = async (
     userId: string,
@@ -66,7 +72,7 @@ export default function AdminUsersPage() {
   ) => {
     if (typeof isChecked !== "boolean") return;
 
-    const userToUpdate = users?.find((u) => u.id === userId);
+    const userToUpdate = paginatedUsers?.find((u) => u.id === userId);
     if (!userToUpdate) return;
 
     // Prevent superadmin roles from being changed
@@ -105,17 +111,57 @@ export default function AdminUsersPage() {
     }
   };
 
+  const handleDownloadCsv = () => {
+    if (!allUsers) {
+        toast({ title: 'No user data to download.', variant: 'destructive' });
+        return;
+    }
+
+    const headers = ['First Name', 'Last Name', 'Email', 'Roles', 'Joined On'];
+    const csvRows = [headers.join(',')];
+
+    allUsers.forEach(user => {
+        const row = [
+            `"${user.firstName}"`,
+            `"${user.lastName}"`,
+            `"${user.email}"`,
+            `"${(user.roles || []).join(', ')}"`,
+            `"${user.createdAt?.seconds ? new Date(user.createdAt.seconds * 1000).toISOString() : 'N/A'}"`
+        ];
+        csvRows.push(row.join(','));
+    });
+
+    const csvString = csvRows.join('\n');
+    const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', 'users.csv');
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+
   return (
     <div className="space-y-6">
-      <div>
-        <h3 className="text-lg font-medium font-headline">Users</h3>
-        <p className="text-sm text-muted-foreground">
-          Manage all registered users and their roles/permissions.
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+            <h3 className="text-lg font-medium font-headline">Users</h3>
+            <p className="text-sm text-muted-foreground">
+            Manage all registered users and their roles/permissions.
+            </p>
+        </div>
+        <Button onClick={handleDownloadCsv} disabled={allUsersLoading || !allUsers}>
+            <Download className="mr-2 h-4 w-4" />
+            Download CSV
+        </Button>
       </div>
       <Card>
         <CardHeader>
           <CardTitle>All Users</CardTitle>
+          <CardDescription>A paginated list of all users in the system.</CardDescription>
         </CardHeader>
         <CardContent>
           {loading && (
@@ -142,8 +188,8 @@ export default function AdminUsersPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {users && users.length > 0 ? (
-                    users.map((user) => (
+                  {paginatedUsers && paginatedUsers.length > 0 ? (
+                    paginatedUsers.map((user) => (
                       <TableRow key={user.id}>
                         <TableCell className="font-medium">
                           <div className="font-medium">{user.firstName} {user.lastName}</div>
