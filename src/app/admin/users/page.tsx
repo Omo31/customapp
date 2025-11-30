@@ -14,15 +14,17 @@ import {
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { allAdminRoles } from "@/lib/roles";
-import { doc, updateDoc, DocumentData, DocumentSnapshot } from "firebase/firestore";
+import { doc, updateDoc, DocumentData, DocumentSnapshot, query, where, or } from "firebase/firestore";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
 import { Label } from "@/components/ui/label";
-import { Eye, Download } from "lucide-react";
-import { useState } from "react";
+import { Eye, Download, Search } from "lucide-react";
+import { useState, useMemo } from "react";
 import { Pagination, PaginationContent, PaginationItem, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
+import { Input } from "@/components/ui/input";
+import { useDebounce } from "use-debounce";
 
 const PAGE_SIZE = 10;
 
@@ -31,26 +33,55 @@ export default function AdminUsersPage() {
   const { toast } = useToast();
   const [currentPage, setCurrentPage] = useState(1);
   const [pageHistory, setPageHistory] = useState<(DocumentSnapshot<DocumentData> | null)[]>([null]);
-  
-  const { data: paginatedUsers, loading, error, lastDoc } = useCollection<UserProfile>(
-    db,
-    "users",
-    {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearchTerm] = useDebounce(searchTerm, 300);
+
+  const collectionQuery = useMemo(() => {
+    let constraints = [
+      orderBy("firstName", "asc")
+    ];
+
+    if (debouncedSearchTerm) {
+      const lowercasedTerm = debouncedSearchTerm.toLowerCase();
+      // Firestore doesn't support full-text search on multiple fields natively on the client.
+      // This is a limitation. A real-world app would use a search service like Algolia or a Cloud Function.
+      // We will filter by first name as a demonstration. A more complex query is needed for multiple fields.
+      // For this implementation, we'll keep it simple and query by email which is more unique.
+      constraints.push(where("email", ">=", lowercasedTerm));
+      constraints.push(where("email", "<=", lowercasedTerm + '\uf8ff'));
+    }
+
+    return {
       orderBy: ["firstName", "asc"],
       limit: PAGE_SIZE,
       startAfter: pageHistory[currentPage - 1]
-    }
-  );
-  
-  // Fetch all users for CSV export, without pagination
+    };
+  }, [debouncedSearchTerm, currentPage, pageHistory]);
+
+  const { data: paginatedUsers, loading, error } = useCollection<UserProfile>(db, "users", collectionQuery);
+
+  const filteredUsers = useMemo(() => {
+    if (!paginatedUsers) return [];
+    if (!debouncedSearchTerm) return paginatedUsers;
+    
+    const lowercasedTerm = debouncedSearchTerm.toLowerCase();
+    return paginatedUsers.filter(user => 
+        user.firstName?.toLowerCase().includes(lowercasedTerm) ||
+        user.lastName?.toLowerCase().includes(lowercasedTerm) ||
+        user.email?.toLowerCase().includes(lowercasedTerm)
+    );
+  }, [paginatedUsers, debouncedSearchTerm]);
+
+
   const { data: allUsers, loading: allUsersLoading } = useCollection<UserProfile>(db, "users", {
     orderBy: ["createdAt", "desc"]
   });
 
 
   const handleNextPage = () => {
-    if (lastDoc) {
-      const newHistory = [...pageHistory, lastDoc];
+    if (paginatedUsers && paginatedUsers.length === PAGE_SIZE) {
+      const lastVisible = paginatedUsers[paginatedUsers.length - 1].doc;
+      const newHistory = [...pageHistory, lastVisible];
       setPageHistory(newHistory);
       setCurrentPage(currentPage + 1);
     }
@@ -62,8 +93,9 @@ export default function AdminUsersPage() {
       setCurrentPage(currentPage - 1);
     }
   };
-
+  
   const canGoNext = paginatedUsers && paginatedUsers.length === PAGE_SIZE;
+
 
   const handleRoleChange = async (
     userId: string,
@@ -162,6 +194,16 @@ export default function AdminUsersPage() {
         <CardHeader>
           <CardTitle>All Users</CardTitle>
           <CardDescription>A paginated list of all users in the system.</CardDescription>
+            <div className="relative">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                type="search"
+                placeholder="Search by name or email..."
+                className="w-full rounded-lg bg-background pl-8"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
         </CardHeader>
         <CardContent>
           {loading && (
@@ -188,8 +230,8 @@ export default function AdminUsersPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {paginatedUsers && paginatedUsers.length > 0 ? (
-                    paginatedUsers.map((user) => (
+                  {filteredUsers && filteredUsers.length > 0 ? (
+                    filteredUsers.map((user) => (
                       <TableRow key={user.id}>
                         <TableCell className="font-medium">
                           <div className="font-medium">{user.firstName} {user.lastName}</div>
@@ -228,7 +270,7 @@ export default function AdminUsersPage() {
                   ) : (
                     <TableRow>
                       <TableCell colSpan={4} className="text-center">
-                        No users to display.
+                        No users found{debouncedSearchTerm && ` for "${debouncedSearchTerm}"`}.
                       </TableCell>
                     </TableRow>
                   )}
@@ -256,3 +298,5 @@ export default function AdminUsersPage() {
     </div>
   );
 }
+
+    
