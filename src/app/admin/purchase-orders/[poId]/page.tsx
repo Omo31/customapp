@@ -82,8 +82,6 @@ export default function AdminPurchaseOrderDetailsPage({ params }: AdminPurchaseO
         return <p>Purchase Order not found.</p>
     }
     
-    const taxAmount = po.subtotal * (po.tax / 100);
-
     return (
         <div className="space-y-6">
             <Card>
@@ -157,10 +155,6 @@ export default function AdminPurchaseOrderDetailsPage({ params }: AdminPurchaseO
                             <span>₦{po.subtotal.toLocaleString()}</span>
                         </div>
                         <div className="flex justify-between">
-                            <span className="text-muted-foreground">Tax ({po.tax}%)</span>
-                            <span>₦{taxAmount.toLocaleString()}</span>
-                        </div>
-                        <div className="flex justify-between">
                             <span className="text-muted-foreground">Shipping</span>
                             <span>₦{po.shipping.toLocaleString()}</span>
                         </div>
@@ -201,3 +195,5 @@ export default function AdminPurchaseOrderDetailsPage({ params }: AdminPurchaseO
         </div>
     )
 }
+
+    

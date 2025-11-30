@@ -300,7 +300,6 @@
           }
         },
         "subtotal": { "type": "number" },
-        "tax": { "type": "number" },
         "shipping": { "type": "number" },
         "total": { "type": "number" },
         "status": {
@@ -436,3 +435,5 @@
     }
   }
 }
+
+    

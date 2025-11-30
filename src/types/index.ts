@@ -153,7 +153,6 @@ export type PurchaseOrder = {
   deliveryDate: any; // Firestore Timestamp
   items: PurchaseOrderItem[];
   subtotal: number;
-  tax: number; // Can be a percentage or a flat amount
   shipping: number;
   total: number;
   status: 'Draft' | 'Issued' | 'Completed' | 'Cancelled';
@@ -209,3 +208,5 @@ export type FooterSettings = {
   address?: string;
   openingHours?: string;
 };
+
+    

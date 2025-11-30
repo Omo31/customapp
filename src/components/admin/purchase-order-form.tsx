@@ -39,7 +39,6 @@ const formSchema = z.object({
   deliveryDate: z.date({ required_error: 'Expected delivery date is required.' }),
   items: z.array(poItemSchema).min(1, 'Please add at least one item.'),
   notes: z.string().optional(),
-  tax: z.coerce.number().min(0).default(0),
   shipping: z.coerce.number().min(0).default(0),
 });
 
@@ -55,7 +54,6 @@ export function PurchaseOrderForm({ po }: { po?: PurchaseOrder }) {
     resolver: zodResolver(formSchema),
     defaultValues: {
       items: [{ description: '', quantity: 1, unitCost: 0, total: 0 }],
-      tax: 0,
       shipping: 0,
     },
   });
@@ -66,7 +64,6 @@ export function PurchaseOrderForm({ po }: { po?: PurchaseOrder }) {
   });
 
   const watchedItems = useWatch({ control: form.control, name: 'items' });
-  const watchedTax = useWatch({ control: form.control, name: 'tax' });
   const watchedShipping = useWatch({ control: form.control, name: 'shipping' });
   
   const subtotal = React.useMemo(() => {
@@ -74,9 +71,8 @@ export function PurchaseOrderForm({ po }: { po?: PurchaseOrder }) {
   }, [watchedItems]);
 
   const total = React.useMemo(() => {
-    const taxAmount = subtotal * (watchedTax / 100);
-    return subtotal + taxAmount + watchedShipping;
-  }, [subtotal, watchedTax, watchedShipping]);
+    return subtotal + watchedShipping;
+  }, [subtotal, watchedShipping]);
 
   React.useEffect(() => {
     watchedItems.forEach((item, index) => {
@@ -108,7 +104,6 @@ export function PurchaseOrderForm({ po }: { po?: PurchaseOrder }) {
             items: values.items,
             notes: values.notes,
             subtotal: subtotal,
-            tax: values.tax,
             shipping: values.shipping,
             total: total,
             status: 'Draft',
@@ -345,28 +340,21 @@ export function PurchaseOrderForm({ po }: { po?: PurchaseOrder }) {
                         <span className="text-muted-foreground">Subtotal</span>
                         <span>₦{subtotal.toLocaleString()}</span>
                     </div>
-                     <FormField
-                        control={form.control}
-                        name="tax"
-                        render={({ field }) => (
-                            <div className="grid grid-cols-2 items-center gap-4">
-                              <Label htmlFor="tax">Tax (%)</Label>
-                              <Input type="number" id="tax" {...field} />
-                              <div className="col-span-2"><FormMessage>{form.formState.errors.tax?.message}</FormMessage></div>
-                            </div>
-                        )}
-                    />
-                    <FormField
-                        control={form.control}
-                        name="shipping"
-                        render={({ field }) => (
-                            <div className="grid grid-cols-2 items-center gap-4">
-                              <Label htmlFor="shipping">Shipping (₦)</Label>
-                              <Input type="number" id="shipping" {...field} />
-                              <div className="col-span-2"><FormMessage>{form.formState.errors.shipping?.message}</FormMessage></div>
-                            </div>
-                        )}
-                    />
+                    <div className="grid grid-cols-2 items-center gap-4">
+                        <Label htmlFor="shipping">Shipping (₦)</Label>
+                        <FormField
+                            control={form.control}
+                            name="shipping"
+                            render={({ field }) => (
+                                <FormItem>
+                                <FormControl>
+                                    <Input id="shipping" type="number" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                    </div>
                     <Separator />
                     <div className="flex justify-between font-bold text-lg">
                         <span>Total</span>
