@@ -9,6 +9,10 @@ import {
     sendPasswordResetEmail,
     sendEmailVerification,
     type User as FirebaseUser,
+    EmailAuthProvider,
+    reauthenticateWithCredential,
+    updatePassword,
+    deleteUser,
 } from "firebase/auth";
 import { doc, serverTimestamp, writeBatch, collection } from 'firebase/firestore';
 import { useToast } from "./use-toast";
@@ -18,6 +22,8 @@ import type { UserProfile, Notification } from "@/types";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { allAdminRoles } from "@/lib/roles";
+import { useRouter } from "next/navigation";
+
 
 // This hook is now a wrapper around the core Firebase user state
 // to provide login/signup/logout functions with loading states.
@@ -25,6 +31,8 @@ export const useAuth = () => {
   const { user, loading: userLoading, roles, hasRole } = useUser();
   const [actionLoading, setActionLoading] = useState(false);
   const { toast } = useToast();
+  const router = useRouter();
+
 
   const loading = userLoading || actionLoading;
 
@@ -57,22 +65,6 @@ export const useAuth = () => {
         createdAt: serverTimestamp(),
     };
     batch.set(userNotifRef, userNotif);
-
-    // Create a notification for the superadmin (assuming a fixed superadmin ID)
-    // In a real app, you might query for all admins and notify them.
-    // For now, we'll assume a single superadmin with a known ID.
-    // NOTE: This assumes the superadmin user exists in Firestore with this UID.
-    // The UID for 'oluwagbengwumi@gmail.com' needs to be known.
-    // Let's hardcode it for this example, but a better solution would be needed for production.
-    const superAdminEmail = "oluwagbengwumi@gmail.com";
-    // We can't know the UID from the email on the client side without another query.
-    // For simplicity, we will skip the admin notification for now as it adds complexity
-    // that requires either a backend function or insecure client-side queries.
-    
-    // Instead, let's create a notification in a general `admin-notifications` collection
-    // that admins with the 'notifications' role can view.
-    // This is more scalable. We'll assume the admin page already queries this.
-    // Let's stick to the user notification to avoid over-complicating.
 
     batch.commit().catch(async (serverError) => {
         const permissionError = new FirestorePermissionError({
@@ -148,6 +140,7 @@ export const useAuth = () => {
     setActionLoading(true);
     try {
       await firebaseSignOut(auth);
+      router.push('/');
     } catch (error: any) {
        toast({
         title: 'Logout Failed',
@@ -179,6 +172,76 @@ export const useAuth = () => {
       setActionLoading(false);
     }
   };
+  
+  const changePassword = async (currentPassword: string, newPassword: string) => {
+    setActionLoading(true);
+    if (!user || !user.email) {
+        toast({ title: "Not Authenticated", description: "You must be logged in to change your password.", variant: "destructive" });
+        setActionLoading(false);
+        return;
+    }
+    
+    try {
+        const credential = EmailAuthProvider.credential(user.email, currentPassword);
+        const currentUser = auth.currentUser;
+        if (!currentUser) throw new Error("No user is currently signed in.");
 
-  return { user, loading, login, signup, logout, resetPassword, roles, hasRole, isAdmin: (roles?.length || 0) > 0 };
+        await reauthenticateWithCredential(currentUser, credential);
+        await updatePassword(currentUser, newPassword);
+
+        toast({ title: "Password Changed", description: "Your password has been updated successfully. Please log in again." });
+        
+        // Log the user out for security
+        await firebaseSignOut(auth);
+        router.push('/login');
+
+    } catch(error: any) {
+        toast({
+            title: "Password Change Failed",
+            description: error.message || 'An unexpected error occurred.',
+            variant: "destructive"
+        });
+        throw error;
+    } finally {
+        setActionLoading(false);
+    }
+  }
+
+  const deleteUserAccount = async (currentPassword: string) => {
+    setActionLoading(true);
+    if (!user || !user.email) {
+        toast({ title: "Not Authenticated", description: "You must be logged in to delete your account.", variant: "destructive" });
+        setActionLoading(false);
+        return;
+    }
+
+    try {
+        const credential = EmailAuthProvider.credential(user.email, currentPassword);
+        const currentUser = auth.currentUser;
+        if (!currentUser) throw new Error("No user is currently signed in.");
+
+        await reauthenticateWithCredential(currentUser, credential);
+        
+        // Note: This only deletes the user from Firebase Auth. 
+        // Associated Firestore data will be orphaned. A Cloud Function is needed for full cleanup.
+        await deleteUser(currentUser);
+
+        toast({ title: "Account Deleted", description: "Your account has been permanently deleted." });
+        
+        router.push('/');
+
+    } catch (error: any) {
+         toast({
+            title: "Account Deletion Failed",
+            description: error.message || 'An unexpected error occurred.',
+            variant: "destructive"
+        });
+        throw error;
+    } finally {
+        setActionLoading(false);
+    }
+  }
+
+
+  return { user, loading, login, signup, logout, resetPassword, changePassword, deleteUserAccount, roles, hasRole, isAdmin: (roles?.length || 0) > 0 };
 };
