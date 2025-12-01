@@ -45,64 +45,81 @@ export default function AdminDashboard() {
         from: subDays(new Date(), 29),
         to: new Date(),
     });
+    
+    const fromDate = date?.from ? startOfDay(date.from) : undefined;
+    const toDate = date?.to ? endOfDay(date.to) : undefined;
+    
+    // --- Optimized Queries ---
+    
+    // 1. Get delivered orders within the date range for revenue and sales
+    const { data: deliveredOrders, loading: deliveredOrdersLoading } = useCollection<Order>(db, "orders", {
+      where: ["createdAt", ">=", fromDate],
+      // We need a second 'where' for the range, but Firestore requires an index for that.
+      // So we filter by status and start date, then filter by end date and status on the client.
+    });
 
-    // Fetch all orders and users once, then filter in memory. This is more efficient for the dashboard scope.
-    const { data: allOrders, loading: ordersLoading } = useCollection<Order>(db, "orders");
-    const { data: allUsers, loading: usersLoading } = useCollection<UserProfile>(db, "users");
+    // 2. Get users created within the date range
+     const { data: newUsers, loading: usersLoading } = useCollection<UserProfile>(db, "users", {
+       where: ["createdAt", ">=", fromDate],
+       // Firestore limitation again, so we filter the end of the range on the client.
+     });
+
+    // 3. Get all pending orders (not date-range dependent)
+    const { data: pendingOrders, loading: pendingOrdersLoading } = useCollection<Order>(db, "orders", {
+        where: ["status", "==", "Pending"]
+    });
+
+    // 4. Get recent orders for the list
     const { data: recentOrders, loading: recentOrdersListLoading } = useCollection<Order>(db, "orders", {
         orderBy: ["createdAt", "desc"],
         limit: 5
     });
+    
+    // --- Memoized Calculations ---
 
     const {
         totalRevenue,
         totalSales,
         newCustomersCount,
         salesChartData,
-        pendingOrdersCount
     } = useMemo(() => {
-        if (!allOrders || !allUsers) {
-            return { totalRevenue: 0, totalSales: 0, newCustomersCount: 0, salesChartData: [], pendingOrdersCount: 0 };
+        if (!deliveredOrders || !newUsers) {
+            return { totalRevenue: 0, totalSales: 0, newCustomersCount: 0, salesChartData: [] };
         }
 
-        const fromDate = date?.from ? startOfDay(date.from) : new Date(0);
-        const toDate = date?.to ? endOfDay(date.to) : new Date();
-
-        const filteredOrders = allOrders.filter(order => {
-            const orderDate = new Date(order.createdAt?.seconds * 1000);
-            return orderDate >= fromDate && orderDate <= toDate;
+        const filteredDeliveredOrders = deliveredOrders.filter(order => {
+             const orderDate = new Date(order.createdAt?.seconds * 1000);
+             return order.status === "Delivered" && (!toDate || orderDate <= toDate);
         });
 
-        const deliveredOrders = filteredOrders.filter(order => order.status === "Delivered");
-
-        const revenue = deliveredOrders.reduce((acc, order) => acc + order.totalCost, 0);
-        const sales = deliveredOrders.length;
+        const revenue = filteredDeliveredOrders.reduce((acc, order) => acc + order.totalCost, 0);
+        const sales = filteredDeliveredOrders.length;
         
-        const filteredUsers = allUsers.filter(user => {
+        const filteredUsers = newUsers.filter(user => {
             if (!user.createdAt?.seconds) return false;
             const userDate = new Date(user.createdAt.seconds * 1000);
-            return userDate >= fromDate && userDate <= toDate;
+            return !toDate || userDate <= toDate;
         });
-
         const customers = filteredUsers.length;
-        
-        const pendingOrders = allOrders.filter(order => order.status === "Pending").length;
 
         // Process chart data
         const dailyRevenue: { [key: string]: number } = {};
-        for (let d = new Date(fromDate); d <= toDate; d.setDate(d.getDate() + 1)) {
-            const formattedDate = format(d, 'MMM d');
-            dailyRevenue[formattedDate] = 0;
-        }
-
-        deliveredOrders.forEach(order => {
-            if (order.createdAt?.seconds) {
-                const orderDate = format(new Date(order.createdAt.seconds * 1000), 'MMM d');
-                if (orderDate in dailyRevenue) {
-                    dailyRevenue[orderDate] += order.totalCost;
-                }
+        if (fromDate && toDate) {
+            // Correctly iterate over the date range without modifying the original date
+            for (let d = new Date(fromDate); d <= toDate; d.setDate(d.getDate() + 1)) {
+                const formattedDate = format(new Date(d), 'MMM d');
+                dailyRevenue[formattedDate] = 0;
             }
-        });
+
+            filteredDeliveredOrders.forEach(order => {
+                if (order.createdAt?.seconds) {
+                    const orderDate = format(new Date(order.createdAt.seconds * 1000), 'MMM d');
+                    if (orderDate in dailyRevenue) {
+                        dailyRevenue[orderDate] += order.totalCost;
+                    }
+                }
+            });
+        }
 
         const chartData = Object.keys(dailyRevenue).map(dateStr => ({
             name: dateStr,
@@ -110,11 +127,11 @@ export default function AdminDashboard() {
         }));
 
 
-        return { totalRevenue: revenue, totalSales: sales, newCustomersCount: customers, salesChartData: chartData, pendingOrdersCount: pendingOrders };
+        return { totalRevenue: revenue, totalSales: sales, newCustomersCount: customers, salesChartData: chartData };
 
-    }, [allOrders, allUsers, date]);
+    }, [deliveredOrders, newUsers, fromDate, toDate]);
     
-    const loading = ordersLoading || usersLoading || recentOrdersListLoading;
+    const loading = deliveredOrdersLoading || usersLoading || pendingOrdersLoading || recentOrdersListLoading;
 
     return (
         <div className="space-y-6">
@@ -164,28 +181,28 @@ export default function AdminDashboard() {
                     title="Total Revenue"
                     value={`₦${totalRevenue.toLocaleString()}`}
                     icon={DollarSign}
-                    loading={loading}
+                    loading={deliveredOrdersLoading}
                     description="From delivered orders"
                 />
                 <KPIStatCard
                     title="New Customers"
                     value={newCustomersCount}
                     icon={Users}
-                    loading={loading}
+                    loading={usersLoading}
                     description="In selected period"
                 />
                 <KPIStatCard
                     title="Sales"
                     value={totalSales}
                     icon={ShoppingBag}
-                    loading={loading}
+                    loading={deliveredOrdersLoading}
                     description="Total delivered orders"
                 />
                 <KPIStatCard
                     title="Pending Orders"
-                    value={pendingOrdersCount}
+                    value={pendingOrders?.length || 0}
                     icon={Truck}
-                    loading={loading}
+                    loading={pendingOrdersLoading}
                     description="Awaiting confirmation"
                 />
             </div>
