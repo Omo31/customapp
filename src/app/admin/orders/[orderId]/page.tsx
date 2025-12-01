@@ -10,7 +10,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { collection, doc, serverTimestamp, updateDoc, writeBatch } from "firebase/firestore";
-import { Separator } from "@/components/ui/separator";
 import {
   Select,
   SelectContent,
@@ -59,7 +58,7 @@ export default function AdminOrderDetailsPage({ params }: AdminOrderDetailsPageP
                 userId: order.userId,
                 title: `Your order is now ${selectedStatus}`,
                 description: `The status of your order #${orderId.slice(-6)} has been updated.`,
-                href: `/account/orders`, // Or a specific order page if one exists for users
+                href: `/account/orders/${orderId}`,
                 isRead: false,
                 createdAt: serverTimestamp(),
             });

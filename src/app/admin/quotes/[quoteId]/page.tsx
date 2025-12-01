@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { doc, serverTimestamp, writeBatch } from "firebase/firestore";
+import { collection, doc, serverTimestamp, writeBatch } from "firebase/firestore";
 import { Separator } from "@/components/ui/separator";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -67,7 +67,7 @@ export default function AdminQuoteDetailsPage({ params }: AdminQuoteDetailsPageP
     React.useEffect(() => {
         if (quote) {
             const serviceCosts = quote.services?.reduce((acc, serviceId) => {
-                acc[serviceId] = 0;
+                acc[serviceId] = quote.pricedServices?.[serviceId] || 0;
                 return acc;
             }, {} as Record<string, number>) || {};
 
@@ -106,8 +106,6 @@ export default function AdminQuoteDetailsPage({ params }: AdminQuoteDetailsPageP
             batch.update(quoteRef, {
                 status: "Quote Ready",
                 items: values.items,
-                // We'll store the service costs directly on the quote for historical record
-                // This is a simplified approach. A better one might be to have a services subcollection.
                 pricedServices: values.serviceCosts,
                 shippingCost: values.shippingCost,
                 updatedAt: serverTimestamp(),
@@ -239,7 +237,7 @@ export default function AdminQuoteDetailsPage({ params }: AdminQuoteDetailsPageP
                             <CardDescription>Enter the cost for the additional services requested.</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                            {quote.services.map((serviceId, index) => (
+                            {quote.services?.map((serviceId, index) => (
                                 <div key={serviceId} className="grid grid-cols-2 items-end gap-4">
                                      <p className="font-medium">{serviceLabels?.[index]}</p>
                                      <FormField
@@ -308,13 +306,11 @@ export default function AdminQuoteDetailsPage({ params }: AdminQuoteDetailsPageP
                         </div>
                     </CardContent>
                     <CardFooter>
-                         <Button type="submit" className="w-full" size="lg" disabled={isSubmitting || quote.status !== 'Pending Review'}>
+                         <Button type="submit" className="w-full" size="lg" disabled={isSubmitting}>
                             {isSubmitting ? (
                                 <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Sending Quote...</>
-                            ) : quote.status === 'Pending Review' ? (
-                                "Send Quote to Customer"
                             ) : (
-                                "Quote Already Sent"
+                                "Send Quote to Customer"
                             )}
                          </Button>
                     </CardFooter>
