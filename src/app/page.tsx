@@ -10,7 +10,7 @@ import { ArrowRight, ShoppingCart } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import * as allLucideIcons from 'lucide-react';
-import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
+// import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 
 function YoutubeEmbed({ url }: { url: string }) {
   const videoId = url.split('v=')[1]?.split('&')[0] || url.split('/').pop();
@@ -131,6 +131,7 @@ export default function Home() {
       )}
 
       {/* Featured Products */}
+      {/*
       {settings?.featuredProducts && settings.featuredProducts.length > 0 && (
         <section id="features" className="w-full py-12 md:py-24 lg:py-32 bg-white dark:bg-card">
           <div className="container px-4 md:px-6">
@@ -177,6 +178,7 @@ export default function Home() {
           </div>
         </section>
       )}
+      */}
 
       {/* YouTube Video */}
       {settings?.youtubeVideoUrl && (
