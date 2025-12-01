@@ -32,6 +32,10 @@ service cloud.firestore {
     }
 
     // Secure quotes
+    // ** Firestore Index Required **
+    // For the "My Quotes" page to work, you need a composite index on:
+    // Collection: quotes
+    // Fields: 1. userId (Ascending), 2. createdAt (Descending)
     match /quotes/{quoteId} {
       allow create: if request.auth.uid == request.resource.data.userId;
       allow read: if request.auth.uid == resource.data.userId || hasRole('quotes');
@@ -39,6 +43,10 @@ service cloud.firestore {
     }
 
     // Secure orders
+    // ** Firestore Index Required **
+    // For the "Order History" page to work, you need a composite index on:
+    // Collection: orders
+    // Fields: 1. userId (Ascending), 2. createdAt (Descending)
     match /orders/{orderId} {
       allow create: if false; // Orders are created by the server-side webhook (backend process)
       allow read: if request.auth.uid == resource.data.userId || hasRole('orders');
