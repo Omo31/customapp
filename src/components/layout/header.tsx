@@ -15,7 +15,7 @@ import {
 } from '../ui/dropdown-menu';
 import { LayoutDashboard, LogOut, User as UserIcon, Bell } from 'lucide-react';
 import { SidebarTrigger } from '@/components/ui/sidebar';
-import { useFirestore, useCollection } from '@/firebase';
+import { useFirestore, useCollection, useCollectionGroup } from '@/firebase';
 import { type Notification } from '@/types';
 import { Badge } from '../ui/badge';
 
@@ -23,16 +23,20 @@ export default function Header() {
   const { user, logout, isAdmin } = useAuth();
   const db = useFirestore();
 
-  // Listen to unread notifications for the current user
-  const { data: notifications } = useCollection<Notification>(
+  // Use a different query depending on whether the user is an admin or not
+  const { data: userNotifications } = useCollection<Notification>(
     db,
-    user ? `users/${user.uid}/notifications` : '',
-    {
-      where: ["isRead", "==", false],
-    }
+    user && !isAdmin ? `users/${user.uid}/notifications` : '',
+    { where: ["isRead", "==", false] }
   );
 
-  const unreadCount = notifications?.length || 0;
+  const { data: adminNotifications } = useCollectionGroup<Notification>(
+    db,
+    user && isAdmin ? 'notifications' : '',
+    { where: ["isRead", "==", false] }
+  );
+
+  const unreadCount = isAdmin ? (adminNotifications?.length || 0) : (userNotifications?.length || 0);
   
   return (
     <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
