@@ -10,8 +10,10 @@ service cloud.firestore {
     }
 
     function isAdmin() {
-      // Check for the user's custom claims.
-      return request.auth != null && request.auth.token.roles.size() > 0;
+      // Check that the user document exists and that the roles array is not empty.
+      return request.auth != null && 
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.roles.size() > 0;
     }
     
     // --- Collection Rules ---
