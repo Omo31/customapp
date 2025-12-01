@@ -99,7 +99,7 @@ export function SignupForm() {
                   <FormItem>
                     <FormLabel>First Name</FormLabel>
                     <FormControl>
-                      <Input placeholder="John" {...field} onChange={(e) => capitalizeFirstLetter(e, field)} autoComplete="given-name" />
+                      <Input placeholder="First Name" {...field} onChange={(e) => capitalizeFirstLetter(e, field)} autoComplete="given-name" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -112,7 +112,7 @@ export function SignupForm() {
                   <FormItem>
                     <FormLabel>Last Name</FormLabel>
                     <FormControl>
-                      <Input placeholder="Doe" {...field} onChange={(e) => capitalizeFirstLetter(e, field)} autoComplete="family-name" />
+                      <Input placeholder="Last Name" {...field} onChange={(e) => capitalizeFirstLetter(e, field)} autoComplete="family-name" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -126,7 +126,7 @@ export function SignupForm() {
                 <FormItem>
                   <FormLabel>Email</FormLabel>
                   <FormControl>
-                    <Input placeholder="m@example.com" {...field} autoComplete="email" />
+                    <Input placeholder="Enter your email" {...field} autoComplete="email" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -140,7 +140,7 @@ export function SignupForm() {
                   <FormLabel>Password</FormLabel>
                   <FormControl>
                     <div className="relative">
-                      <Input type={showPassword ? "text" : "password"} {...field} autoComplete="new-password" />
+                      <Input type={showPassword ? "text" : "password"} {...field} autoComplete="new-password" placeholder="Create a password" />
                       <Button
                         type="button"
                         variant="ghost"
