@@ -169,7 +169,7 @@ export function SignupForm() {
                     />
                   </FormControl>
                   <div className="space-y-1 leading-none">
-                    <FormLabel className="font-normal">
+                    <FormLabel>
                       I accept the{" "}
                       <Link href="/terms" className="underline hover:text-primary">
                         Terms and Conditions
