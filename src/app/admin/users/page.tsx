@@ -14,47 +14,33 @@ import {
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { allAdminRoles } from "@/lib/roles";
-import { doc, updateDoc, DocumentData, DocumentSnapshot, query, where, or, orderBy } from "firebase/firestore";
+import { doc, updateDoc, DocumentData, DocumentSnapshot } from "firebase/firestore";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
 import { Label } from "@/components/ui/label";
-import { Eye, Download, Search } from "lucide-react";
+import { Eye, Download } from "lucide-react";
 import { useState, useMemo } from "react";
 import { Pagination, PaginationContent, PaginationItem, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
-import { Input } from "@/components/ui/input";
-import { useDebounce } from "use-debounce";
+import { useRouter } from "next/navigation";
+
 
 const PAGE_SIZE = 10;
 
 export default function AdminUsersPage() {
   const db = useFirestore();
   const { toast } = useToast();
+  const router = useRouter();
   const [currentPage, setCurrentPage] = useState(1);
   const [pageHistory, setPageHistory] = useState<(DocumentSnapshot<DocumentData> | null)[]>([null]);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [debouncedSearchTerm] = useDebounce(searchTerm, 300);
 
-  const { data: paginatedUsers, loading, error, lastDoc } = useCollection<UserProfile>(db, "users", {
+  const { data: users, loading, error, lastDoc } = useCollection<UserProfile>(db, "users", {
     orderBy: ["createdAt", "desc"],
     limit: PAGE_SIZE,
     startAfter: pageHistory[currentPage - 1]
   });
-
-  const filteredUsers = useMemo(() => {
-    if (!paginatedUsers) return [];
-    if (!debouncedSearchTerm) return paginatedUsers;
-    
-    const lowercasedTerm = debouncedSearchTerm.toLowerCase();
-    return paginatedUsers.filter(user => 
-        user.firstName?.toLowerCase().includes(lowercasedTerm) ||
-        user.lastName?.toLowerCase().includes(lowercasedTerm) ||
-        user.email?.toLowerCase().includes(lowercasedTerm)
-    );
-  }, [paginatedUsers, debouncedSearchTerm]);
-
-
+  
   const { data: allUsers, loading: allUsersLoading } = useCollection<UserProfile>(db, "users", {
     orderBy: ["createdAt", "desc"]
   });
@@ -75,7 +61,7 @@ export default function AdminUsersPage() {
     }
   };
   
-  const canGoNext = paginatedUsers && paginatedUsers.length === PAGE_SIZE;
+  const canGoNext = users && users.length === PAGE_SIZE;
 
 
   const handleRoleChange = async (
@@ -85,7 +71,7 @@ export default function AdminUsersPage() {
   ) => {
     if (typeof isChecked !== "boolean") return;
 
-    const userToUpdate = paginatedUsers?.find((u) => u.id === userId);
+    const userToUpdate = users?.find((u) => u.id === userId);
     if (!userToUpdate) return;
 
     // Prevent superadmin roles from being changed
@@ -97,7 +83,6 @@ export default function AdminUsersPage() {
       });
       // We need to trigger a re-render to revert the checkbox state visually
       // This is a bit of a hack, but it works without complex state management.
-      // A more robust solution might involve managing checkbox state separately.
       router.refresh(); 
       return;
     }
@@ -179,16 +164,6 @@ export default function AdminUsersPage() {
         <CardHeader>
           <CardTitle>All Users</CardTitle>
           <CardDescription>A paginated list of all users in the system.</CardDescription>
-            <div className="relative">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                type="search"
-                placeholder="Search by name or email..."
-                className="w-full rounded-lg bg-background pl-8"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
         </CardHeader>
         <CardContent>
           {loading && (
@@ -215,8 +190,8 @@ export default function AdminUsersPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredUsers && filteredUsers.length > 0 ? (
-                    filteredUsers.map((user) => (
+                  {users && users.length > 0 ? (
+                    users.map((user) => (
                       <TableRow key={user.id}>
                         <TableCell className="font-medium">
                           <div className="font-medium">{user.firstName} {user.lastName}</div>
@@ -255,7 +230,7 @@ export default function AdminUsersPage() {
                   ) : (
                     <TableRow>
                       <TableCell colSpan={4} className="text-center">
-                        No users found{debouncedSearchTerm && ` for "${debouncedSearchTerm}"`}.
+                        No users found.
                       </TableCell>
                     </TableRow>
                   )}

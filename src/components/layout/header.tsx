@@ -20,7 +20,7 @@ import { type Notification } from '@/types';
 import { Badge } from '../ui/badge';
 
 export default function Header() {
-  const { user, logout, isAdmin, hasRole } = useAuth();
+  const { user, logout, isAdmin } = useAuth();
   const db = useFirestore();
 
   // Listen to unread notifications for the current user
@@ -34,9 +34,6 @@ export default function Header() {
 
   const unreadCount = notifications?.length || 0;
   
-  const showSettings = hasRole('settings');
-
-
   return (
     <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-14 items-center">

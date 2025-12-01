@@ -46,96 +46,80 @@ export default function AdminDashboard() {
         to: new Date(),
     });
 
-    const { data: rangedDeliveredOrders, loading: ordersLoading } = useCollection<Order>(db, "orders", {
-        where: [
-            "createdAt", 
-            ">=", 
-            date?.from ? startOfDay(date.from) : new Date(0)
-        ],
-        // Firestore requires separate range filters for a single query
-    });
-    
-    // A second query to filter by the 'to' date.
-    const filteredDeliveredOrders = useMemo(() => {
-        if (!rangedDeliveredOrders) return [];
-        return rangedDeliveredOrders.filter(order => 
-            order.status === "Delivered" &&
-            order.createdAt?.seconds * 1000 <= (date?.to ? endOfDay(date.to) : new Date()).getTime()
-        );
-    }, [rangedDeliveredOrders, date]);
-
-
-    const { data: pendingOrders, loading: pendingOrdersLoading } = useCollection<Order>(db, "orders", {
-        where: ["status", "==", "Pending"],
-    });
-
-    const { data: newUsers, loading: usersLoading } = useCollection<UserProfile>(db, "users", {
-        where: [
-            "createdAt", 
-            ">=", 
-            date?.from ? startOfDay(date.from) : new Date(0)
-        ],
-    });
-    
-    const filteredNewUsers = useMemo(() => {
-        if (!newUsers) return [];
-        return newUsers.filter(user => 
-            user.createdAt?.seconds * 1000 <= (date?.to ? endOfDay(date.to) : new Date()).getTime()
-        );
-    }, [newUsers, date]);
-
-    
+    // Fetch all orders and users once, then filter in memory. This is more efficient for the dashboard scope.
+    const { data: allOrders, loading: ordersLoading } = useCollection<Order>(db, "orders");
+    const { data: allUsers, loading: usersLoading } = useCollection<UserProfile>(db, "users");
     const { data: recentOrders, loading: recentOrdersListLoading } = useCollection<Order>(db, "orders", {
         orderBy: ["createdAt", "desc"],
         limit: 5
     });
 
-    const totalRevenue = useMemo(() => {
-        if (!filteredDeliveredOrders) return 0;
-        return filteredDeliveredOrders.reduce((acc, order) => acc + order.totalCost, 0);
-    }, [filteredDeliveredOrders]);
-    
-    const totalSales = useMemo(() => {
-        if (!filteredDeliveredOrders) return 0;
-        return filteredDeliveredOrders.length;
-    }, [filteredDeliveredOrders]);
-
-    const salesChartData = useMemo(() => {
-        if (!filteredDeliveredOrders || !date?.from) return [];
-        
-        const dailyRevenue: { [key: string]: number } = {};
-        let currentDate = startOfDay(date.from);
-        const endDate = endOfDay(date.to || date.from);
-
-        while (currentDate <= endDate) {
-            dailyRevenue[format(currentDate, 'MMM d')] = 0;
-            currentDate.setDate(currentDate.getDate() + 1);
+    const {
+        totalRevenue,
+        totalSales,
+        newCustomersCount,
+        salesChartData,
+        pendingOrdersCount
+    } = useMemo(() => {
+        if (!allOrders || !allUsers) {
+            return { totalRevenue: 0, totalSales: 0, newCustomersCount: 0, salesChartData: [], pendingOrdersCount: 0 };
         }
 
-        filteredDeliveredOrders.forEach(order => {
-                if (order.createdAt?.seconds) {
-                    const orderDate = format(new Date(order.createdAt.seconds * 1000), 'MMM d');
-                    if (date in dailyRevenue) {
-                        dailyRevenue[orderDate] += order.totalCost;
-                    }
-                }
-            });
+        const fromDate = date?.from ? startOfDay(date.from) : new Date(0);
+        const toDate = date?.to ? endOfDay(date.to) : new Date();
+
+        const filteredOrders = allOrders.filter(order => {
+            const orderDate = new Date(order.createdAt?.seconds * 1000);
+            return orderDate >= fromDate && orderDate <= toDate;
+        });
+
+        const deliveredOrders = filteredOrders.filter(order => order.status === "Delivered");
+
+        const revenue = deliveredOrders.reduce((acc, order) => acc + order.totalCost, 0);
+        const sales = deliveredOrders.length;
         
-        return Object.keys(dailyRevenue).map(dateStr => ({
+        const filteredUsers = allUsers.filter(user => {
+            if (!user.createdAt?.seconds) return false;
+            const userDate = new Date(user.createdAt.seconds * 1000);
+            return userDate >= fromDate && userDate <= toDate;
+        });
+
+        const customers = filteredUsers.length;
+        
+        const pendingOrders = allOrders.filter(order => order.status === "Pending").length;
+
+        // Process chart data
+        const dailyRevenue: { [key: string]: number } = {};
+        for (let d = new Date(fromDate); d <= toDate; d.setDate(d.getDate() + 1)) {
+            const formattedDate = format(d, 'MMM d');
+            dailyRevenue[formattedDate] = 0;
+        }
+
+        deliveredOrders.forEach(order => {
+            if (order.createdAt?.seconds) {
+                const orderDate = format(new Date(order.createdAt.seconds * 1000), 'MMM d');
+                if (orderDate in dailyRevenue) {
+                    dailyRevenue[orderDate] += order.totalCost;
+                }
+            }
+        });
+
+        const chartData = Object.keys(dailyRevenue).map(dateStr => ({
             name: dateStr,
             total: dailyRevenue[dateStr]
         }));
 
-    }, [filteredDeliveredOrders, date]);
 
-    const newCustomersCount = filteredNewUsers?.length || 0;
-    const pendingOrdersCount = pendingOrders?.length || 0;
-    const loading = ordersLoading || pendingOrdersLoading || usersLoading || recentOrdersListLoading;
+        return { totalRevenue: revenue, totalSales: sales, newCustomersCount: customers, salesChartData: chartData, pendingOrdersCount: pendingOrders };
+
+    }, [allOrders, allUsers, date]);
+    
+    const loading = ordersLoading || usersLoading || recentOrdersListLoading;
 
     return (
         <div className="space-y-6">
             <div className="flex items-center justify-between space-y-2">
-                <h2 className="text-3xl font-bold tracking-tight font-headline">Dashboard</h2>
+                <div />
                 <div className="flex items-center space-x-2">
                 <Popover>
                     <PopoverTrigger asChild>
@@ -201,7 +185,7 @@ export default function AdminDashboard() {
                     title="Pending Orders"
                     value={pendingOrdersCount}
                     icon={Truck}
-                    loading={pendingOrdersLoading}
+                    loading={loading}
                     description="Awaiting confirmation"
                 />
             </div>
@@ -308,5 +292,3 @@ export default function AdminDashboard() {
         </div>
     );
 }
-
-    
