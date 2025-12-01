@@ -11,7 +11,7 @@ import { useState } from "react";
 import { DocumentData, DocumentSnapshot } from "firebase/firestore";
 import { Pagination, PaginationContent, PaginationItem, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 import { Button } from "@/components/ui/button";
-import { PlusCircle } from "lucide-react";
+import { PlusCircle, ExternalLink } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -21,6 +21,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { ExpenseForm } from "./expense-form";
+import Link from "next/link";
 
 const PAGE_SIZE = 10;
 
@@ -94,6 +95,7 @@ export function ExpensesManager() {
                   <TableHead>Category</TableHead>
                   <TableHead>Date</TableHead>
                   <TableHead className="text-right">Amount</TableHead>
+                  <TableHead className="text-right">Receipt</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -103,10 +105,21 @@ export function ExpensesManager() {
                     <TableCell><Badge variant="outline">{expense.category}</Badge></TableCell>
                     <TableCell>{new Date(expense.date?.seconds * 1000).toLocaleDateString()}</TableCell>
                     <TableCell className="text-right">₦{expense.amount.toLocaleString()}</TableCell>
+                    <TableCell className="text-right">
+                        {expense.receiptUrl ? (
+                            <Button asChild variant="outline" size="sm">
+                                <Link href={expense.receiptUrl} target="_blank" rel="noopener noreferrer">
+                                    <ExternalLink className="mr-2 h-4 w-4"/> View
+                                </Link>
+                            </Button>
+                        ) : (
+                            <span className="text-xs text-muted-foreground">N/A</span>
+                        )}
+                    </TableCell>
                   </TableRow>
                 )) : (
                   <TableRow>
-                      <TableCell colSpan={4} className="text-center">No expenses have been logged yet.</TableCell>
+                      <TableCell colSpan={5} className="text-center">No expenses have been logged yet.</TableCell>
                   </TableRow>
                 )}
               </TableBody>
@@ -133,5 +146,3 @@ export function ExpensesManager() {
     </Card>
   )
 }
-
-    

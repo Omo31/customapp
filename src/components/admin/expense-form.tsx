@@ -19,6 +19,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { Calendar } from '../ui/calendar';
+import { ImageUpload } from '../ui/image-upload';
 
 const formSchema = z.object({
   description: z.string().min(2, 'Description is required.'),
@@ -120,50 +121,57 @@ export function ExpenseForm({ onFormSubmit }: ExpenseFormProps) {
             )}
           />
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FormField
-            control={form.control}
-            name="date"
-            render={({ field }) => (
-              <FormItem className="flex flex-col">
-                <FormLabel>Date of Expense</FormLabel>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <FormControl>
-                      <Button
-                        variant={"outline"}
-                        className={cn(
-                          "w-full pl-3 text-left font-normal",
-                          !field.value && "text-muted-foreground"
-                        )}
-                      >
-                        {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}
-                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                      </Button>
-                    </FormControl>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus />
-                  </PopoverContent>
-                </Popover>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
+        
+        <FormField
+          control={form.control}
+          name="date"
+          render={({ field }) => (
+            <FormItem className="flex flex-col">
+              <FormLabel>Date of Expense</FormLabel>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <FormControl>
+                    <Button
+                      variant={"outline"}
+                      className={cn(
+                        "w-full pl-3 text-left font-normal",
+                        !field.value && "text-muted-foreground"
+                      )}
+                    >
+                      {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}
+                      <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                    </Button>
+                  </FormControl>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus />
+                </PopoverContent>
+              </Popover>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        
+        <FormField
             control={form.control}
             name="receiptUrl"
             render={({ field }) => (
-              <FormItem>
-                <FormLabel>Receipt URL (Optional)</FormLabel>
-                <FormControl>
-                  <Input type="url" placeholder="https://example.com/receipt.jpg" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
+                <FormItem>
+                    <FormLabel>Receipt (Optional)</FormLabel>
+                    <FormControl>
+                        <ImageUpload
+                            storagePath="receipts/"
+                            currentImageUrl={field.value}
+                            onUploadComplete={(url) => {
+                                form.setValue('receiptUrl', url, { shouldDirty: true });
+                            }}
+                        />
+                    </FormControl>
+                    <FormMessage />
+                </FormItem>
             )}
-          />
-        </div>
+        />
+        
         <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
           {form.formState.isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Log Expense'}
         </Button>
@@ -171,5 +179,3 @@ export function ExpenseForm({ onFormSubmit }: ExpenseFormProps) {
     </Form>
   );
 }
-
-    
