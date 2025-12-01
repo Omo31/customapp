@@ -43,7 +43,9 @@ const formSchema = z.object({
   })).min(1, "Please add at least one item."),
   services: z.array(z.string()).optional(),
   additionalNotes: z.string().optional(),
-  deliveryOption: z.enum(["pickup", "delivery-lagos", "quote"]),
+  deliveryOption: z.enum(["pickup", "delivery-lagos", "quote"], {
+    required_error: "You must select a shipping option.",
+  }),
   lagosLga: z.string().optional(),
   shippingAddress: z.string().optional(),
   customerName: z.string().min(1, "Name is required."),
@@ -86,7 +88,6 @@ export function AdvancedCustomOrderForm() {
     defaultValues: {
       items: [{ name: "", quantity: "1", unit: "", customUnit: "" }],
       services: [],
-      deliveryOption: "pickup",
       customerName: user?.displayName || "",
       customerEmail: user?.email || "",
       customerPhone: "",
