@@ -8,6 +8,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Button } from "@/components/ui/button";
+import { Download } from "lucide-react";
+import { generateOrderPdf } from "@/lib/pdf-generator";
 
 interface OrderDetailsPageProps {
   params: {
@@ -37,10 +40,20 @@ export default function OrderDetailsPage({ params }: OrderDetailsPageProps) {
 
     return (
         <div className="space-y-6">
+             <div className="flex justify-between items-start">
+                <div>
+                    <h3 className="text-2xl font-bold font-headline tracking-tight">Order #...{orderId.slice(-6)}</h3>
+                    <p className="text-muted-foreground">Review your order details and receipt.</p>
+                </div>
+                <Button variant="outline" onClick={() => generateOrderPdf(order)} disabled={!order}>
+                    <Download className="mr-2 h-4 w-4" />
+                    Download Receipt
+                </Button>
+            </div>
             <Card>
                 <CardHeader className="flex flex-row items-start justify-between">
                     <div>
-                        <CardTitle className="text-2xl font-headline">Order #...{orderId.slice(-6)}</CardTitle>
+                        <CardTitle>Order Details</CardTitle>
                         <CardDescription>Date Placed: {order.createdAt?.seconds ? new Date(order.createdAt.seconds * 1000).toLocaleDateString() : 'N/A'}</CardDescription>
                     </div>
                     <Badge variant={order.status === 'Delivered' ? 'default' : 'secondary'}>{order.status}</Badge>

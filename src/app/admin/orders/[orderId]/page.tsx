@@ -18,7 +18,8 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { useState } from "react";
-import { Loader2 } from "lucide-react";
+import { Loader2, Download } from "lucide-react";
+import { generateOrderPdf } from "@/lib/pdf-generator";
 
 
 interface AdminOrderDetailsPageProps {
@@ -99,11 +100,21 @@ export default function AdminOrderDetailsPage({ params }: AdminOrderDetailsPageP
 
     return (
         <div className="space-y-6">
+             <div className="flex justify-between items-start">
+                <div>
+                    <h3 className="text-2xl font-bold font-headline tracking-tight">Order #...{orderId.slice(-6)}</h3>
+                    <p className="text-muted-foreground">Manage order details and status.</p>
+                </div>
+                <Button variant="outline" onClick={() => generateOrderPdf(order)} disabled={!order}>
+                    <Download className="mr-2 h-4 w-4" />
+                    Download PDF
+                </Button>
+            </div>
             <Card>
                 <CardHeader className="flex flex-row items-start justify-between">
                     <div>
-                        <CardTitle className="text-2xl font-headline">Order #...{orderId.slice(-6)}</CardTitle>
-                        <CardDescription>Date Placed: {order.createdAt?.seconds ? new Date(order.createdAt.seconds * 1000).toLocaleDateString() : 'N/A'}</CardDescription>
+                        <CardTitle>Order Details</CardTitle>
+                        <CardDescription>Placed on: {order.createdAt?.seconds ? new Date(order.createdAt.seconds * 1000).toLocaleDateString() : 'N/A'}</CardDescription>
                     </div>
                     <Badge variant={order.status === 'Delivered' ? 'default' : 'secondary'}>{order.status}</Badge>
                 </CardHeader>

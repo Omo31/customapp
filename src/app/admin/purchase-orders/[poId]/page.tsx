@@ -19,7 +19,8 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { useState } from "react";
-import { Loader2 } from "lucide-react";
+import { Loader2, Download } from "lucide-react";
+import { generatePurchaseOrderPdf } from "@/lib/pdf-generator";
 
 
 interface AdminPurchaseOrderDetailsPageProps {
@@ -84,10 +85,20 @@ export default function AdminPurchaseOrderDetailsPage({ params }: AdminPurchaseO
     
     return (
         <div className="space-y-6">
+             <div className="flex justify-between items-start">
+                <div>
+                    <h3 className="text-2xl font-bold font-headline tracking-tight">Purchase Order #{po.poNumber}</h3>
+                    <p className="text-muted-foreground">Manage PO details and status.</p>
+                </div>
+                <Button variant="outline" onClick={() => generatePurchaseOrderPdf(po)} disabled={!po}>
+                    <Download className="mr-2 h-4 w-4" />
+                    Download PDF
+                </Button>
+            </div>
             <Card>
                 <CardHeader className="flex flex-row items-start justify-between">
                     <div>
-                        <CardTitle className="text-2xl font-headline">Purchase Order #{po.poNumber}</CardTitle>
+                        <CardTitle>PO Details</CardTitle>
                         <CardDescription>Issued: {po.issueDate?.seconds ? new Date(po.issueDate.seconds * 1000).toLocaleDateString() : 'N/A'}</CardDescription>
                     </div>
                     <Badge variant={po.status === 'Completed' ? 'default' : 'secondary'}>{po.status}</Badge>
