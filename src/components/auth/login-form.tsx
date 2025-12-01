@@ -114,11 +114,11 @@ export function LoginForm() {
               name="password"
               render={({ field }) => (
                 <FormItem>
-                    <div className="flex items-center">
+                    <div className="flex items-center justify-between">
                         <FormLabel>Password</FormLabel>
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
-                             <Button variant="link" className="ml-auto inline-block px-0 text-sm">
+                             <Button variant="link" className="inline-block px-0 text-sm h-auto py-0">
                                 Forgot password?
                              </Button>
                           </AlertDialogTrigger>
