@@ -5,7 +5,7 @@ import { Logo } from '../logo';
 import Link from 'next/link';
 import { useFirestore, useDoc } from '@/firebase';
 import { type FooterSettings } from '@/types';
-import { FaFacebook, FaInstagram, FaYoutube } from 'react-icons/fa';
+import { Facebook, Instagram, Youtube } from 'lucide-react';
 
 export default function Footer() {
   const db = useFirestore();
@@ -31,17 +31,17 @@ export default function Footer() {
               <div className="flex justify-center sm:justify-start space-x-4">
                 {settings?.socialLinks?.facebook && (
                   <a href={settings.socialLinks.facebook} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary">
-                    <FaFacebook size={24} />
+                    <Facebook className="h-6 w-6" />
                   </a>
                 )}
                  {settings?.socialLinks?.instagram && (
                   <a href={settings.socialLinks.instagram} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary">
-                    <FaInstagram size={24} />
+                    <Instagram className="h-6 w-6" />
                   </a>
                 )}
                  {settings?.socialLinks?.youtube && (
                   <a href={settings.socialLinks.youtube} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary">
-                    <FaYoutube size={24} />
+                    <Youtube className="h-6 w-6" />
                   </a>
                 )}
               </div>
