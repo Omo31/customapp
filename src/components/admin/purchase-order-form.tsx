@@ -39,6 +39,8 @@ const formSchema = z.object({
   items: z.array(poItemSchema).min(1, 'Please add at least one item.'),
   notes: z.string().optional(),
   shipping: z.coerce.number().min(0).default(0),
+  subtotal: z.coerce.number().default(0),
+  total: z.coerce.number().default(0),
 });
 
 type PurchaseOrderFormValues = z.infer<typeof formSchema>;
@@ -54,6 +56,8 @@ export function PurchaseOrderForm({ po }: { po?: PurchaseOrder }) {
     defaultValues: {
       items: [{ description: '', quantity: 1, unitCost: 0, total: 0 }],
       shipping: 0,
+      subtotal: 0,
+      total: 0,
     },
   });
 
@@ -65,22 +69,26 @@ export function PurchaseOrderForm({ po }: { po?: PurchaseOrder }) {
   const watchedItems = useWatch({ control: form.control, name: 'items' });
   const watchedShipping = useWatch({ control: form.control, name: 'shipping' });
   
-  const subtotal = React.useMemo(() => {
-    return watchedItems.reduce((acc, item) => acc + (item.quantity * item.unitCost), 0);
-  }, [watchedItems]);
-
-  const total = React.useMemo(() => {
-    return subtotal + watchedShipping;
-  }, [subtotal, watchedShipping]);
-
   React.useEffect(() => {
+    let newSubtotal = 0;
     watchedItems.forEach((item, index) => {
-        const newTotal = item.quantity * item.unitCost;
-        if (form.getValues(`items.${index}.total`) !== newTotal) {
-            form.setValue(`items.${index}.total`, newTotal);
+        const itemTotal = (item.quantity || 0) * (item.unitCost || 0);
+        newSubtotal += itemTotal;
+        if (form.getValues(`items.${index}.total`) !== itemTotal) {
+            form.setValue(`items.${index}.total`, itemTotal, { shouldValidate: true });
         }
     });
-  }, [watchedItems, form]);
+
+    if (form.getValues('subtotal') !== newSubtotal) {
+        form.setValue('subtotal', newSubtotal, { shouldValidate: true });
+    }
+
+    const newTotal = newSubtotal + (watchedShipping || 0);
+    if (form.getValues('total') !== newTotal) {
+        form.setValue('total', newTotal, { shouldValidate: true });
+    }
+  }, [watchedItems, watchedShipping, form]);
+
 
   async function onSubmit(values: PurchaseOrderFormValues) {
     if (!settings?.suppliers) return;
@@ -102,9 +110,9 @@ export function PurchaseOrderForm({ po }: { po?: PurchaseOrder }) {
             deliveryDate: values.deliveryDate,
             items: values.items,
             notes: values.notes,
-            subtotal: subtotal,
+            subtotal: values.subtotal,
             shipping: values.shipping,
-            total: total,
+            total: values.total,
             status: 'Draft',
             createdAt: serverTimestamp(),
         }
@@ -282,7 +290,7 @@ export function PurchaseOrderForm({ po }: { po?: PurchaseOrder }) {
                                         <FormItem>
                                         <FormLabel>Total (₦)</FormLabel>
                                         <FormControl>
-                                            <Input type="number" readOnly {...field} value={form.getValues(`items.${index}.quantity`) * form.getValues(`items.${index}.unitCost`)} />
+                                            <Input type="number" readOnly {...field} />
                                         </FormControl>
                                         </FormItem>
                                     )}
@@ -337,7 +345,7 @@ export function PurchaseOrderForm({ po }: { po?: PurchaseOrder }) {
                 <CardContent className="space-y-4">
                     <div className="flex justify-between text-sm">
                         <span className="text-muted-foreground">Subtotal</span>
-                        <span>₦{subtotal.toLocaleString()}</span>
+                        <span>₦{form.getValues('subtotal').toLocaleString()}</span>
                     </div>
                     
                     <FormField
@@ -359,7 +367,7 @@ export function PurchaseOrderForm({ po }: { po?: PurchaseOrder }) {
                     <Separator />
                     <div className="flex justify-between font-bold text-lg">
                         <span>Total</span>
-                        <span>₦{total.toLocaleString()}</span>
+                        <span>₦{form.getValues('total').toLocaleString()}</span>
                     </div>
                 </CardContent>
                 <CardFooter>
