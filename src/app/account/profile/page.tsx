@@ -322,7 +322,7 @@ export default function ProfilePage() {
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <div className="space-y-2">
-                        <Label htmlFor="delete-confirm-password">Password</Label>
+                        <FormLabel htmlFor="delete-confirm-password">Password</FormLabel>
                         <Input 
                             id="delete-confirm-password"
                             type="password"
@@ -346,3 +346,5 @@ export default function ProfilePage() {
     </div>
   )
 }
+
+    
