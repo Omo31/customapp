@@ -25,11 +25,12 @@ import { useState } from "react";
 import { Pagination, PaginationContent, PaginationItem, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 import { useRouter } from "next/navigation";
 import { usePagination } from "@/hooks/use-pagination";
+import ProtectedRoute from "@/components/auth/protected-route";
 
 
 const PAGE_SIZE = 10;
 
-export default function AdminUsersPage() {
+function AdminUsersContent() {
   const db = useFirestore();
   const { toast } = useToast();
   const router = useRouter();
@@ -250,4 +251,12 @@ export default function AdminUsersPage() {
       </Card>
     </div>
   );
+}
+
+export default function AdminUsersPage() {
+    return (
+        <ProtectedRoute requiredRole="users">
+            <AdminUsersContent />
+        </ProtectedRoute>
+    )
 }

@@ -4,8 +4,9 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { TransactionsLedger } from '@/components/admin/transactions-ledger';
 import { ExpensesManager } from '@/components/admin/expenses-manager';
+import ProtectedRoute from '@/components/auth/protected-route';
 
-export default function AdminAccountingPage() {
+function AdminAccountingContent() {
   return (
     <div className="space-y-6">
       <div>
@@ -28,7 +29,14 @@ export default function AdminAccountingPage() {
         </TabsContent>
       </Tabs>
     </div>
-  );
+  )
 }
 
-    
+
+export default function AdminAccountingPage() {
+  return (
+    <ProtectedRoute requiredRole="accounting">
+      <AdminAccountingContent />
+    </ProtectedRoute>
+  );
+}

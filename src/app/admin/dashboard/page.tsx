@@ -1,7 +1,8 @@
 
 import AdminDashboard from "@/components/admin/dashboard";
+import ProtectedRoute from "@/components/auth/protected-route";
 
-export default function AdminDashboardPage() {
+function AdminDashboardContent() {
   return (
     <div className="space-y-6">
         <div>
@@ -13,4 +14,12 @@ export default function AdminDashboardPage() {
         <AdminDashboard />
     </div>
   )
+}
+
+export default function AdminDashboardPage() {
+    return (
+        <ProtectedRoute requiredRole="dashboard">
+            <AdminDashboardContent />
+        </ProtectedRoute>
+    )
 }

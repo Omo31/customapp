@@ -12,10 +12,11 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { Eye, PlusCircle } from "lucide-react";
 import { usePagination } from "@/hooks/use-pagination";
+import ProtectedRoute from "@/components/auth/protected-route";
 
 const PAGE_SIZE = 10;
 
-export default function AdminPurchaseOrdersPage() {
+function AdminPurchaseOrdersContent() {
     const db = useFirestore();
     
     const { data: initialData, loading: initialLoading } = useCollection<PurchaseOrder>(db, "purchaseOrders", {
@@ -124,4 +125,12 @@ export default function AdminPurchaseOrdersPage() {
       </Card>
     </div>
   )
+}
+
+export default function AdminPurchaseOrdersPage() {
+    return (
+        <ProtectedRoute requiredRole="purchase-orders">
+            <AdminPurchaseOrdersContent />
+        </ProtectedRoute>
+    )
 }

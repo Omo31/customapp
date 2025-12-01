@@ -12,10 +12,11 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { Eye } from "lucide-react";
 import { usePagination } from "@/hooks/use-pagination";
+import ProtectedRoute from "@/components/auth/protected-route";
 
 const PAGE_SIZE = 10;
 
-export default function AdminQuotesPage() {
+function AdminQuotesContent() {
     const db = useFirestore();
     
     const { data: initialData, loading: initialLoading } = useCollection<Quote>(db, "quotes", {
@@ -114,4 +115,12 @@ export default function AdminQuotesPage() {
       </Card>
     </div>
   )
+}
+
+export default function AdminQuotesPage() {
+    return (
+        <ProtectedRoute requiredRole="quotes">
+            <AdminQuotesContent />
+        </ProtectedRoute>
+    )
 }

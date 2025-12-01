@@ -1,8 +1,9 @@
 "use client"
 
 import AdminDashboard from "@/components/admin/dashboard";
+import ProtectedRoute from "@/components/auth/protected-route";
 
-export default function AdminAnalyticsPage() {
+function AdminAnalyticsContent() {
   return (
     <div className="space-y-6">
       <div>
@@ -13,5 +14,13 @@ export default function AdminAnalyticsPage() {
       </div>
       <AdminDashboard />
     </div>
+  )
+}
+
+export default function AdminAnalyticsPage() {
+  return (
+    <ProtectedRoute requiredRole="analytics">
+      <AdminAnalyticsContent />
+    </ProtectedRoute>
   )
 }

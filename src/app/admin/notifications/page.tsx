@@ -10,10 +10,11 @@ import { Button } from "@/components/ui/button";
 import { Pagination, PaginationContent, PaginationItem, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 import { BellRing } from "lucide-react";
 import { usePagination } from "@/hooks/use-pagination";
+import ProtectedRoute from "@/components/auth/protected-route";
 
 const PAGE_SIZE = 20;
 
-export default function AdminNotificationsPage() {
+function AdminNotificationsContent() {
   const db = useFirestore();
 
   const { data: initialData, loading: initialLoading } = useCollectionGroup<Notification>(db, 'notifications', {
@@ -119,4 +120,12 @@ export default function AdminNotificationsPage() {
       </Card>
     </div>
   )
+}
+
+export default function AdminNotificationsPage() {
+    return (
+        <ProtectedRoute requiredRole="notifications">
+            <AdminNotificationsContent />
+        </ProtectedRoute>
+    )
 }

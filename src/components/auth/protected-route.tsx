@@ -4,21 +4,27 @@ import { useRouter } from 'next/navigation';
 import { useEffect, type ReactNode } from 'react';
 import { Loader2 } from 'lucide-react';
 
-export default function ProtectedRoute({ children }: { children: ReactNode }) {
-  const { user, loading } = useAuth();
+export default function ProtectedRoute({ children, requiredRole }: { children: ReactNode, requiredRole?: string }) {
+  const { user, loading, hasRole } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    if (!loading && !user) {
-      router.push('/login');
+    if (!loading) {
+      if (!user) {
+        // Not logged in, redirect to login
+        router.push('/login');
+      } else if (requiredRole && !hasRole(requiredRole)) {
+        // Logged in, but does not have the required role
+        router.push('/'); // Or redirect to an 'unauthorized' page
+      }
     }
-  }, [user, loading, router]);
+  }, [user, loading, router, requiredRole, hasRole]);
 
-  if (loading || !user) {
+  if (loading || !user || (requiredRole && !hasRole(requiredRole))) {
     return (
       <div className="flex flex-col items-center justify-center h-[calc(100vh-10rem)]">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
-        <p className="mt-4 text-muted-foreground">Loading your experience...</p>
+        <p className="mt-4 text-muted-foreground">Verifying permissions...</p>
       </div>
     );
   }

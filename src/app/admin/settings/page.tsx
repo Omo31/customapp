@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { clearCache } from './actions';
 import { useToast } from '@/hooks/use-toast';
 import { useState, useTransition } from 'react';
+import ProtectedRoute from '@/components/auth/protected-route';
 
 const settingsCategories = [
     {
@@ -72,7 +73,7 @@ function CacheManagementCard() {
 }
 
 
-export default function AdminSettingsPage() {
+function AdminSettingsContent() {
   return (
     <div className="space-y-6">
       <div>
@@ -104,4 +105,13 @@ export default function AdminSettingsPage() {
       </div>
     </div>
   );
+}
+
+
+export default function AdminSettingsPage() {
+    return (
+        <ProtectedRoute requiredRole="settings">
+            <AdminSettingsContent />
+        </ProtectedRoute>
+    )
 }
