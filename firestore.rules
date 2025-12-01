@@ -20,9 +20,9 @@ service cloud.firestore {
 
     // Secure user profiles
     match /users/{userId} {
-      allow read: if request.auth.uid == userId || isAdmin();
+      allow read: if request.auth.uid == userId || hasRole('users');
       allow create: if request.auth.uid == userId && !("roles" in request.resource.data); // Anyone can create their own profile, but cannot assign roles
-      allow update: if request.auth.uid == userId && !("roles" in request.resource.data) // Users can update their profile, but not their roles
+      allow update: if (request.auth.uid == userId && !("roles" in request.resource.data)) // Users can update their profile, but not their roles
                        || (hasRole('users') && request.resource.data.email != 'oluwagbengwumi@gmail.com'); // Admins with 'users' role can update anyone except the superadmin
     }
 
@@ -65,11 +65,6 @@ service cloud.firestore {
     match /settings/{settingId} {
       allow read: if true; // All settings are public-facing content
       allow write: if hasRole('settings'); // Only admins with the 'settings' role can change them
-    }
-    
-    // Default fallback rule (should not be reached if all paths are covered)
-    match /{document=**} {
-      allow read, write: if false;
     }
   }
 }
