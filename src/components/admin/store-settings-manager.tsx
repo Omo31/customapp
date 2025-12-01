@@ -31,11 +31,12 @@ import { type StoreSettings } from '@/types';
 import { Skeleton } from '../ui/skeleton';
 import { Textarea } from '../ui/textarea';
 import Image from 'next/image';
+import { ImageUpload } from '../ui/image-upload';
 
 const storeItemSchema = z.object({
   name: z.string().min(1, 'Item name is required.'),
   description: z.string().min(1, 'Description is required.'),
-  imageUrl: z.string().url('Must be a valid URL.'),
+  imageUrl: z.string().url('Must be a valid URL.').min(1, "Image is required."),
   price: z.string().optional(),
 });
 
@@ -124,56 +125,38 @@ export function StoreSettingsManager() {
             <div className="space-y-4">
               {fields.map((field, index) => (
                 <div key={field.id} className="p-4 border rounded-md space-y-4 relative">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
-                    <div className="relative h-24 w-24 rounded-md overflow-hidden border">
-                       <Image 
-                        src={form.watch(`items.${index}.imageUrl`) || 'https://placehold.co/100x100/e2e8f0/e2e8f0'} 
-                        alt={form.watch(`items.${index}.name`) || "Placeholder"}
-                        fill
-                        style={{ objectFit: "cover" }}
-                       />
-                    </div>
-                    <div className="md:col-span-2 space-y-4">
-                        <FormField
-                            control={form.control}
-                            name={`items.${index}.name`}
-                            render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Product Name</FormLabel>
-                                <FormControl>
-                                <Input placeholder="e.g., 'Smoked Catfish'" {...field} />
-                                </FormControl>
-                                <FormMessage />
-                            </FormItem>
-                            )}
-                        />
-                         <FormField
-                            control={form.control}
-                            name={`items.${index}.price`}
-                            render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Price</FormLabel>
-                                <FormControl>
-                                <Input placeholder="e.g., ₦5,000 or 'Market Price'" {...field} />
-                                </FormControl>
-                                <FormMessage />
-                            </FormItem>
-                            )}
-                        />
-                    </div>
-                  </div>
-                   <FormField
+                  <FormField
                     control={form.control}
                     name={`items.${index}.imageUrl`}
-                    render={({ field }) => (
-                    <FormItem>
-                        <FormLabel>Image URL</FormLabel>
-                        <FormControl>
-                        <Input placeholder="https://..." {...field} />
-                        </FormControl>
-                        <FormMessage />
-                    </FormItem>
+                    render={({ field: imageField }) => (
+                      <FormItem>
+                          <FormLabel>Product Image</FormLabel>
+                          <FormControl>
+                            <ImageUpload
+                              storagePath="product-images/"
+                              currentImageUrl={imageField.value}
+                              onUploadComplete={(url) => {
+                                imageField.onChange(url);
+                                form.trigger(`items.${index}.imageUrl`);
+                              }}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                      </FormItem>
                     )}
+                  />
+                  <FormField
+                      control={form.control}
+                      name={`items.${index}.name`}
+                      render={({ field }) => (
+                      <FormItem>
+                          <FormLabel>Product Name</FormLabel>
+                          <FormControl>
+                          <Input placeholder="e.g., 'Smoked Catfish'" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                      </FormItem>
+                      )}
                   />
                   <FormField
                     control={form.control}
@@ -187,6 +170,19 @@ export function StoreSettingsManager() {
                         <FormMessage />
                     </FormItem>
                     )}
+                  />
+                   <FormField
+                      control={form.control}
+                      name={`items.${index}.price`}
+                      render={({ field }) => (
+                      <FormItem>
+                          <FormLabel>Price</FormLabel>
+                          <FormControl>
+                          <Input placeholder="e.g., ₦5,000 or 'Market Price'" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                      </FormItem>
+                      )}
                   />
                   <Button
                     type="button"

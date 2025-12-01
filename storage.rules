@@ -1,0 +1,29 @@
+
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // Allow public read access to product images
+    match /product-images/{allPaths=**} {
+      allow read: if true;
+      allow write: if request.auth != null; // Only authenticated users can upload
+    }
+    
+    // Allow public read access to receipts
+    match /receipts/{allPaths=**} {
+      allow read: if true;
+      allow write: if request.auth != null; // Only authenticated users can upload
+    }
+
+    // Allow authenticated users to upload quote attachments to their own folder
+    match /quote-attachments/{userId}/{allPaths=**} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Fallback rule: Disallow all other reads and writes by default
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

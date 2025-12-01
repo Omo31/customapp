@@ -3,11 +3,13 @@
 
 import { getAuth, Auth } from 'firebase/auth';
 import { getFirestore, Firestore } from 'firebase/firestore';
+import { getStorage } from 'firebase/storage';
 import { app } from './config';
 
 // Export the necessary client-side Firebase instances
 export const auth = getAuth(app);
 export const db = getFirestore(app);
+export const storage = getStorage(app);
 
 // Export hooks and providers
 export * from './provider';
