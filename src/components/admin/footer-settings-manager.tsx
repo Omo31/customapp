@@ -16,6 +16,8 @@ import { doc, setDoc } from 'firebase/firestore';
 import { type FooterSettings } from '@/types';
 import { Skeleton } from '../ui/skeleton';
 import { Textarea } from '../ui/textarea';
+import { clearCache } from '@/app/admin/settings/actions';
+import { useTransition } from 'react';
 
 const formSchema = z.object({
   socialLinks: z.object({
@@ -34,6 +36,7 @@ export function FooterSettingsManager() {
   const { toast } = useToast();
   const db = useFirestore();
   const { data: settings, loading } = useDoc<FooterSettings>(db, 'settings', 'footer');
+  const [isPending, startTransition] = useTransition();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -61,9 +64,18 @@ export function FooterSettingsManager() {
       await setDoc(settingsRef, values, { merge: true });
       toast({
         title: 'Footer Settings Saved',
-        description: 'Your footer content has been updated successfully.',
+        description: 'Your footer content has been updated.',
       });
       form.reset(values);
+
+      startTransition(async () => {
+        await clearCache();
+        toast({
+            title: "Live Site Updated",
+            description: "The changes are now live for all visitors.",
+        });
+      });
+
     } catch (error) {
       console.error(error);
       toast({
@@ -207,8 +219,8 @@ export function FooterSettingsManager() {
             </div>
           </CardContent>
           <CardFooter>
-            <Button type="submit" disabled={isSubmitting || !isDirty}>
-              {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Save Footer Settings'}
+            <Button type="submit" disabled={isSubmitting || !isDirty || isPending}>
+              {(isSubmitting || isPending) ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Save Footer Settings'}
             </Button>
           </CardFooter>
         </form>

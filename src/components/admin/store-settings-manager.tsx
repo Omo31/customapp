@@ -32,6 +32,8 @@ import { Skeleton } from '../ui/skeleton';
 import { Textarea } from '../ui/textarea';
 import Image from 'next/image';
 import { ImageUpload } from '../ui/image-upload';
+import { clearCache } from '@/app/admin/settings/actions';
+import { useTransition } from 'react';
 
 const storeItemSchema = z.object({
   name: z.string().min(1, 'Item name is required.'),
@@ -52,6 +54,7 @@ export function StoreSettingsManager() {
     'settings',
     'store'
   );
+  const [isPending, startTransition] = useTransition();
 
   const form = useForm<z.infer<typeof storeSettingsSchema>>({
     resolver: zodResolver(storeSettingsSchema),
@@ -83,6 +86,15 @@ export function StoreSettingsManager() {
         description: 'Your product list has been updated successfully.',
       });
       form.reset(values); // Resets the dirty state
+
+      startTransition(async () => {
+        await clearCache();
+        toast({
+            title: "Live Site Updated",
+            description: "The changes are now live for all visitors.",
+        });
+      });
+
     } catch (error) {
       console.error(error);
       toast({
@@ -206,8 +218,8 @@ export function StoreSettingsManager() {
             </Button>
           </CardContent>
           <CardFooter>
-            <Button type="submit" className="w-full" disabled={isSubmitting || !isDirty}>
-              {isSubmitting ? (
+            <Button type="submit" className="w-full" disabled={isSubmitting || !isDirty || isPending}>
+              {(isSubmitting || isPending) ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...
                 </>

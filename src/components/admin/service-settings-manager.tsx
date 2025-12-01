@@ -15,6 +15,8 @@ import { useFirestore, useDoc } from '@/firebase';
 import { doc, setDoc } from 'firebase/firestore';
 import { type CustomOrderSettings } from '@/types';
 import { Skeleton } from '../ui/skeleton';
+import { clearCache } from '@/app/admin/settings/actions';
+import { useTransition } from 'react';
 
 const serviceSchema = z.object({
   id: z.string().min(1, 'ID is required.'),
@@ -29,6 +31,7 @@ export function ServiceSettingsManager() {
   const { toast } = useToast();
   const db = useFirestore();
   const { data: settings, loading } = useDoc<CustomOrderSettings>(db, 'settings', 'customOrder');
+  const [isPending, startTransition] = useTransition();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -59,6 +62,15 @@ export function ServiceSettingsManager() {
         description: 'Your list of optional services has been updated.',
       });
       form.reset(values);
+
+      startTransition(async () => {
+        await clearCache();
+        toast({
+            title: "Live Site Updated",
+            description: "The changes are now live for all visitors.",
+        });
+      });
+
     } catch (error) {
       console.error(error);
       toast({
@@ -149,8 +161,8 @@ export function ServiceSettingsManager() {
             >
               Add New Service
             </Button>
-            <Button type="submit" className="w-full md:w-auto" disabled={isSubmitting || !isDirty}>
-              {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Save Services'}
+            <Button type="submit" className="w-full md:w-auto" disabled={isSubmitting || !isDirty || isPending}>
+              {(isSubmitting || isPending) ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Save Services'}
             </Button>
           </CardFooter>
         </form>
