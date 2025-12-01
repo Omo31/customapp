@@ -50,6 +50,10 @@ export const useAuth = () => {
       // Superadmin gets all roles, others get an empty array.
       roles: isSuperAdmin ? allAdminRoles : [],
       createdAt: serverTimestamp(),
+      notificationPreferences: {
+        marketingEmails: false,
+        quoteAndOrderUpdates: true,
+      }
     };
 
     batch.set(userRef, userProfile, { merge: true });

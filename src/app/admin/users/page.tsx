@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { allAdminRoles } from "@/lib/roles";
-import { doc, updateDoc, DocumentData, DocumentSnapshot, query, where, or } from "firebase/firestore";
+import { doc, updateDoc, DocumentData, DocumentSnapshot, query, where, or, orderBy } from "firebase/firestore";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -36,29 +36,11 @@ export default function AdminUsersPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearchTerm] = useDebounce(searchTerm, 300);
 
-  const collectionQuery = useMemo(() => {
-    let constraints = [
-      orderBy("firstName", "asc")
-    ];
-
-    if (debouncedSearchTerm) {
-      const lowercasedTerm = debouncedSearchTerm.toLowerCase();
-      // Firestore doesn't support full-text search on multiple fields natively on the client.
-      // This is a limitation. A real-world app would use a search service like Algolia or a Cloud Function.
-      // We will filter by first name as a demonstration. A more complex query is needed for multiple fields.
-      // For this implementation, we'll keep it simple and query by email which is more unique.
-      constraints.push(where("email", ">=", lowercasedTerm));
-      constraints.push(where("email", "<=", lowercasedTerm + '\uf8ff'));
-    }
-
-    return {
-      orderBy: ["firstName", "asc"],
-      limit: PAGE_SIZE,
-      startAfter: pageHistory[currentPage - 1]
-    };
-  }, [debouncedSearchTerm, currentPage, pageHistory]);
-
-  const { data: paginatedUsers, loading, error } = useCollection<UserProfile>(db, "users", collectionQuery);
+  const { data: paginatedUsers, loading, error, lastDoc } = useCollection<UserProfile>(db, "users", {
+    orderBy: ["createdAt", "desc"],
+    limit: PAGE_SIZE,
+    startAfter: pageHistory[currentPage - 1]
+  });
 
   const filteredUsers = useMemo(() => {
     if (!paginatedUsers) return [];
@@ -79,11 +61,10 @@ export default function AdminUsersPage() {
 
 
   const handleNextPage = () => {
-    if (paginatedUsers && paginatedUsers.length === PAGE_SIZE) {
-      const lastVisible = paginatedUsers[paginatedUsers.length - 1].doc;
-      const newHistory = [...pageHistory, lastVisible];
-      setPageHistory(newHistory);
-      setCurrentPage(currentPage + 1);
+    if (lastDoc) {
+        const newHistory = [...pageHistory, lastDoc];
+        setPageHistory(newHistory);
+        setCurrentPage(currentPage + 1);
     }
   };
 
@@ -114,6 +95,10 @@ export default function AdminUsersPage() {
         description: "Cannot change the roles of the superadmin.",
         variant: "destructive"
       });
+      // We need to trigger a re-render to revert the checkbox state visually
+      // This is a bit of a hack, but it works without complex state management.
+      // A more robust solution might involve managing checkbox state separately.
+      router.refresh(); 
       return;
     }
 
@@ -298,5 +283,3 @@ export default function AdminUsersPage() {
     </div>
   );
 }
-
-    
