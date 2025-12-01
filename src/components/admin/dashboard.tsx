@@ -66,7 +66,8 @@ export default function AdminDashboard() {
 
     // 3. Get all pending orders (not date-range dependent)
     const { data: pendingOrders, loading: pendingOrdersLoading } = useCollection<Order>(db, "orders", {
-        where: ["status", "==", "Pending"]
+        where: ["status", "==", "Pending"],
+        orderBy: ["createdAt", "desc"],
     });
 
     // 4. Get recent orders for the list
