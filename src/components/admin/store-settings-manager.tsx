@@ -36,6 +36,7 @@ const storeItemSchema = z.object({
   name: z.string().min(1, 'Item name is required.'),
   description: z.string().min(1, 'Description is required.'),
   imageUrl: z.string().url('Must be a valid URL.'),
+  price: z.string().optional(),
 });
 
 const storeSettingsSchema = z.object({
@@ -146,14 +147,14 @@ export function StoreSettingsManager() {
                             </FormItem>
                             )}
                         />
-                        <FormField
+                         <FormField
                             control={form.control}
-                            name={`items.${index}.imageUrl`}
+                            name={`items.${index}.price`}
                             render={({ field }) => (
                             <FormItem>
-                                <FormLabel>Image URL</FormLabel>
+                                <FormLabel>Price</FormLabel>
                                 <FormControl>
-                                <Input placeholder="https://..." {...field} />
+                                <Input placeholder="e.g., ₦5,000 or 'Market Price'" {...field} />
                                 </FormControl>
                                 <FormMessage />
                             </FormItem>
@@ -161,6 +162,19 @@ export function StoreSettingsManager() {
                         />
                     </div>
                   </div>
+                   <FormField
+                    control={form.control}
+                    name={`items.${index}.imageUrl`}
+                    render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Image URL</FormLabel>
+                        <FormControl>
+                        <Input placeholder="https://..." {...field} />
+                        </FormControl>
+                        <FormMessage />
+                    </FormItem>
+                    )}
+                  />
                   <FormField
                     control={form.control}
                     name={`items.${index}.description`}
@@ -190,7 +204,7 @@ export function StoreSettingsManager() {
             <Button
               type="button"
               variant="outline"
-              onClick={() => append({ name: '', description: '', imageUrl: '' })}
+              onClick={() => append({ name: '', description: '', imageUrl: '', price: '' })}
             >
               Add New Product
             </Button>

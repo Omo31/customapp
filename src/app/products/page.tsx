@@ -43,7 +43,7 @@ export default function ProductsPage() {
       {!loading && storeSettings && storeSettings.items && storeSettings.items.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           {storeSettings.items.map((item, index) => (
-            <Card key={index} className="overflow-hidden transform transition-transform duration-300 hover:scale-105 hover:shadow-xl">
+            <Card key={index} className="overflow-hidden transform transition-transform duration-300 hover:scale-105 hover:shadow-xl flex flex-col">
               <CardHeader className="p-0">
                 <div className="relative h-48 w-full">
                   <Image
@@ -56,11 +56,14 @@ export default function ProductsPage() {
                   />
                 </div>
               </CardHeader>
-              <CardContent className="p-4">
+              <CardContent className="p-4 flex flex-col flex-grow">
                 <CardTitle className="text-lg font-headline mb-2">{item.name}</CardTitle>
-                <p className="text-sm text-muted-foreground line-clamp-3">
+                <p className="text-sm text-muted-foreground line-clamp-3 flex-grow">
                   {item.description}
                 </p>
+                {item.price && (
+                    <p className="font-bold text-lg mt-2">{item.price}</p>
+                )}
               </CardContent>
             </Card>
           ))}

@@ -89,6 +89,7 @@ export type StoreItem = {
   name: string;
   description: string;
   imageUrl: string;
+  price?: string;
 };
 
 export type StoreSettings = {
@@ -208,5 +209,3 @@ export type FooterSettings = {
   address?: string;
   openingHours?: string;
 };
-
-    

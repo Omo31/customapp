@@ -173,6 +173,10 @@
                 "type": "string",
                 "description": "A brief description of the product."
             },
+            "price": {
+                "type": "string",
+                "description": "The price of the product (can be a formatted string)."
+            },
             "imageUrl": {
                 "type": "string",
                 "format": "uri",
@@ -435,5 +439,3 @@
     }
   }
 }
-
-    
