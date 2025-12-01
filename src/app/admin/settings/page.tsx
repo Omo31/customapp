@@ -1,9 +1,13 @@
 
 'use client';
 
-import { Card, CardDescription, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { ArrowRight, ShoppingCart, FileText, Settings, Banknote, FileSliders } from 'lucide-react';
+import { Card, CardDescription, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
+import { ArrowRight, ShoppingCart, FileText, Settings, Banknote, FileSliders, Trash2, Loader2 } from 'lucide-react';
 import Link from 'next/link';
+import { Button } from '@/components/ui/button';
+import { clearCache } from './actions';
+import { useToast } from '@/hooks/use-toast';
+import { useState, useTransition } from 'react';
 
 const settingsCategories = [
     {
@@ -31,6 +35,42 @@ const settingsCategories = [
         icon: Banknote,
     },
 ]
+
+function CacheManagementCard() {
+    const [isPending, startTransition] = useTransition();
+    const { toast } = useToast();
+
+    const handleClearCache = () => {
+        startTransition(async () => {
+            await clearCache();
+            toast({
+                title: "Cache Cleared",
+                description: "The application's data cache has been successfully cleared.",
+            });
+        });
+    }
+
+    return (
+        <Card className="md:col-span-2 border-destructive/50">
+            <CardHeader>
+                <CardTitle className="text-base font-medium font-headline flex items-center gap-2">
+                    <Trash2 className="h-5 w-5 text-destructive" />
+                    Cache Management
+                </CardTitle>
+                 <CardDescription>
+                    Manually clear the server-side data cache for the entire application. This will force all pages to fetch fresh data from the database. Use this after making significant content changes.
+                </CardDescription>
+            </CardHeader>
+            <CardFooter>
+                <Button variant="destructive" onClick={handleClearCache} disabled={isPending}>
+                    {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Clear Server Cache
+                </Button>
+            </CardFooter>
+        </Card>
+    )
+}
+
 
 export default function AdminSettingsPage() {
   return (
@@ -60,6 +100,7 @@ export default function AdminSettingsPage() {
                 </Card>
             </Link>
         ))}
+        <CacheManagementCard />
       </div>
     </div>
   );
