@@ -45,7 +45,7 @@ export default function OrderDetailsPage({ params }: OrderDetailsPageProps) {
                     <h3 className="text-2xl font-bold font-headline tracking-tight">Order #...{orderId.slice(-6)}</h3>
                     <p className="text-muted-foreground">Review your order details and receipt.</p>
                 </div>
-                <Button variant="outline" onClick={() => generateOrderPdf(order)} disabled={!order}>
+                <Button variant="outline" onClick={() => generateOrderPdf(order)} disabled={!order?.createdAt}>
                     <Download className="mr-2 h-4 w-4" />
                     Download Receipt
                 </Button>

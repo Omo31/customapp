@@ -20,6 +20,7 @@ export default function OrdersPage() {
     const { user } = useAuth();
     const db = useFirestore();
     
+    // This is the initial fetch, which also seeds the pagination hook
     const { data: initialData, loading: initialLoading } = useCollection<Order>(db, "orders", {
         where: ["userId", "==", user?.uid || ""],
         orderBy: ["createdAt", "desc"],
@@ -35,15 +36,17 @@ export default function OrdersPage() {
       startAfter,
     } = usePagination({ data: initialData, pageSize: PAGE_SIZE });
 
-    const { data: orders, loading: paginatedLoading } = useCollection<Order>(db, "orders", {
+    // This query is now only for subsequent pages
+    const { data: paginatedOrders, loading: paginatedLoading } = useCollection<Order>(db, "orders", {
         where: ["userId", "==", user?.uid || ""],
         orderBy: ["createdAt", "desc"],
         limit: PAGE_SIZE,
         startAfter: startAfter
     });
 
-    const loading = initialLoading || paginatedLoading;
-    const currentOrders = currentPage > 1 ? orders : initialData;
+    // Determine the loading state and which data to display
+    const loading = initialLoading || (currentPage > 1 && paginatedLoading);
+    const currentOrders = currentPage > 1 ? paginatedOrders : initialData;
 
   return (
     <div className="space-y-6">
@@ -81,7 +84,7 @@ export default function OrdersPage() {
                   {currentOrders.length > 0 ? currentOrders.map(order => (
                     <TableRow key={order.id}>
                       <TableCell className="font-medium">#...{order.id?.slice(-6)}</TableCell>
-                      <TableCell>{new Date(order.createdAt?.seconds * 1000).toLocaleDateString()}</TableCell>
+                      <TableCell>{order.createdAt?.seconds ? new Date(order.createdAt.seconds * 1000).toLocaleDateString() : 'N/A'}</TableCell>
                       <TableCell><Badge>{order.status}</Badge></TableCell>
                       <TableCell className="text-right">₦{order.totalCost.toLocaleString()}</TableCell>
                       <TableCell className="text-right">
@@ -102,21 +105,23 @@ export default function OrdersPage() {
               </Table>
           )}
         </CardContent>
-         <CardFooter>
-            <Pagination>
-                <PaginationContent>
-                    <PaginationItem>
-                        <PaginationPrevious onClick={handlePreviousPage} aria-disabled={!canGoPrevious} className={!canGoPrevious ? "pointer-events-none opacity-50" : undefined} />
-                    </PaginationItem>
-                    <PaginationItem>
-                       <span className="p-2 text-sm">Page {currentPage}</span>
-                    </PaginationItem>
-                    <PaginationItem>
-                        <PaginationNext onClick={handleNextPage} aria-disabled={!canGoNext} className={!canGoNext ? "pointer-events-none opacity-50" : undefined} />
-                    </PaginationItem>
-                </PaginationContent>
-            </Pagination>
-        </CardFooter>
+         {currentOrders && currentOrders.length > 0 && (
+            <CardFooter>
+                <Pagination>
+                    <PaginationContent>
+                        <PaginationItem>
+                            <PaginationPrevious onClick={handlePreviousPage} aria-disabled={!canGoPrevious} className={!canGoPrevious ? "pointer-events-none opacity-50" : undefined} />
+                        </PaginationItem>
+                        <PaginationItem>
+                        <span className="p-2 text-sm">Page {currentPage}</span>
+                        </PaginationItem>
+                        <PaginationItem>
+                            <PaginationNext onClick={handleNextPage} aria-disabled={!canGoNext} className={!canGoNext ? "pointer-events-none opacity-50" : undefined} />
+                        </PaginationItem>
+                    </PaginationContent>
+                </Pagination>
+            </CardFooter>
+         )}
       </Card>
     </div>
   )
