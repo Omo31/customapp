@@ -78,7 +78,7 @@ export async function POST(req: NextRequest) {
 
 
             // 2. VERIFY THE TRANSACTION with Flutterwave's API to be sure
-            const verificationResponse = await verifyTransaction(transactionId);
+            const verificationResponse = await verifyTransaction(String(transactionId));
             
             if (
                 verificationResponse.status === 'success' &&

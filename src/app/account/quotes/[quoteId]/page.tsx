@@ -38,17 +38,19 @@ export default function QuoteDetailsPage({ params }: QuoteDetailsPageProps) {
     const totalCost = itemsTotal + servicesTotal + serviceCharge + shippingCost;
 
 
-    const handlePaymentSuccess = () => {
+    const handlePaymentSuccess = (response: any) => {
         // The webhook will now handle database updates.
-        // We just need to show a confirmation message and redirect.
+        // We just need to show a confirmation message and redirect to the order page.
         toast({
-            title: "Payment Processing",
-            description: "Your payment is being confirmed. You will be redirected shortly.",
+            title: "Payment Successful!",
+            description: "Your order is being created. You will be notified once it's confirmed.",
         });
         
         closePaymentModal(); 
         
-        // Redirect to the orders page where the new order will appear once the webhook is processed.
+        // The webhook will create an Order document. We can try to guess the ID,
+        // but it's better to redirect the user to a page where they can see their new order appear.
+        // Redirecting to the orders list is a good start.
         router.push(`/account/orders`);
     };
 
@@ -58,6 +60,8 @@ export default function QuoteDetailsPage({ params }: QuoteDetailsPageProps) {
         amount: totalCost,
         currency: 'NGN',
         payment_options: 'card,mobilemoney,ussd',
+        // The redirect_url is a fallback for if the modal closes unexpectedly.
+        // The primary success handling is in the callback.
         redirect_url: `${typeof window !== 'undefined' ? window.location.origin : ''}/account/orders`,
         customer: {
             email: user?.email || '',
@@ -183,8 +187,8 @@ export default function QuoteDetailsPage({ params }: QuoteDetailsPageProps) {
                     <CardFooter>
                          <Button className="w-full" size="lg" onClick={() => {
                             handleFlutterwavePayment({
-                                callback: () => {
-                                   handlePaymentSuccess();
+                                callback: (response) => {
+                                   handlePaymentSuccess(response);
                                 },
                                 onClose: () => {
                                     // Don't show a toast on close, it's not an error.
