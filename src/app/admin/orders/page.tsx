@@ -7,42 +7,39 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useState } from "react";
-import { DocumentData, DocumentSnapshot } from "firebase/firestore";
 import { Pagination, PaginationContent, PaginationItem, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { Eye } from "lucide-react";
+import { usePagination } from "@/hooks/use-pagination";
 
 const PAGE_SIZE = 10;
 
 export default function AdminOrdersPage() {
     const db = useFirestore();
-    const [currentPage, setCurrentPage] = useState(1);
-    const [pageHistory, setPageHistory] = useState<(DocumentSnapshot<DocumentData> | null)[]>([null]);
     
-    const { data: orders, loading, lastDoc } = useCollection<Order>(db, "orders", {
+    const { data: initialData, loading: initialLoading } = useCollection<Order>(db, "orders", {
         orderBy: ["createdAt", "desc"],
         limit: PAGE_SIZE,
-        startAfter: pageHistory[currentPage - 1]
     });
 
-    const handleNextPage = () => {
-      if (lastDoc) {
-        const newHistory = [...pageHistory, lastDoc];
-        setPageHistory(newHistory);
-        setCurrentPage(currentPage + 1);
-      }
-    };
-  
-    const handlePreviousPage = () => {
-      if (currentPage > 1) {
-        setPageHistory(pageHistory.slice(0, -1));
-        setCurrentPage(currentPage - 1);
-      }
-    };
-  
-    const canGoNext = orders && orders.length === PAGE_SIZE;
+    const {
+      currentPage,
+      handleNextPage,
+      handlePreviousPage,
+      canGoNext,
+      canGoPrevious,
+      startAfter,
+    } = usePagination({ data: initialData, pageSize: PAGE_SIZE });
+
+    const { data: orders, loading: paginatedLoading } = useCollection<Order>(db, "orders", {
+        orderBy: ["createdAt", "desc"],
+        limit: PAGE_SIZE,
+        startAfter: startAfter
+    });
+    
+    const loading = initialLoading || paginatedLoading;
+    const currentOrders = currentPage > 1 ? orders : initialData;
 
   return (
     <div className="space-y-6">
@@ -63,7 +60,7 @@ export default function AdminOrdersPage() {
                 ))}
               </div>
           )}
-          {!loading && orders && (
+          {!loading && currentOrders && (
              <Table>
                 <TableHeader>
                   <TableRow>
@@ -75,7 +72,7 @@ export default function AdminOrdersPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {orders.length > 0 ? orders.map(order => (
+                  {currentOrders.length > 0 ? currentOrders.map(order => (
                     <TableRow key={order.id}>
                       <TableCell className="font-medium">{order.customerName}</TableCell>
                       <TableCell>{new Date(order.createdAt?.seconds * 1000).toLocaleDateString()}</TableCell>
@@ -103,7 +100,7 @@ export default function AdminOrdersPage() {
             <Pagination>
                 <PaginationContent>
                     <PaginationItem>
-                        <PaginationPrevious onClick={handlePreviousPage} aria-disabled={currentPage === 1} className={currentPage === 1 ? "pointer-events-none opacity-50" : undefined} />
+                        <PaginationPrevious onClick={handlePreviousPage} aria-disabled={!canGoPrevious} className={!canGoPrevious ? "pointer-events-none opacity-50" : undefined} />
                     </PaginationItem>
                     <PaginationItem>
                        <span className="p-2 text-sm">Page {currentPage}</span>

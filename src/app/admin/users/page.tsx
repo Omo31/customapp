@@ -14,16 +14,17 @@ import {
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { allAdminRoles } from "@/lib/roles";
-import { doc, updateDoc, DocumentData, DocumentSnapshot } from "firebase/firestore";
+import { doc, updateDoc } from "firebase/firestore";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
 import { Label } from "@/components/ui/label";
 import { Eye, Download } from "lucide-react";
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { Pagination, PaginationContent, PaginationItem, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 import { useRouter } from "next/navigation";
+import { usePagination } from "@/hooks/use-pagination";
 
 
 const PAGE_SIZE = 10;
@@ -32,36 +33,33 @@ export default function AdminUsersPage() {
   const db = useFirestore();
   const { toast } = useToast();
   const router = useRouter();
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageHistory, setPageHistory] = useState<(DocumentSnapshot<DocumentData> | null)[]>([null]);
 
-  const { data: users, loading, error, lastDoc } = useCollection<UserProfile>(db, "users", {
+  const { data: initialData, loading: initialLoading } = useCollection<UserProfile>(db, "users", {
     orderBy: ["createdAt", "desc"],
     limit: PAGE_SIZE,
-    startAfter: pageHistory[currentPage - 1]
+  });
+
+  const {
+    currentPage,
+    handleNextPage,
+    handlePreviousPage,
+    canGoNext,
+    canGoPrevious,
+    startAfter,
+  } = usePagination({ data: initialData, pageSize: PAGE_SIZE });
+
+  const { data: users, loading: paginatedLoading } = useCollection<UserProfile>(db, "users", {
+    orderBy: ["createdAt", "desc"],
+    limit: PAGE_SIZE,
+    startAfter: startAfter
   });
   
   const { data: allUsers, loading: allUsersLoading } = useCollection<UserProfile>(db, "users", {
     orderBy: ["createdAt", "desc"]
   });
 
-
-  const handleNextPage = () => {
-    if (lastDoc) {
-        const newHistory = [...pageHistory, lastDoc];
-        setPageHistory(newHistory);
-        setCurrentPage(currentPage + 1);
-    }
-  };
-
-  const handlePreviousPage = () => {
-    if (currentPage > 1) {
-      setPageHistory(pageHistory.slice(0, -1));
-      setCurrentPage(currentPage - 1);
-    }
-  };
-  
-  const canGoNext = users && users.length === PAGE_SIZE;
+  const loading = initialLoading || paginatedLoading;
+  const currentUsers = currentPage > 1 ? users : initialData;
 
 
   const handleRoleChange = async (
@@ -173,12 +171,7 @@ export default function AdminUsersPage() {
               ))}
             </div>
           )}
-          {error && (
-            <p className="text-destructive">
-              Error loading users: {error.message}
-            </p>
-          )}
-          {!loading && !error && (
+          {!loading && currentUsers && (
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
@@ -190,8 +183,8 @@ export default function AdminUsersPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {users && users.length > 0 ? (
-                    users.map((user) => (
+                  {currentUsers.length > 0 ? (
+                    currentUsers.map((user) => (
                       <TableRow key={user.id}>
                         <TableCell className="font-medium">
                           <div className="font-medium">{user.firstName} {user.lastName}</div>
@@ -243,7 +236,7 @@ export default function AdminUsersPage() {
             <Pagination>
                 <PaginationContent>
                     <PaginationItem>
-                        <PaginationPrevious onClick={handlePreviousPage} aria-disabled={currentPage === 1} className={currentPage === 1 ? "pointer-events-none opacity-50" : undefined} />
+                        <PaginationPrevious onClick={handlePreviousPage} aria-disabled={!canGoPrevious} className={!canGoPrevious ? "pointer-events-none opacity-50" : undefined} />
                     </PaginationItem>
                     <PaginationItem>
                        <span className="p-2 text-sm">Page {currentPage}</span>

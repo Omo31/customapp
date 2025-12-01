@@ -1,7 +1,7 @@
 
 "use client"
 
-import { useFirestore, useCollection, useDoc } from "@/firebase";
+import { useFirestore, useCollection } from "@/firebase";
 import { useAuth } from "@/hooks/use-auth";
 import { type Notification, type UserProfile } from "@/types";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
@@ -9,7 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
-import { DocumentData, DocumentSnapshot, doc, updateDoc } from "firebase/firestore";
+import { doc, updateDoc } from "firebase/firestore";
 import { Pagination, PaginationContent, PaginationItem, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 import { BellRing, Check, Loader2 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
@@ -19,7 +19,8 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Form, FormControl, FormField, FormItem } from "@/components/ui/form";
-
+import { useDoc } from "@/firebase/firestore/use-doc";
+import { usePagination } from "@/hooks/use-pagination";
 
 const PAGE_SIZE = 10;
 
@@ -32,18 +33,26 @@ export default function NotificationsPage() {
   const { user } = useAuth();
   const db = useFirestore();
   const { toast } = useToast();
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageHistory, setPageHistory] = useState<(DocumentSnapshot<DocumentData> | null)[]>([null]);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
 
   const { data: notifications, loading } = useCollection<Notification>(db, `users/${user?.uid}/notifications`, {
       orderBy: ["createdAt", "desc"],
       limit: PAGE_SIZE,
-      startAfter: pageHistory[currentPage - 1],
   });
-  
-  const { data: allNotifications } = useCollection<Notification>(db, `users/${user?.uid}/notifications`, {
+
+  const {
+    currentPage,
+    handleNextPage,
+    handlePreviousPage,
+    canGoNext,
+    canGoPrevious,
+    startAfter,
+  } = usePagination({ data: notifications, pageSize: PAGE_SIZE });
+
+   const { data: paginatedNotifications, loading: paginatedLoading } = useCollection<Notification>(db, `users/${user?.uid}/notifications`, {
       orderBy: ["createdAt", "desc"],
+      limit: PAGE_SIZE,
+      startAfter: startAfter,
   });
 
   const { data: userProfile, loading: profileLoading } = useDoc<UserProfile>(db, 'users', user?.uid);
@@ -81,24 +90,6 @@ export default function NotificationsPage() {
     }
   };
 
-
-  const handleNextPage = () => {
-    if (allNotifications && (currentPage * PAGE_SIZE < allNotifications.length)) {
-      const newHistory = [...pageHistory, allNotifications[currentPage*PAGE_SIZE -1].doc as DocumentSnapshot<DocumentData>];
-      setPageHistory(newHistory);
-      setCurrentPage(currentPage + 1);
-    }
-  };
-
-  const handlePreviousPage = () => {
-    if (currentPage > 1) {
-      setPageHistory(pageHistory.slice(0, -1));
-      setCurrentPage(currentPage - 1);
-    }
-  };
-
-  const canGoNext = allNotifications && (currentPage * PAGE_SIZE < allNotifications.length);
-
   async function onPreferencesSubmit(values: z.infer<typeof preferencesSchema>) {
     if (!user) return;
     try {
@@ -121,6 +112,8 @@ export default function NotificationsPage() {
     }
   }
 
+  const currentLoading = loading || paginatedLoading;
+  const currentNotifications = currentPage > 1 ? paginatedNotifications : notifications;
 
   return (
     <div className="space-y-6">
@@ -137,7 +130,7 @@ export default function NotificationsPage() {
           <CardDescription>All your notifications are listed below. Unread notifications are marked with a blue dot.</CardDescription>
         </CardHeader>
         <CardContent>
-          {loading && (
+          {currentLoading && (
             <div className="space-y-4">
               {[...Array(5)].map((_, i) => (
                 <div key={i} className="flex items-center space-x-4">
@@ -150,9 +143,9 @@ export default function NotificationsPage() {
               ))}
             </div>
           )}
-          {!loading && notifications && notifications.length > 0 && (
+          {!currentLoading && currentNotifications && currentNotifications.length > 0 && (
             <div className="space-y-1">
-              {notifications.map((notif) => (
+              {currentNotifications.map((notif) => (
                 <div key={notif.id} className="flex items-center justify-between p-3 hover:bg-secondary rounded-lg transition-colors">
                   <div className="flex items-center gap-4">
                      {!notif.isRead && <div className="h-2.5 w-2.5 rounded-full bg-blue-500" />}
@@ -186,7 +179,7 @@ export default function NotificationsPage() {
               ))}
             </div>
           )}
-          {!loading && (!notifications || notifications.length === 0) && (
+          {!currentLoading && (!currentNotifications || currentNotifications.length === 0) && (
              <div className="text-center py-12">
                 <BellRing className="mx-auto h-12 w-12 text-muted-foreground" />
                 <h3 className="mt-4 text-lg font-semibold">No New Notifications</h3>
@@ -194,12 +187,12 @@ export default function NotificationsPage() {
             </div>
           )}
         </CardContent>
-        {notifications && notifications.length > 0 && (
+        {currentNotifications && currentNotifications.length > 0 && (
             <CardFooter>
                 <Pagination>
                     <PaginationContent>
                         <PaginationItem>
-                            <PaginationPrevious onClick={handlePreviousPage} aria-disabled={currentPage === 1} className={currentPage === 1 ? "pointer-events-none opacity-50" : undefined} />
+                            <PaginationPrevious onClick={handlePreviousPage} aria-disabled={!canGoPrevious} className={!canGoPrevious ? "pointer-events-none opacity-50" : undefined} />
                         </PaginationItem>
                         <PaginationItem>
                         <span className="p-2 text-sm">Page {currentPage}</span>

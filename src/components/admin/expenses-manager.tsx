@@ -8,7 +8,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useState } from "react";
-import { DocumentData, DocumentSnapshot } from "firebase/firestore";
 import { Pagination, PaginationContent, PaginationItem, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 import { Button } from "@/components/ui/button";
 import { PlusCircle, ExternalLink } from "lucide-react";
@@ -22,37 +21,36 @@ import {
 } from "@/components/ui/dialog"
 import { ExpenseForm } from "./expense-form";
 import Link from "next/link";
+import { usePagination } from "@/hooks/use-pagination";
 
 const PAGE_SIZE = 10;
 
 export function ExpensesManager() {
     const db = useFirestore();
-    const [currentPage, setCurrentPage] = useState(1);
-    const [pageHistory, setPageHistory] = useState<(DocumentSnapshot<DocumentData> | null)[]>([null]);
     const [isFormOpen, setIsFormOpen] = useState(false);
     
-    const { data: expenses, loading, lastDoc } = useCollection<Expense>(db, "expenses", {
+    const { data: initialData, loading: initialLoading } = useCollection<Expense>(db, "expenses", {
         orderBy: ["date", "desc"],
         limit: PAGE_SIZE,
-        startAfter: pageHistory[currentPage - 1]
     });
 
-    const handleNextPage = () => {
-      if (lastDoc) {
-        const newHistory = [...pageHistory, lastDoc];
-        setPageHistory(newHistory);
-        setCurrentPage(currentPage + 1);
-      }
-    };
-  
-    const handlePreviousPage = () => {
-      if (currentPage > 1) {
-        setPageHistory(pageHistory.slice(0, -1));
-        setCurrentPage(currentPage - 1);
-      }
-    };
-  
-    const canGoNext = expenses && expenses.length === PAGE_SIZE;
+    const {
+      currentPage,
+      handleNextPage,
+      handlePreviousPage,
+      canGoNext,
+      canGoPrevious,
+      startAfter,
+    } = usePagination({ data: initialData, pageSize: PAGE_SIZE });
+
+    const { data: expenses, loading: paginatedLoading } = useCollection<Expense>(db, "expenses", {
+        orderBy: ["date", "desc"],
+        limit: PAGE_SIZE,
+        startAfter: startAfter
+    });
+
+    const loading = initialLoading || paginatedLoading;
+    const currentExpenses = currentPage > 1 ? expenses : initialData;
 
   return (
     <Card>
@@ -87,7 +85,7 @@ export function ExpensesManager() {
               ))}
             </div>
         )}
-        {!loading && expenses && (
+        {!loading && currentExpenses && (
            <Table>
               <TableHeader>
                 <TableRow>
@@ -99,7 +97,7 @@ export function ExpensesManager() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {expenses.length > 0 ? expenses.map(expense => (
+                {currentExpenses.length > 0 ? currentExpenses.map(expense => (
                   <TableRow key={expense.id}>
                     <TableCell className="font-medium">{expense.description}</TableCell>
                     <TableCell><Badge variant="outline">{expense.category}</Badge></TableCell>
@@ -126,12 +124,12 @@ export function ExpensesManager() {
             </Table>
         )}
       </CardContent>
-      {expenses && expenses.length > 0 && (
+      {currentExpenses && currentExpenses.length > 0 && (
        <CardFooter>
           <Pagination>
               <PaginationContent>
                   <PaginationItem>
-                      <PaginationPrevious onClick={handlePreviousPage} aria-disabled={currentPage === 1} className={currentPage === 1 ? "pointer-events-none opacity-50" : undefined} />
+                      <PaginationPrevious onClick={handlePreviousPage} aria-disabled={!canGoPrevious} className={!canGoPrevious ? "pointer-events-none opacity-50" : undefined} />
                   </PaginationItem>
                   <PaginationItem>
                      <span className="p-2 text-sm">Page {currentPage}</span>
