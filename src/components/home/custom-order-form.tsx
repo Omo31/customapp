@@ -62,49 +62,49 @@ export function CustomOrderForm() {
 
     setIsSubmitting(true)
 
-    try {
-      const quotesCollection = collection(db, "quotes");
-      const newQuote = {
-        userId: user.uid,
-        customerName: user.displayName || 'N/A',
-        customerEmail: user.email || 'N/A',
-        customerPhone: '', // This will be part of the advanced form
-        items: [
-            { name: values.itemName, quantity: values.quantity || '1', unit: 'Custom' , customUnit: values.description }
-        ],
-        services: [],
-        additionalNotes: values.description,
-        deliveryOption: 'quote',
-        status: 'Pending Review',
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-      };
-      
-      const docRef = await addDoc(quotesCollection, newQuote);
-
-      toast({
-        title: "Request Submitted!",
-        description: "We've received your special request and will get back to you shortly.",
-      })
-      form.reset()
-      router.push(`/account/quotes/${docRef.id}`);
-
-    } catch (error) {
-        console.error("Error submitting quote:", error);
-        const permissionError = new FirestorePermissionError({
-            path: `quotes`,
-            operation: 'create',
-            requestResourceData: values
+    const quotesCollection = collection(db, "quotes");
+    const newQuote = {
+      userId: user.uid,
+      customerName: user.displayName || 'N/A',
+      customerEmail: user.email || 'N/A',
+      customerPhone: '', // This will be part of the advanced form
+      items: [
+          { name: values.itemName, quantity: values.quantity || '1', unit: 'Custom' , customUnit: values.description }
+      ],
+      services: [],
+      additionalNotes: values.description,
+      deliveryOption: 'quote',
+      status: 'Pending Review',
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    };
+    
+    addDoc(quotesCollection, newQuote)
+        .then((docRef) => {
+            toast({
+                title: "Request Submitted!",
+                description: "We've received your special request and will get back to you shortly.",
+            });
+            form.reset();
+            router.push(`/account/quotes/${docRef.id}`);
+        })
+        .catch(async (serverError) => {
+            console.error("Error submitting quote:", serverError);
+            const permissionError = new FirestorePermissionError({
+                path: `quotes`,
+                operation: 'create',
+                requestResourceData: values
+            });
+            errorEmitter.emit('permission-error', permissionError);
+            toast({
+                title: "Submission Failed",
+                description: "Could not submit your request. Please try again.",
+                variant: 'destructive',
+            });
+        })
+        .finally(() => {
+            setIsSubmitting(false);
         });
-        errorEmitter.emit('permission-error', permissionError);
-        toast({
-            title: "Submission Failed",
-            description: "Could not submit your request. Please try again.",
-            variant: 'destructive',
-        });
-    } finally {
-        setIsSubmitting(false)
-    }
   }
 
   return (

@@ -122,66 +122,64 @@ export function AdvancedCustomOrderForm() {
       return;
     }
 
-    try {
-        const batch = writeBatch(db);
+    const batch = writeBatch(db);
 
-        // 1. Create the new quote
-        const quoteRef = doc(collection(db, "quotes"));
-        const newQuoteData = {
-          ...values,
-          userId: user.uid,
-          shippingCost: watchDeliveryOption === 'delivery-lagos' ? selectedLgaFee : 0,
-          status: 'Pending Review',
-          createdAt: serverTimestamp(),
-          updatedAt: serverTimestamp(),
-        };
-        batch.set(quoteRef, newQuoteData);
+    // 1. Create the new quote
+    const quoteRef = doc(collection(db, "quotes"));
+    const newQuoteData = {
+      ...values,
+      userId: user.uid,
+      shippingCost: watchDeliveryOption === 'delivery-lagos' ? selectedLgaFee : 0,
+      status: 'Pending Review',
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    };
+    batch.set(quoteRef, newQuoteData);
 
-        // 2. Create notification for the user
-        const userNotifRef = doc(collection(db, `users/${user.uid}/notifications`));
-        batch.set(userNotifRef, {
-            userId: user.uid,
-            title: "Quote Request Received",
-            description: `We've received your request #${quoteRef.id.slice(-6)} and will review it shortly.`,
-            href: `/account/quotes/${quoteRef.id}`,
-            isRead: false,
-            createdAt: serverTimestamp(),
-        });
-        
-        // 3. Create notification for admins by creating a doc in the root `notifications` collection
-        const adminNotifRef = doc(collection(db, `notifications`));
-        batch.set(adminNotifRef, {
-            userId: 'admin', // Generic ID for admin-facing notifications
-            title: "New Quote Request",
-            description: `A new quote #${quoteRef.id.slice(-6)} was submitted by ${values.customerName}.`,
-            href: `/admin/quotes/${quoteRef.id}`,
-            isRead: false,
-            createdAt: serverTimestamp(),
-        });
+    // 2. Create notification for the user
+    const userNotifRef = doc(collection(db, `users/${user.uid}/notifications`));
+    batch.set(userNotifRef, {
+        userId: user.uid,
+        title: "Quote Request Received",
+        description: `We've received your request #${quoteRef.id.slice(-6)} and will review it shortly.`,
+        href: `/account/quotes/${quoteRef.id}`,
+        isRead: false,
+        createdAt: serverTimestamp(),
+    });
+    
+    // 3. Create notification for admins by creating a doc in the root `notifications` collection
+    const adminNotifRef = doc(collection(db, `notifications`));
+    batch.set(adminNotifRef, {
+        userId: 'admin', // Generic ID for admin-facing notifications
+        title: "New Quote Request",
+        description: `A new quote #${quoteRef.id.slice(-6)} was submitted by ${values.customerName}.`,
+        href: `/admin/quotes/${quoteRef.id}`,
+        isRead: false,
+        createdAt: serverTimestamp(),
+    });
 
-        await batch.commit();
-
-        toast({
-            title: "Quote Request Submitted!",
-            description: "We've received your request. You can track its status on your 'My Quotes' page.",
+    await batch.commit()
+        .then(() => {
+            toast({
+                title: "Quote Request Submitted!",
+                description: "We've received your request. You can track its status on your 'My Quotes' page.",
+            });
+            router.push(`/account/quotes`);
+        })
+        .catch(async (serverError) => {
+            console.error("Error submitting quote:", serverError);
+            const permissionError = new FirestorePermissionError({
+                path: `quotes`,
+                operation: 'create',
+                requestResourceData: values
+            });
+            errorEmitter.emit('permission-error', permissionError);
+            toast({
+                title: "Submission Failed",
+                description: "Could not submit your quote request. Please check your permissions and try again.",
+                variant: "destructive"
+            });
         });
-        
-        router.push(`/account/quotes`);
-
-    } catch (error) {
-        console.error("Error submitting quote:", error);
-         const permissionError = new FirestorePermissionError({
-            path: `quotes`,
-            operation: 'create',
-            requestResourceData: values
-        });
-        errorEmitter.emit('permission-error', permissionError);
-        toast({
-            title: "Submission Failed",
-            description: "Could not submit your quote request. Please try again.",
-            variant: "destructive"
-        });
-    }
   }
 
   if (settingsLoading) {

@@ -1,4 +1,5 @@
 
+
 "use client"
 
 import * as React from "react"
@@ -98,51 +99,50 @@ export default function AdminQuoteDetailsPage({ params }: AdminQuoteDetailsPageP
     async function onSubmit(values: z.infer<typeof formSchema>) {
         if (!quote) return;
 
-        try {
-            const batch = writeBatch(db);
+        const batch = writeBatch(db);
 
-            // 1. Update the quote document with prices and new status
-            const quoteRef = doc(db, "quotes", quoteId);
-            batch.update(quoteRef, {
-                status: "Quote Ready",
-                items: values.items,
-                pricedServices: values.serviceCosts,
-                shippingCost: values.shippingCost,
-                updatedAt: serverTimestamp(),
-            });
+        // 1. Update the quote document with prices and new status
+        const quoteRef = doc(db, "quotes", quoteId);
+        batch.update(quoteRef, {
+            status: "Quote Ready",
+            items: values.items,
+            pricedServices: values.serviceCosts,
+            shippingCost: values.shippingCost,
+            updatedAt: serverTimestamp(),
+        });
 
-            // 2. Create a notification for the user
-            const userNotifRef = doc(collection(db, `users/${quote.userId}/notifications`));
-            batch.set(userNotifRef, {
-                userId: quote.userId,
-                title: "Your Quote is Ready!",
-                description: `Your quote request #${quoteId.slice(-6)} has been updated with pricing.`,
-                href: `/account/quotes/${quoteId}`,
-                isRead: false,
-                createdAt: serverTimestamp(),
-            });
+        // 2. Create a notification for the user
+        const userNotifRef = doc(collection(db, `users/${quote.userId}/notifications`));
+        batch.set(userNotifRef, {
+            userId: quote.userId,
+            title: "Your Quote is Ready!",
+            description: `Your quote request #${quoteId.slice(-6)} has been updated with pricing.`,
+            href: `/account/quotes/${quoteId}`,
+            isRead: false,
+            createdAt: serverTimestamp(),
+        });
 
-            await batch.commit();
-
-            toast({
-                title: "Quote Sent!",
-                description: `The user has been notified that their quote is ready for review.`,
+        await batch.commit()
+            .then(() => {
+                toast({
+                    title: "Quote Sent!",
+                    description: `The user has been notified that their quote is ready for review.`,
+                });
+            })
+            .catch(async (serverError) => {
+                console.error("Error sending quote:", serverError);
+                const permissionError = new FirestorePermissionError({
+                    path: `quotes/${quoteId}`,
+                    operation: 'update',
+                    requestResourceData: values
+                });
+                errorEmitter.emit('permission-error', permissionError);
+                toast({
+                    title: "Error",
+                    description: "Could not send the quote. Please check your permissions and try again.",
+                    variant: "destructive"
+                });
             });
-            
-        } catch (error) {
-            console.error("Error sending quote:", error);
-            const permissionError = new FirestorePermissionError({
-                path: `quotes/${quoteId}`,
-                operation: 'update',
-                requestResourceData: values
-            });
-            errorEmitter.emit('permission-error', permissionError);
-            toast({
-                title: "Error",
-                description: "Could not send the quote. Please check your permissions and try again.",
-                variant: "destructive"
-            });
-        }
     }
     
     const { isSubmitting } = form.formState;
