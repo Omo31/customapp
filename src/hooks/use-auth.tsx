@@ -72,11 +72,24 @@ export const useAuth = () => {
     };
     batch.set(userNotifRef, userNotif);
 
+    // Create a notification for admins in the root collection
+    const adminNotifRef = doc(collection(db, `notifications`));
+    const adminNotif: Omit<Notification, 'id'> = {
+        userId: 'admin', // Generic ID for admin-facing notifications
+        title: "New User Joined",
+        description: `${firstName} ${lastName} (${firebaseUser.email}) just signed up.`,
+        href: `/admin/users/${firebaseUser.uid}`,
+        isRead: false,
+        createdAt: serverTimestamp(),
+    };
+    batch.set(adminNotifRef, adminNotif);
+
+
     batch.commit().catch(async (serverError) => {
         const permissionError = new FirestorePermissionError({
             path: `batch write for user ${firebaseUser.uid}`,
             operation: 'create',
-            requestResourceData: { userProfile, userNotif }
+            requestResourceData: { userProfile, userNotif, adminNotif }
         });
         errorEmitter.emit('permission-error', permissionError);
     });
