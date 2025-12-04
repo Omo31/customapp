@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useAuth } from '@/hooks/use-auth';
@@ -18,26 +19,39 @@ import { SidebarTrigger } from '@/components/ui/sidebar';
 import { useFirestore, useCollection } from '@/firebase';
 import { type Notification } from '@/types';
 import { Badge } from '../ui/badge';
+import { useMemo } from 'react';
 
 export default function Header() {
-  const { user, logout, isAdmin } = useAuth();
+  const { user, logout, isAdmin, roles } = useAuth();
   const db = useFirestore();
 
-  // Query for user-specific notifications
+  // Query for user-specific notifications in their subcollection
   const { data: userNotifications } = useCollection<Notification>(
     db,
     user && !isAdmin ? `users/${user.uid}/notifications` : '',
     { where: ["isRead", "==", false] }
   );
 
-  // Corrected query for admin-specific notifications from the root collection
+  // Memoize the 'in' query array for admin roles to prevent re-renders
+  const adminNotificationRoles = useMemo(() => {
+    // Ensure roles are defined and not empty before creating the query
+    return roles && roles.length > 0 ? roles : ['']; 
+  }, [roles]);
+
+  // Query for admin notifications where the 'role' field matches one of the admin's roles
   const { data: adminNotifications } = useCollection<Notification>(
     db,
     user && isAdmin ? 'notifications' : '',
-    { where: ["isRead", "==", false] }
+    { where: ["role", "in", adminNotificationRoles] }
   );
+  
+  // Further filter admin notifications on the client for `isRead: false`
+  const unreadAdminNotifications = useMemo(() => {
+    return adminNotifications?.filter(n => !n.isRead) || [];
+  }, [adminNotifications]);
 
-  const unreadCount = isAdmin ? (adminNotifications?.length || 0) : (userNotifications?.length || 0);
+
+  const unreadCount = isAdmin ? unreadAdminNotifications.length : (userNotifications?.length || 0);
   
   return (
     <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">

@@ -1,4 +1,5 @@
 
+
 "use client";
 import { useUser } from "@/firebase";
 import { 
@@ -72,10 +73,11 @@ export const useAuth = () => {
     };
     batch.set(userNotifRef, userNotif);
 
-    // Create a notification for admins in the root collection
+    // Create a notification for admins with the 'users' role
     const adminNotifRef = doc(collection(db, `notifications`));
     const adminNotif: Omit<Notification, 'id'> = {
-        userId: 'admin', // Generic ID for admin-facing notifications
+        userId: 'admin-users',
+        role: 'users',
         title: "New User Joined",
         description: `${firstName} ${lastName} (${firebaseUser.email}) just signed up.`,
         href: `/admin/users/${firebaseUser.uid}`,

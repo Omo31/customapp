@@ -80,12 +80,13 @@ export type UserProfile = {
 
 export type Notification = {
     id?: string;
-    userId: string;
+    userId: string; // Can be a user ID or a role like 'admin-users'
     title: string;
     description: string;
     href?: string;
     isRead: boolean;
     createdAt: any; // Firestore Timestamp
+    role?: string; // e.g., 'orders', 'quotes', 'users' for role-based notifications
 };
 
 export type StoreItem = {

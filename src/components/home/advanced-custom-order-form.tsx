@@ -1,4 +1,5 @@
 
+
 "use client"
 
 import * as React from "react"
@@ -152,10 +153,11 @@ export function AdvancedCustomOrderForm() {
         createdAt: serverTimestamp(),
     });
     
-    // 3. Create notification for admins by creating a doc in the root `notifications` collection
+    // 3. Create notification for admins with the 'quotes' role
     const adminNotifRef = doc(collection(db, `notifications`));
     batch.set(adminNotifRef, {
-        userId: 'admin', // Generic ID for admin-facing notifications
+        userId: 'admin-quotes',
+        role: 'quotes',
         title: "New Quote Request",
         description: `A new quote #${quoteRef.id.slice(-6)} was submitted by ${values.customerName}.`,
         href: `/admin/quotes/${quoteRef.id}`,
