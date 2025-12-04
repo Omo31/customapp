@@ -15,7 +15,7 @@ import {
 } from '../ui/dropdown-menu';
 import { LayoutDashboard, LogOut, User as UserIcon, Bell } from 'lucide-react';
 import { SidebarTrigger } from '@/components/ui/sidebar';
-import { useFirestore, useCollection, useCollectionGroup } from '@/firebase';
+import { useFirestore, useCollection } from '@/firebase';
 import { type Notification } from '@/types';
 import { Badge } from '../ui/badge';
 
@@ -23,14 +23,15 @@ export default function Header() {
   const { user, logout, isAdmin } = useAuth();
   const db = useFirestore();
 
-  // Use a different query depending on whether the user is an admin or not
+  // Query for user-specific notifications
   const { data: userNotifications } = useCollection<Notification>(
     db,
     user && !isAdmin ? `users/${user.uid}/notifications` : '',
     { where: ["isRead", "==", false] }
   );
 
-  const { data: adminNotifications } = useCollectionGroup<Notification>(
+  // Corrected query for admin-specific notifications from the root collection
+  const { data: adminNotifications } = useCollection<Notification>(
     db,
     user && isAdmin ? 'notifications' : '',
     { where: ["isRead", "==", false] }
