@@ -69,7 +69,7 @@ export async function POST(req: NextRequest) {
                 return NextResponse.json({ status: 'success', message: 'Already processed' });
             }
             
-            // Calculate the expected total cost from the quote
+            // Calculate the expected total cost from the quote for server-side verification
             const itemsTotal = quote.items.reduce((acc, item) => acc + (item.unitCost || 0) * Number(item.quantity), 0);
             const servicesTotal = quote.pricedServices ? Object.values(quote.pricedServices).reduce((acc, cost) => acc + cost, 0) : 0;
             const serviceCharge = itemsTotal * 0.06;
@@ -82,7 +82,7 @@ export async function POST(req: NextRequest) {
             
             if (
                 verificationResponse.status === 'success' &&
-                verificationResponse.data.amount >= expectedTotalCost && // SECURITY: Check if amount paid is >= expected total
+                verificationResponse.data.amount >= expectedTotalCost && // SECURITY: Check if amount paid is >= expected server-calculated total
                 verificationResponse.data.currency === currency
             ) {
                 // 3. PERFORM DATABASE UPDATES in a batch

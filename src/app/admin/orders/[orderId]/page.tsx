@@ -51,7 +51,7 @@ export default function AdminOrderDetailsPage({ params }: AdminOrderDetailsPageP
 
             // 1. Update the order status
             const orderRef = doc(db, "orders", orderId);
-            batch.update(orderRef, { status: selectedStatus });
+            batch.update(orderRef, { status: selectedStatus, updatedAt: serverTimestamp() });
 
             // 2. Create a notification for the user
             const userNotifRef = doc(collection(db, `users/${order.userId}/notifications`));
