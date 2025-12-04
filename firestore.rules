@@ -28,10 +28,11 @@ service cloud.firestore {
     
     // --- Collection Rules ---
 
-    // Users can read/update their own profile. Admins can read/write any profile.
+    // Users can create/read/update their own profile. Admins can read/write any profile.
     match /users/{userId} {
-      allow read, update: if isOwner(userId) || hasRole('users');
-      allow create, delete: if hasRole('users');
+      allow create, update: if isOwner(userId) || hasRole('users');
+      allow read: if isOwner(userId) || hasRole('users');
+      allow delete: if hasRole('users');
       allow list: if hasRole('users');
 
       // Notifications subcollection: Only the user can access their notifications.
@@ -43,7 +44,7 @@ service cloud.firestore {
     // Quotes: Users can create. Users can read their own. Admins can read/write all.
     match /quotes/{quoteId} {
       allow create: if request.auth != null;
-      allow read: if isOwner(resource.data.userId);
+      allow read: if isOwner(resource.data.userId) || hasRole('quotes');
       allow update: if isOwner(resource.data.userId) || hasRole('quotes');
       allow list: if hasRole('quotes');
       allow delete: if hasRole('quotes');
