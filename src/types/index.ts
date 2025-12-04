@@ -68,6 +68,8 @@ export type UserProfile = {
   lastName: string;
   email: string;
   photoURL?: string;
+  phoneNumber?: string;
+  shippingAddress?: string;
   roles: string[];
   notificationPreferences?: {
     marketingEmails?: boolean;

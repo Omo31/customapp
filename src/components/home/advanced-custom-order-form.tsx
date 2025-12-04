@@ -31,7 +31,7 @@ import { useFirestore, useDoc } from "@/firebase"
 import { errorEmitter } from "@/firebase/error-emitter"
 import { FirestorePermissionError } from "@/firebase/errors"
 import Link from "next/link"
-import { type CustomOrderSettings } from "@/types"
+import { type CustomOrderSettings, type UserProfile } from "@/types"
 import { Skeleton } from "@/components/ui/skeleton"
 
 const formSchema = z.object({
@@ -77,6 +77,8 @@ export function AdvancedCustomOrderForm() {
   const router = useRouter()
 
   const { data: settings, loading: settingsLoading } = useDoc<CustomOrderSettings>(db, 'settings', 'customOrder');
+  const { data: userProfile, loading: profileLoading } = useDoc<UserProfile>(db, 'users', user?.uid);
+
 
   const unitsOfMeasure = settings?.unitsOfMeasure || [];
   const optionalServices = settings?.optionalServices || [];
@@ -88,18 +90,21 @@ export function AdvancedCustomOrderForm() {
     defaultValues: {
       items: [{ name: "", quantity: "1", unit: "", customUnit: "" }],
       services: [],
-      customerName: user?.displayName || "",
-      customerEmail: user?.email || "",
+      customerName: "",
+      customerEmail: "",
       customerPhone: "",
+      shippingAddress: "",
     },
   })
 
   React.useEffect(() => {
-    if (user) {
-        form.setValue('customerName', user.displayName || '');
-        form.setValue('customerEmail', user.email || '');
+    if (userProfile) {
+        form.setValue('customerName', `${userProfile.firstName} ${userProfile.lastName}`.trim());
+        form.setValue('customerEmail', userProfile.email || '');
+        form.setValue('customerPhone', userProfile.phoneNumber || '');
+        form.setValue('shippingAddress', userProfile.shippingAddress || '');
     }
-  }, [user, form]);
+  }, [userProfile, form]);
 
   const { isSubmitting } = form.formState;
 
@@ -182,7 +187,7 @@ export function AdvancedCustomOrderForm() {
         });
   }
 
-  if (settingsLoading) {
+  if (settingsLoading || profileLoading) {
     return (
         <Card>
             <CardContent className="space-y-8 pt-6">

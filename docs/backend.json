@@ -19,6 +19,14 @@
           "format": "email",
           "description": "The user's email address."
         },
+        "phoneNumber": {
+            "type": "string",
+            "description": "The user's phone number."
+        },
+        "shippingAddress": {
+            "type": "string",
+            "description": "The user's primary shipping address."
+        },
         "roles": {
           "type": "array",
           "description": "A list of roles assigned to the user.",

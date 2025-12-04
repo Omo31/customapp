@@ -34,11 +34,14 @@ import { UserProfile } from "@/types"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
+import { Textarea } from "@/components/ui/textarea"
 
 const profileFormSchema = z.object({
   firstName: z.string().min(1, "First name is required."),
   lastName: z.string().min(1, "Last name is required."),
   email: z.string().email(),
+  phoneNumber: z.string().optional(),
+  shippingAddress: z.string().optional(),
 })
 
 const passwordFormSchema = z.object({
@@ -68,6 +71,8 @@ export default function ProfilePage() {
       firstName: "",
       lastName: "",
       email: "",
+      phoneNumber: "",
+      shippingAddress: "",
     },
   })
 
@@ -86,6 +91,8 @@ export default function ProfilePage() {
         firstName: userProfile.firstName || "",
         lastName: userProfile.lastName || "",
         email: userProfile.email || "",
+        phoneNumber: userProfile.phoneNumber || "",
+        shippingAddress: userProfile.shippingAddress || "",
       })
     }
   }, [userProfile, profileForm])
@@ -98,6 +105,8 @@ export default function ProfilePage() {
         await updateDoc(userRef, {
             firstName: values.firstName,
             lastName: values.lastName,
+            phoneNumber: values.phoneNumber,
+            shippingAddress: values.shippingAddress,
         });
 
         if (authUser.auth && authUser.auth.currentUser) {
@@ -217,6 +226,32 @@ export default function ProfilePage() {
                                 <FormLabel>Email</FormLabel>
                                 <FormControl>
                                     <Input type="email" {...field} disabled autoComplete="email" />
+                                </FormControl>
+                                <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={profileForm.control}
+                            name="phoneNumber"
+                            render={({ field }) => (
+                                <FormItem>
+                                <FormLabel>Phone Number</FormLabel>
+                                <FormControl>
+                                    <Input type="tel" {...field} autoComplete="tel" placeholder="Your phone number" />
+                                </FormControl>
+                                <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={profileForm.control}
+                            name="shippingAddress"
+                            render={({ field }) => (
+                                <FormItem>
+                                <FormLabel>Shipping Address</FormLabel>
+                                <FormControl>
+                                    <Textarea {...field} autoComplete="street-address" placeholder="Your default shipping address" />
                                 </FormControl>
                                 <FormMessage />
                                 </FormItem>

@@ -47,6 +47,8 @@ export const useAuth = () => {
       firstName,
       lastName,
       email: firebaseUser.email || "",
+      phoneNumber: "",
+      shippingAddress: "",
       // Superadmin gets all roles, others get an empty array.
       roles: isSuperAdmin ? allAdminRoles : [],
       createdAt: serverTimestamp(),
