@@ -30,14 +30,16 @@ service cloud.firestore {
 
     // Users can create/read/update their own profile. Admins can read/write any profile.
     match /users/{userId} {
-      allow create, update: if isOwner(userId) || hasRole('users');
+      allow create: if isOwner(userId);
+      allow update: if isOwner(userId) || hasRole('users');
       allow read: if isOwner(userId) || hasRole('users');
       allow delete: if hasRole('users');
       allow list: if hasRole('users');
 
       // Notifications subcollection: Only the user can access their notifications.
+      // Allow create for a new user creating their own welcome notification.
       match /notifications/{notificationId} {
-        allow read, write: if isOwner(userId);
+        allow read, write, create: if isOwner(userId);
       }
     }
 
