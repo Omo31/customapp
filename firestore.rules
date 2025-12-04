@@ -26,61 +26,64 @@ service cloud.firestore {
                getUserData().roles.size() > 0;
     }
     
-    // --- Collection Group Rules ---
-    
-    // This rule allows admins with the 'notifications' role to perform a
-    // collection group query across all 'notifications' sub-collections.
-    // NOTE: This is now deprecated in favor of role-based queries on the root collection.
-    // match /{path=**}/notifications/{notificationId} {
-    //     allow list: if hasRole('notifications');
-    // }
-
     // --- Collection Rules ---
 
-    // Users can create/read/update their own profile. Admins can read/write any profile.
+    // Users Collection
     match /users/{userId} {
-      allow create, read, write: if isOwner(userId);
-      allow update: if isOwner(userId) || hasRole('users');
-      allow read: if isOwner(userId) || hasRole('users');
+      allow read, update, write: if isOwner(userId) || hasRole('users');
       allow delete: if hasRole('users');
-      allow list: if hasRole('users');
 
-      // Notifications subcollection: Only the user can access their notifications.
+      // User Notifications Subcollection
       match /notifications/{notificationId} {
-        allow read, write, create: if isOwner(userId);
-        allow list: if isOwner(userId);
+        allow read, write, create, list: if isOwner(userId);
       }
     }
+    
+    match /users/{document=**} {
+        allow list: if hasRole('users');
+        allow create: if isOwner(request.resource.data.userId);
+    }
 
-    // Quotes: Users can create. Users can read their own. Admins can read/write all.
+
+    // Quotes Collection
     match /quotes/{quoteId} {
-      allow create: if request.auth != null;
-      allow read: if isOwner(resource.data.userId) || hasRole('quotes');
-      allow update, write: if hasRole('quotes');
-      allow delete: if hasRole('quotes');
-      allow list: if hasRole('quotes');
+        allow read: if isOwner(resource.data.userId) || hasRole('quotes');
+        allow update, write: if hasRole('quotes');
+        allow delete: if hasRole('quotes');
+    }
+    match /quotes/{document=**} {
+        allow list: if hasRole('quotes');
+        allow create: if request.auth != null;
     }
     
-    // Orders: Users can read their own. Admins can read/write all.
-    // Creation is handled by the server-side webhook.
+    // Orders Collection
     match /orders/{orderId} {
         allow read: if isOwner(resource.data.userId) || hasRole('orders');
         allow update, write: if hasRole('orders');
+    }
+    match /orders/{document=**} {
         allow list: if hasRole('orders');
-        // Disallow direct client-side creation/deletion of orders
+        // Direct creation/deletion of orders is disallowed. They are created by the webhook.
         allow create, delete: if false; 
     }
     
-    // Admin-only collections based on specific roles
+    // Purchase Orders Collection (Admin-only)
     match /purchaseOrders/{poId} {
-        allow read, write, list: if hasRole('purchase-orders');
+        allow read, write: if hasRole('purchase-orders');
+    }
+    match /purchaseOrders/{document=**} {
+        allow list, create: if hasRole('purchase-orders');
     }
     
+    // Expenses Collection (Admin-only)
     match /expenses/{expenseId} {
-        allow read, write, list: if hasRole('accounting');
+        allow read, write: if hasRole('accounting');
+    }
+    match /expenses/{document=**} {
+         allow list, create: if hasRole('accounting');
     }
     
-    // Root notifications collection for role-based admin notifications
+    // Root Notifications Collection for Admins
     match /notifications/{notificationId} {
         // Admins can list/read notifications relevant to their roles
         allow list, read: if isAdmin() && (
@@ -95,7 +98,7 @@ service cloud.firestore {
         allow create: if request.auth == null || isAdmin();
     }
 
-    // Settings are public to read, but only admins with the 'settings' role can write.
+    // Settings Collection
     match /settings/{settingId} {
       allow read: if true;
       allow write: if hasRole('settings');
