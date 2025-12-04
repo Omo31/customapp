@@ -113,7 +113,7 @@ export function LoginForm() {
               control={form.control}
               name="password"
               render={({ field }) => (
-                <FormItem>
+                <FormItem className="relative">
                     <div className="flex items-center justify-between">
                         <FormLabel>Password</FormLabel>
                         <AlertDialog>
@@ -150,20 +150,18 @@ export function LoginForm() {
                         </AlertDialog>
                     </div>
                   <FormControl>
-                    <div className="relative">
                       <Input type={showPassword ? "text" : "password"} {...field} autoComplete="current-password" placeholder="Enter your password" />
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="absolute inset-y-0 right-0 h-full px-3"
-                        onClick={() => setShowPassword(!showPassword)}
-                      >
-                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                        <span className="sr-only">{showPassword ? 'Hide password' : 'Show password'}</span>
-                      </Button>
-                    </div>
                   </FormControl>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="absolute inset-y-0 right-0 h-full px-3 top-1/2 -translate-y-1/2"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    <span className="sr-only">{showPassword ? 'Hide password' : 'Show password'}</span>
+                  </Button>
                   <FormMessage />
                 </FormItem>
               )}
