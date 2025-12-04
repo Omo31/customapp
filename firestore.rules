@@ -37,11 +37,14 @@ service cloud.firestore {
       allow list: if hasRole('users');
 
       // Notifications subcollection: Only the user can access their notifications.
-      // Admins with the 'notifications' role can list them for collection group queries.
       match /notifications/{notificationId} {
         allow read, write, create: if isOwner(userId);
-        allow list: if hasRole('notifications');
       }
+    }
+    
+    // Rule for the collection group query on 'notifications'
+    match /{path=**}/notifications/{notificationId} {
+        allow list: if hasRole('notifications');
     }
 
     // Quotes: Users can create. Users can read their own. Admins can read/write all.
@@ -73,9 +76,9 @@ service cloud.firestore {
     }
     
     // Notifications (Root collection for admins and webhook)
+    // This allows admins to get system-wide notifications and webhooks to create them.
     match /notifications/{notificationId} {
       allow read: if isAdmin();
-      // Allow webhook (unauthenticated server process) to create system notifications
       allow create: if request.auth == null; 
     }
 
