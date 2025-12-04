@@ -14,6 +14,17 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { Separator } from "@/components/ui/separator";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 
 interface QuoteDetailsPageProps {
@@ -28,6 +39,7 @@ export default function QuoteDetailsPage({ params }: QuoteDetailsPageProps) {
     const { user } = useAuth();
     const { toast } = useToast();
     const router = useRouter();
+    const [showRetryDialog, setShowRetryDialog] = useState(false);
 
     const { data: quote, loading: quoteLoading } = useDoc<Quote>(db, "quotes", quoteId);
 
@@ -76,6 +88,19 @@ export default function QuoteDetailsPage({ params }: QuoteDetailsPageProps) {
 
     const handleFlutterwavePayment = useFlutterwave(flutterwaveConfig);
 
+    const initiatePayment = () => {
+        handleFlutterwavePayment({
+            callback: (response) => {
+               handlePaymentSuccess(response);
+            },
+            onClose: () => {
+                // This is called when the modal is closed by the user or on failure.
+                // We'll prompt the user to retry.
+                setShowRetryDialog(true);
+            },
+        });
+    };
+
     if (quoteLoading) {
         return (
             <div className="space-y-6">
@@ -101,6 +126,21 @@ export default function QuoteDetailsPage({ params }: QuoteDetailsPageProps) {
 
     return (
         <div className="space-y-6">
+            <AlertDialog open={showRetryDialog} onOpenChange={setShowRetryDialog}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                    <AlertDialogTitle>Payment Incomplete</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        The payment process was not completed. Would you like to try again?
+                    </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={initiatePayment}>Retry Payment</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
             <Card>
                 <CardHeader className="flex flex-row items-start justify-between">
                     <div>
@@ -185,17 +225,7 @@ export default function QuoteDetailsPage({ params }: QuoteDetailsPageProps) {
                 </CardContent>
                 {canPay && (
                     <CardFooter>
-                         <Button className="w-full" size="lg" onClick={() => {
-                            handleFlutterwavePayment({
-                                callback: (response) => {
-                                   handlePaymentSuccess(response);
-                                },
-                                onClose: () => {
-                                    // Don't show a toast on close, it's not an error.
-                                    // The user might just be closing the modal to pay later.
-                                },
-                            });
-                        }}>
+                         <Button className="w-full" size="lg" onClick={initiatePayment}>
                             Pay with Flutterwave
                         </Button>
                     </CardFooter>
