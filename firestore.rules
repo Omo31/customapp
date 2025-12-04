@@ -37,9 +37,10 @@ service cloud.firestore {
       allow list: if hasRole('users');
 
       // Notifications subcollection: Only the user can access their notifications.
-      // Allow create for a new user creating their own welcome notification.
+      // Admins with the 'notifications' role can list them for collection group queries.
       match /notifications/{notificationId} {
         allow read, write, create: if isOwner(userId);
+        allow list: if hasRole('notifications');
       }
     }
 
