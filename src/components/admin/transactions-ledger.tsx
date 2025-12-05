@@ -26,16 +26,17 @@ const PAGE_SIZE = 15;
 export function TransactionsLedger() {
   const db = useFirestore();
 
-  const { data: deliveredOrders, loading: ordersLoading } = useCollection<Order>(db, "orders", { where: ["status", "==", "Delivered"] });
-  const { data: completedPOs, loading: poLoading } = useCollection<PurchaseOrder>(db, "purchaseOrders", { where: ["status", "==", "Completed"] });
-  const { data: manualExpenses, loading: expensesLoading } = useCollection<Expense>(db, "expenses");
+  const { data: allDeliveredOrders, loading: allOrdersLoading } = useCollection<Order>(db, "orders", { where: ["status", "==", "Delivered"] });
+  const { data: allCompletedPOs, loading: allPoLoading } = useCollection<PurchaseOrder>(db, "purchaseOrders", { where: ["status", "==", "Completed"] });
+  const { data: allManualExpenses, loading: allExpensesLoading } = useCollection<Expense>(db, "expenses");
 
   const [currentPage, setCurrentPage] = useState(1);
+  const [pageHistory, setPageHistory] = useState<(string | null)[]>([null]);
 
   const allTransactions = useMemo(() => {
     const transactions: Transaction[] = [];
 
-    deliveredOrders?.forEach(order => {
+    allDeliveredOrders?.forEach(order => {
       transactions.push({
         id: `order-${order.id}`,
         type: 'Income',
@@ -47,19 +48,19 @@ export function TransactionsLedger() {
       });
     });
 
-    completedPOs?.forEach(po => {
+    allCompletedPOs?.forEach(po => {
       transactions.push({
         id: `po-${po.id}`,
         type: 'Expense',
         description: `Payment for PO #${po.poNumber}`,
-        date: new Date(po.deliveryDate.seconds * 1000),
+        date: po.deliveryDate.seconds ? new Date(po.deliveryDate.seconds * 1000) : new Date(),
         amount: po.total,
         sourceType: 'Purchase Order',
         sourceId: po.id || '',
       });
     });
 
-    manualExpenses?.forEach(expense => {
+    allManualExpenses?.forEach(expense => {
       transactions.push({
         id: `expense-${expense.id}`,
         type: 'Expense',
@@ -72,17 +73,18 @@ export function TransactionsLedger() {
     });
 
     return transactions.sort((a, b) => b.date.getTime() - a.date.getTime());
-  }, [deliveredOrders, completedPOs, manualExpenses]);
+  }, [allDeliveredOrders, allCompletedPOs, allManualExpenses]);
 
-  const loading = ordersLoading || poLoading || expensesLoading;
-
+  const loading = allOrdersLoading || allPoLoading || allExpensesLoading;
+  
   const paginatedTransactions = useMemo(() => {
     const startIndex = (currentPage - 1) * PAGE_SIZE;
     const endIndex = startIndex + PAGE_SIZE;
     return allTransactions.slice(startIndex, endIndex);
   }, [allTransactions, currentPage]);
 
-  const canGoNext = currentPage * PAGE_SIZE < allTransactions.length;
+  const totalPages = Math.ceil(allTransactions.length / PAGE_SIZE);
+  const canGoNext = currentPage < totalPages;
   const canGoPrevious = currentPage > 1;
 
   const handleNextPage = () => {
@@ -111,21 +113,24 @@ export function TransactionsLedger() {
             <CardDescription>A real-time log of all income and expenses.</CardDescription>
              <div className="text-right">
                 <p className="text-sm text-muted-foreground">Current Balance</p>
-                <p className={`text-2xl font-bold ${currentBalance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                    ₦{currentBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </p>
+                {loading ? (
+                    <Skeleton className="h-8 w-32 mt-1" />
+                ) : (
+                    <p className={`text-2xl font-bold ${currentBalance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        ₦{currentBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </p>
+                )}
             </div>
         </div>
       </CardHeader>
       <CardContent>
-        {loading && (
+        {loading && paginatedTransactions.length === 0 ? (
           <div className="space-y-2">
             {[...Array(PAGE_SIZE)].map((_, i) => (
               <Skeleton key={i} className="h-12 w-full" />
             ))}
           </div>
-        )}
-        {!loading && (
+        ) : (
           <Table>
             <TableHeader>
               <TableRow>
@@ -175,7 +180,7 @@ export function TransactionsLedger() {
                         <PaginationPrevious onClick={handlePreviousPage} aria-disabled={!canGoPrevious} className={!canGoPrevious ? "pointer-events-none opacity-50" : undefined} />
                     </PaginationItem>
                     <PaginationItem>
-                       <span className="p-2 text-sm">Page {currentPage}</span>
+                       <span className="p-2 text-sm">Page {currentPage} of {totalPages}</span>
                     </PaginationItem>
                     <PaginationItem>
                         <PaginationNext onClick={handleNextPage} aria-disabled={!canGoNext} className={!canGoNext ? "pointer-events-none opacity-50" : undefined} />
