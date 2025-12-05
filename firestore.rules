@@ -66,7 +66,7 @@ service cloud.firestore {
         allow create: if request.auth != null; // Any authenticated user can create a quote
     }
     match /quotes/{document=**} {
-        allow list: if hasRole('quotes') || isOwner(resource.data.userId);
+        allow list: if hasRole('quotes');
     }
     
     // Orders Collection
@@ -75,7 +75,7 @@ service cloud.firestore {
         allow update, write: if hasRole('orders');
     }
     match /orders/{document=**} {
-        allow list: if hasRole('orders') || isOwner(resource.data.userId);
+        allow list: if hasRole('orders');
         allow create, delete: if false; 
     }
     

@@ -22,7 +22,7 @@ export default function OrdersPage() {
     
     // This is the initial fetch, which also seeds the pagination hook
     const { data: initialData, loading: initialLoading } = useCollection<Order>(db, "orders", {
-        where: ["userId", "==", user?.uid || ""],
+        where: ["userId", "==", user?.uid || " "], // Use a non-existent UID if user is not loaded
         orderBy: ["createdAt", "desc"],
         limit: PAGE_SIZE,
     });
@@ -38,7 +38,7 @@ export default function OrdersPage() {
 
     // This query is now only for subsequent pages
     const { data: paginatedOrders, loading: paginatedLoading } = useCollection<Order>(db, "orders", {
-        where: ["userId", "==", user?.uid || ""],
+        where: ["userId", "==", user?.uid || " "],
         orderBy: ["createdAt", "desc"],
         limit: PAGE_SIZE,
         startAfter: startAfter
