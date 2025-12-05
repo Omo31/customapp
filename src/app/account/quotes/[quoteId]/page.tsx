@@ -108,13 +108,28 @@ export default function QuoteDetailsPage({ params }: QuoteDetailsPageProps) {
         
         setActionType(newStatus === 'Quote Ready' ? 'accept' : newStatus === 'Rejected' ? 'reject' : 'cancel');
         setIsSubmitting(true);
-        const quoteRef = doc(db, 'quotes', quoteId);
+        const batch = writeBatch(db);
 
+        // 1. Update the quote status
+        const quoteRef = doc(db, 'quotes', quoteId);
+        batch.update(quoteRef, {
+            status: newStatus,
+            updatedAt: serverTimestamp(),
+        });
+
+        // 2. Create notification for admins
+        const adminNotifRef = doc(collection(db, 'notifications'));
+        batch.set(adminNotifRef, {
+            role: 'quotes',
+            title: `User ${newStatus} Quote`,
+            description: `${user.displayName} has ${newStatus.toLowerCase()} quote #${quoteId.slice(-6)}.`,
+            href: `/admin/quotes/${quoteId}`,
+            isRead: false,
+            createdAt: serverTimestamp(),
+        });
+        
         try {
-            await updateDoc(quoteRef, {
-                status: newStatus,
-                updatedAt: serverTimestamp(),
-            });
+            await batch.commit();
             toast({
                 title: `Quote ${newStatus}`,
                 description: `You have successfully ${newStatus.toLowerCase()}ed the quote.`,

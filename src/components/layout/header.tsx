@@ -17,7 +17,6 @@ import { LayoutDashboard, LogOut, User as UserIcon, Bell } from 'lucide-react';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { useFirestore, useCollection } from '@/firebase';
 import { type Notification } from '@/types';
-import { Badge } from '../ui/badge';
 import { useMemo } from 'react';
 
 export default function Header() {
@@ -32,8 +31,8 @@ export default function Header() {
   );
 
   // Memoize the 'in' query array for admin roles to prevent re-renders
+  // Firestore 'in' queries cannot be empty. Provide a dummy value if roles array is empty.
   const adminNotificationRoles = useMemo(() => {
-    // Ensure roles are defined and not empty before creating the query
     return roles && roles.length > 0 ? roles : ['']; 
   }, [roles]);
 

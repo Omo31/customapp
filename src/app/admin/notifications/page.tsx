@@ -26,8 +26,8 @@ function AdminNotificationsContent() {
   const [updatingId, setUpdatingId] = useState<string | null>(null);
 
   // Memoize the array for the 'in' query
+  // Firestore 'in' queries cannot be empty. Provide a dummy value if roles array is empty.
   const userRoles = useMemo(() => {
-    // Firestore 'in' queries cannot be empty, so we provide a dummy value if roles are not yet loaded
     return roles && roles.length > 0 ? roles : [''];
   }, [roles]);
 
