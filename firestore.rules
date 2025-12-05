@@ -48,14 +48,12 @@ service cloud.firestore {
       allow read: if isOwner(userId) || hasRole('users');
       allow update: if isOwner(userId) || hasRole('users');
       // Allow users to create their own profile document.
-      // This is a more direct rule than using isOwner() to avoid issues during initial creation.
       allow create: if request.auth.uid == userId;
       allow delete: if hasRole('users');
 
       // User Notifications Subcollection
       match /notifications/{notificationId} {
-        allow read, write, create: if isOwner(userId);
-        allow list: if isOwner(userId);
+        allow read, write, create, list: if isOwner(userId);
       }
     }
     
@@ -76,7 +74,7 @@ service cloud.firestore {
         allow create: if request.auth != null; // Any authenticated user can create a quote
     }
     match /quotes/{document=**} {
-        allow list: if hasRole('quotes');
+        allow list: if request.auth != null;
     }
     
     // Orders Collection
@@ -111,7 +109,8 @@ service cloud.firestore {
     match /notifications/{notificationId} {
       allow read, list: if isAdmin();
       allow write: if hasRole('notifications');
-      // Allow server-side processes (like webhooks) and admins to create notifications
+      // Allow any newly authenticated user to create the 'New User Joined' notification,
+      // and allow server-side processes (webhooks) to create notifications.
       allow create: if request.auth != null;
     }
 
