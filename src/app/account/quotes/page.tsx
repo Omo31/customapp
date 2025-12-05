@@ -17,7 +17,7 @@ import { usePagination } from "@/hooks/use-pagination";
 const PAGE_SIZE = 10;
 
 export default function QuotesPage() {
-    const { user } = useAuth();
+    const { user, loading: authLoading } = useAuth();
     const db = useFirestore();
 
     const { data: initialData, loading: initialLoading } = useCollection<Quote>(db, "quotes", {
@@ -42,7 +42,7 @@ export default function QuotesPage() {
         startAfter: startAfter
     });
 
-    const loading = initialLoading || paginatedLoading;
+    const loading = authLoading || initialLoading || paginatedLoading;
     const currentQuotes = currentPage > 1 ? quotes : initialData;
 
     const getBadgeVariant = (status: Quote['status']) => {
