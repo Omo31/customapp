@@ -76,7 +76,6 @@ export const useAuth = () => {
     // Create a notification for admins with the 'users' role
     const adminNotifRef = doc(collection(db, `notifications`));
     const adminNotif: Omit<Notification, 'id'> = {
-        userId: 'admin-users',
         role: 'users',
         title: "New User Joined",
         description: `${firstName} ${lastName} (${firebaseUser.email}) just signed up.`,

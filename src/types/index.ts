@@ -80,7 +80,7 @@ export type UserProfile = {
 
 export type Notification = {
     id?: string;
-    userId: string; // Can be a user ID or a role like 'admin-users'
+    userId?: string; // Can be a user ID 
     title: string;
     description: string;
     href?: string;

@@ -1,5 +1,4 @@
 
-
 import { NextRequest, NextResponse } from 'next/server';
 import { doc, writeBatch, collection, serverTimestamp, getDoc } from 'firebase-firestore';
 import { db } from '@/firebase/server-init'; // We'll need a server-side admin init
@@ -120,7 +119,6 @@ export async function POST(req: NextRequest) {
                 // Create notification for admins with the 'orders' role
                 const adminNotifRef = doc(collection(db, `notifications`));
                 batch.set(adminNotifRef, {
-                     userId: 'admin-orders',
                      role: 'orders',
                      title: "New Order Received",
                      description: `A new order #${orderRef.id.slice(-6)} was placed by ${quote.customerName}.`,

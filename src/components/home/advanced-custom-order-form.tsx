@@ -156,7 +156,6 @@ export function AdvancedCustomOrderForm() {
     // 3. Create notification for admins with the 'quotes' role
     const adminNotifRef = doc(collection(db, `notifications`));
     batch.set(adminNotifRef, {
-        userId: 'admin-quotes',
         role: 'quotes',
         title: "New Quote Request",
         description: `A new quote #${quoteRef.id.slice(-6)} was submitted by ${values.customerName}.`,
