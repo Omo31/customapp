@@ -37,7 +37,7 @@ export const useAuth = () => {
 
   const loading = userLoading || actionLoading;
 
-  const saveUserProfile = (firebaseUser: FirebaseUser, firstName: string, lastName: string) => {
+  const saveUserProfile = async (firebaseUser: FirebaseUser, firstName: string, lastName: string) => {
     const batch = writeBatch(db);
     const userRef = doc(db, 'users', firebaseUser.uid);
     
@@ -85,15 +85,8 @@ export const useAuth = () => {
     };
     batch.set(adminNotifRef, adminNotif);
 
-
-    batch.commit().catch(async (serverError) => {
-        const permissionError = new FirestorePermissionError({
-            path: `batch write for user ${firebaseUser.uid}`,
-            operation: 'create',
-            requestResourceData: { userProfile, userNotif, adminNotif }
-        });
-        errorEmitter.emit('permission-error', permissionError);
-    });
+    // No more silent catch. Let errors propagate to be caught by the global error handler.
+    await batch.commit();
   }
 
   const login = async (email: string, pass: string) => {
@@ -127,11 +120,11 @@ export const useAuth = () => {
         displayName: `${firstName} ${lastName}`
       });
       
+      // Create the user profile document in Firestore & a welcome notification
+      await saveUserProfile(userCredential.user, firstName, lastName);
+      
       // Send verification email
       await sendEmailVerification(userCredential.user);
-      
-      // Create the user profile document in Firestore & a welcome notification
-      saveUserProfile(userCredential.user, firstName, lastName);
       
       // Inform the user
       toast({
@@ -144,6 +137,7 @@ export const useAuth = () => {
       await firebaseSignOut(auth);
 
     } catch (error: any)       {
+       console.error("Signup Error:", error);
        toast({
         title: 'Sign Up Failed',
         description: error.message || 'An unexpected error occurred.',
