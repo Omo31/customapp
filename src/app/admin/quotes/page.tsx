@@ -42,6 +42,17 @@ function AdminQuotesContent() {
     const loading = initialLoading || paginatedLoading;
     const currentQuotes = currentPage > 1 ? quotes : initialData;
 
+    const getBadgeVariant = (status: Quote['status']) => {
+        switch (status) {
+            case 'Pending Review':
+                return 'destructive';
+            case 'Paid':
+                return 'default';
+            default:
+                return 'secondary';
+        }
+    }
+
   return (
     <div className="space-y-6">
       <div>
@@ -77,7 +88,7 @@ function AdminQuotesContent() {
                     <TableRow key={quote.id}>
                       <TableCell className="font-medium">{quote.customerName}</TableCell>
                       <TableCell>{new Date(quote.createdAt?.seconds * 1000).toLocaleDateString()}</TableCell>
-                      <TableCell><Badge>{quote.status}</Badge></TableCell>
+                      <TableCell><Badge variant={getBadgeVariant(quote.status)}>{quote.status}</Badge></TableCell>
                       <TableCell>{quote.items.length}</TableCell>
                       <TableCell className="text-right">
                           <Button asChild variant="outline" size="sm">

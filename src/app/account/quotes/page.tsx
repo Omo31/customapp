@@ -45,6 +45,18 @@ export default function QuotesPage() {
     const loading = initialLoading || paginatedLoading;
     const currentQuotes = currentPage > 1 ? quotes : initialData;
 
+    const getBadgeVariant = (status: Quote['status']) => {
+        switch (status) {
+            case 'Pending User Action':
+                return 'default';
+            case 'Rejected':
+            case 'Cancelled':
+                return 'destructive';
+            default:
+                return 'secondary';
+        }
+    }
+
 
   return (
     <div className="space-y-6">
@@ -82,7 +94,7 @@ export default function QuotesPage() {
                     <TableRow key={quote.id}>
                       <TableCell className="font-medium">#...{quote.id?.slice(-6)}</TableCell>
                       <TableCell>{quote.createdAt?.seconds ? new Date(quote.createdAt.seconds * 1000).toLocaleDateString() : 'N/A'}</TableCell>
-                      <TableCell><Badge>{quote.status}</Badge></TableCell>
+                      <TableCell><Badge variant={getBadgeVariant(quote.status)}>{quote.status}</Badge></TableCell>
                       <TableCell className="text-right">
                         <Button asChild variant="outline" size="sm">
                           <Link href={`/account/quotes/${quote.id}`}>
