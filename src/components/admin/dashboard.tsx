@@ -11,7 +11,7 @@ import { subDays, format, startOfDay, endOfDay } from 'date-fns';
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from "recharts";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { DateRange } from "react-day-picker";
+import { type DateRange } from "react-day-picker";
 import { Button } from "../ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { Calendar } from "../ui/calendar";
@@ -123,7 +123,7 @@ export default function AdminDashboard() {
             salesChartData: chartData 
         };
 
-    }, [orders, newUsers, fromDate, toDate]);
+    }, [orders, newUsers, toDate]);
     
     const loading = ordersLoading || usersLoading || recentOrdersListLoading;
 
@@ -302,5 +302,4 @@ export default function AdminDashboard() {
             </div>
         </div>
     );
-
-    
+}
