@@ -59,7 +59,7 @@ function AdminUsersContent() {
     orderBy: ["createdAt", "desc"]
   });
 
-  const loading = initialLoading || paginatedLoading;
+  const loading = currentPage === 1 ? initialLoading : paginatedLoading;
   const currentUsers = currentPage > 1 ? users : initialData;
 
 

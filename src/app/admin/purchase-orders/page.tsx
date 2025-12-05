@@ -39,7 +39,7 @@ function AdminPurchaseOrdersContent() {
         startAfter: startAfter
     });
 
-    const loading = initialLoading || paginatedLoading;
+    const loading = currentPage === 1 ? initialLoading : paginatedLoading;
     const currentPurchaseOrders = currentPage > 1 ? purchaseOrders : initialData;
 
   return (

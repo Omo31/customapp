@@ -49,7 +49,7 @@ export function ExpensesManager() {
         startAfter: startAfter
     });
 
-    const loading = initialLoading || paginatedLoading;
+    const loading = currentPage === 1 ? initialLoading : paginatedLoading;
     const currentExpenses = currentPage > 1 ? expenses : initialData;
 
   return (

@@ -39,7 +39,7 @@ function AdminQuotesContent() {
         startAfter: startAfter
     });
 
-    const loading = initialLoading || paginatedLoading;
+    const loading = currentPage === 1 ? initialLoading : paginatedLoading;
     const currentQuotes = currentPage > 1 ? quotes : initialData;
 
     const getBadgeVariant = (status: Quote['status']) => {

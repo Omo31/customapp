@@ -40,7 +40,7 @@ function AdminOrdersContent() {
         startAfter: startAfter
     });
     
-    const loading = initialLoading || paginatedLoading;
+    const loading = currentPage === 1 ? initialLoading : paginatedLoading;
     const currentOrders = currentPage > 1 ? orders : initialData;
 
   return (

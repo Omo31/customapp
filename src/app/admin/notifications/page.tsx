@@ -25,8 +25,6 @@ function AdminNotificationsContent() {
   const { toast } = useToast();
   const [updatingId, setUpdatingId] = useState<string | null>(null);
 
-  // Memoize the array for the 'in' query
-  // Firestore 'in' queries cannot be empty. Provide a dummy value if roles array is empty.
   const userRoles = useMemo(() => {
     return roles && roles.length > 0 ? roles : [''];
   }, [roles]);
@@ -53,7 +51,7 @@ function AdminNotificationsContent() {
       startAfter: startAfter
   });
   
-  const loading = initialLoading || paginatedLoading;
+  const loading = currentPage === 1 ? initialLoading : paginatedLoading;
   const currentNotifications = currentPage > 1 ? notifications : initialData;
 
   const handleMarkAsRead = async (notificationId: string) => {

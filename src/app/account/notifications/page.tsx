@@ -35,7 +35,7 @@ export default function NotificationsPage() {
   const { toast } = useToast();
   const [updatingId, setUpdatingId] = useState<string | null>(null);
 
-  const { data: notifications, loading } = useCollection<Notification>(db, `users/${user?.uid}/notifications`, {
+  const { data: initialNotifications, loading: initialLoading } = useCollection<Notification>(db, `users/${user?.uid}/notifications`, {
       orderBy: ["createdAt", "desc"],
       limit: PAGE_SIZE,
   });
@@ -47,7 +47,7 @@ export default function NotificationsPage() {
     canGoNext,
     canGoPrevious,
     startAfter,
-  } = usePagination({ data: notifications, pageSize: PAGE_SIZE });
+  } = usePagination({ data: initialNotifications, pageSize: PAGE_SIZE });
 
    const { data: paginatedNotifications, loading: paginatedLoading } = useCollection<Notification>(db, `users/${user?.uid}/notifications`, {
       orderBy: ["createdAt", "desc"],
@@ -112,8 +112,8 @@ export default function NotificationsPage() {
     }
   }
 
-  const currentLoading = loading || paginatedLoading;
-  const currentNotifications = currentPage > 1 ? paginatedNotifications : notifications;
+  const currentLoading = currentPage === 1 ? initialLoading : paginatedLoading;
+  const currentNotifications = currentPage > 1 ? paginatedNotifications : initialNotifications;
 
   return (
     <div className="space-y-6">

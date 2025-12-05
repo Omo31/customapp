@@ -21,7 +21,7 @@ export default function QuotesPage() {
     const db = useFirestore();
 
     const { data: initialData, loading: initialLoading } = useCollection<Quote>(db, "quotes", {
-        where: ["userId", "==", user?.uid || ""],
+        where: ["userId", "==", user?.uid || " "],
         orderBy: ["createdAt", "desc"],
         limit: PAGE_SIZE,
     });
@@ -36,13 +36,13 @@ export default function QuotesPage() {
     } = usePagination({ data: initialData, pageSize: PAGE_SIZE });
 
     const { data: quotes, loading: paginatedLoading } = useCollection<Quote>(db, "quotes", {
-        where: ["userId", "==", user?.uid || ""],
+        where: ["userId", "==", user?.uid || " "],
         orderBy: ["createdAt", "desc"],
         limit: PAGE_SIZE,
         startAfter: startAfter
     });
 
-    const loading = authLoading || initialLoading || paginatedLoading;
+    const loading = authLoading || (currentPage === 1 ? initialLoading : paginatedLoading);
     const currentQuotes = currentPage > 1 ? quotes : initialData;
 
     const getBadgeVariant = (status: Quote['status']) => {

@@ -20,9 +20,8 @@ export default function OrdersPage() {
     const { user, loading: authLoading } = useAuth();
     const db = useFirestore();
     
-    // This is the initial fetch, which also seeds the pagination hook
     const { data: initialData, loading: initialLoading } = useCollection<Order>(db, "orders", {
-        where: ["userId", "==", user?.uid || ""], // The `|| ""` prevents a query with `undefined`
+        where: ["userId", "==", user?.uid || " "],
         orderBy: ["createdAt", "desc"],
         limit: PAGE_SIZE,
     });
@@ -36,16 +35,14 @@ export default function OrdersPage() {
       startAfter,
     } = usePagination({ data: initialData, pageSize: PAGE_SIZE });
 
-    // This query is now only for subsequent pages
     const { data: paginatedOrders, loading: paginatedLoading } = useCollection<Order>(db, "orders", {
-        where: ["userId", "==", user?.uid || ""],
+        where: ["userId", "==", user?.uid || " "],
         orderBy: ["createdAt", "desc"],
         limit: PAGE_SIZE,
         startAfter: startAfter
     });
 
-    // Determine the loading state and which data to display
-    const loading = authLoading || initialLoading || (currentPage > 1 && paginatedLoading);
+    const loading = authLoading || (currentPage === 1 ? initialLoading : paginatedLoading);
     const currentOrders = currentPage > 1 ? paginatedOrders : initialData;
 
   return (
