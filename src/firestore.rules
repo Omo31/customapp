@@ -1,0 +1,123 @@
+
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // --- Helper Functions ---
+    function isOwner(userId) {
+      return request.auth != null && request.auth.uid == userId;
+    }
+
+    function getUserData() {
+        return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function hasRole(role) {
+        // Superadmin always has the role.
+        if (request.auth.token.email == 'oluwagbengwumi@gmail.com') {
+            return true;
+        }
+        return request.auth != null &&
+               exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+               role in getUserData().roles;
+    }
+    
+    function isAdmin() {
+        // An admin is anyone with at least one role.
+        if (request.auth.token.email == 'oluwagbengwumi@gmail.com') {
+            return true;
+        }
+        return request.auth != null && 
+               exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+               getUserData().roles.size() > 0;
+    }
+    
+    function isQuoteOwner(quote) {
+      return isOwner(quote.userId);
+    }
+    
+    function isChangingStatusTo(status) {
+      return request.resource.data.status == status && resource.data.status != status;
+    }
+
+    // --- Collection Rules ---
+
+    // Users Collection
+    match /users/{userId} {
+      allow read: if isOwner(userId) || hasRole('users');
+      allow update: if isOwner(userId) || hasRole('users');
+      // A user can only create their own document. This is critical for signup.
+      allow create: if request.auth.uid == userId;
+      allow delete: if hasRole('users');
+
+      // User Notifications Subcollection
+      match /notifications/{notificationId} {
+        allow read, write, create, list: if isOwner(userId);
+      }
+    }
+    
+    // Allow admins with 'users' role to list all user documents
+    match /users/{document=**} {
+        allow list: if hasRole('users');
+    }
+
+    // Quotes Collection
+    match /quotes/{quoteId} {
+        allow read: if isQuoteOwner(resource.data) || hasRole('quotes');
+        allow update: if (hasRole('quotes')) || 
+                        (isQuoteOwner(resource.data) && (
+                            isChangingStatusTo('Quote Ready') ||
+                            isChangingStatusTo('Rejected') ||
+                            isChangingStatusTo('Cancelled')
+                        ));
+        allow create: if request.auth != null; // Any authenticated user can create a quote
+    }
+    match /quotes/{document=**} {
+        allow list: if request.auth != null;
+    }
+    
+    // Orders Collection
+    match /orders/{orderId} {
+        allow read: if isOwner(resource.data.userId) || hasRole('orders');
+        allow write, update: if hasRole('orders');
+        allow create, delete: if false; 
+    }
+    match /orders/{document=**} {
+        // Users can list their own orders (filtered by userId in the query)
+        // Admins with 'orders' role can list all orders
+        allow list: if request.auth != null;
+    }
+    
+    // Purchase Orders Collection (Admin-only)
+    match /purchaseOrders/{poId} {
+      allow read, write, create: if hasRole('purchase-orders');
+    }
+    match /purchaseOrders/{document=**} {
+        allow list: if hasRole('purchase-orders');
+    }
+    
+    // Expenses Collection (Admin-only)
+    match /expenses/{expenseId} {
+        allow read, write, create: if hasRole('accounting');
+    }
+    match /expenses/{document=**} {
+         allow list: if hasRole('accounting');
+    }
+    
+    // Root Notifications Collection for Admins
+    match /notifications/{notificationId} {
+      allow read, list: if isAdmin();
+      allow update, delete: if hasRole('notifications');
+      // Allow any newly authenticated user to create the 'New User Joined' notification,
+      // but only admins can update or delete notifications.
+      allow create: if request.auth != null;
+    }
+
+    // Settings Collection
+    match /settings/{settingId} {
+      allow read: if true;
+      allow write: if hasRole('settings');
+    }
+  }
+}

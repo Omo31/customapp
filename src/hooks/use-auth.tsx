@@ -85,7 +85,7 @@ export const useAuth = () => {
     };
     batch.set(adminNotifRef, adminNotif);
 
-    // No more silent catch. Let errors propagate to be caught by the global error handler.
+    // Removed the silent catch. Let errors propagate to be handled by the form's catch block.
     await batch.commit();
   }
 
