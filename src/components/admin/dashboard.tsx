@@ -49,52 +49,39 @@ export default function AdminDashboard() {
     const fromDate = date?.from ? startOfDay(date.from) : undefined;
     const toDate = date?.to ? endOfDay(date.to) : undefined;
     
-    // --- Optimized Queries ---
-    
-    // 1. Get delivered orders within the date range for revenue and sales
-    const { data: deliveredOrders, loading: deliveredOrdersLoading } = useCollection<Order>(db, "orders", {
+    const { data: orders, loading: ordersLoading } = useCollection<Order>(db, "orders", {
       where: ["createdAt", ">=", fromDate],
-      // We need a second 'where' for the range, but Firestore requires an index for that.
-      // So we filter by status and start date, then filter by end date and status on the client.
     });
 
-    // 2. Get users created within the date range
      const { data: newUsers, loading: usersLoading } = useCollection<UserProfile>(db, "users", {
        where: ["createdAt", ">=", fromDate],
-       // Firestore limitation again, so we filter the end of the range on the client.
      });
 
-    // 3. Get all pending orders (not date-range dependent)
-    const { data: pendingOrders, loading: pendingOrdersLoading } = useCollection<Order>(db, "orders", {
-        where: ["status", "==", "Pending"],
-        orderBy: ["createdAt", "desc"],
-    });
-
-    // 4. Get recent orders for the list
     const { data: recentOrders, loading: recentOrdersListLoading } = useCollection<Order>(db, "orders", {
         orderBy: ["createdAt", "desc"],
         limit: 5
     });
     
-    // --- Memoized Calculations ---
-
     const {
         totalRevenue,
         totalSales,
         newCustomersCount,
+        pendingOrdersCount,
         salesChartData,
     } = useMemo(() => {
-        if (!deliveredOrders || !newUsers) {
-            return { totalRevenue: 0, totalSales: 0, newCustomersCount: 0, salesChartData: [] };
+        if (!orders || !newUsers) {
+            return { totalRevenue: 0, totalSales: 0, newCustomersCount: 0, pendingOrdersCount: 0, salesChartData: [] };
         }
 
-        const filteredDeliveredOrders = deliveredOrders.filter(order => {
+        const filteredOrders = orders.filter(order => {
              const orderDate = new Date(order.createdAt?.seconds * 1000);
-             return order.status === "Delivered" && (!toDate || orderDate <= toDate);
+             return !toDate || orderDate <= toDate;
         });
+        
+        const deliveredOrders = filteredOrders.filter(o => o.status === 'Delivered');
 
-        const revenue = filteredDeliveredOrders.reduce((acc, order) => acc + order.totalCost, 0);
-        const sales = filteredDeliveredOrders.length;
+        const revenue = deliveredOrders.reduce((acc, order) => acc + order.totalCost, 0);
+        const sales = deliveredOrders.length;
         
         const filteredUsers = newUsers.filter(user => {
             if (!user.createdAt?.seconds) return false;
@@ -102,17 +89,17 @@ export default function AdminDashboard() {
             return !toDate || userDate <= toDate;
         });
         const customers = filteredUsers.length;
+        
+        const pending = filteredOrders.filter(o => o.status === 'Pending').length;
 
-        // Process chart data
         const dailyRevenue: { [key: string]: number } = {};
         if (fromDate && toDate) {
-            // Correctly iterate over the date range without modifying the original date
             for (let d = new Date(fromDate); d <= toDate; d.setDate(d.getDate() + 1)) {
                 const formattedDate = format(new Date(d), 'MMM d');
                 dailyRevenue[formattedDate] = 0;
             }
 
-            filteredDeliveredOrders.forEach(order => {
+            deliveredOrders.forEach(order => {
                 if (order.createdAt?.seconds) {
                     const orderDate = format(new Date(order.createdAt.seconds * 1000), 'MMM d');
                     if (orderDate in dailyRevenue) {
@@ -128,11 +115,17 @@ export default function AdminDashboard() {
         }));
 
 
-        return { totalRevenue: revenue, totalSales: sales, newCustomersCount: customers, salesChartData: chartData };
+        return { 
+            totalRevenue: revenue, 
+            totalSales: sales, 
+            newCustomersCount: customers, 
+            pendingOrdersCount: pending,
+            salesChartData: chartData 
+        };
 
-    }, [deliveredOrders, newUsers, fromDate, toDate]);
+    }, [orders, newUsers, fromDate, toDate]);
     
-    const loading = deliveredOrdersLoading || usersLoading || pendingOrdersLoading || recentOrdersListLoading;
+    const loading = ordersLoading || usersLoading || recentOrdersListLoading;
 
     return (
         <div className="space-y-6">
@@ -182,7 +175,7 @@ export default function AdminDashboard() {
                     title="Total Revenue"
                     value={`₦${totalRevenue.toLocaleString()}`}
                     icon={DollarSign}
-                    loading={deliveredOrdersLoading}
+                    loading={ordersLoading}
                     description="From delivered orders"
                 />
                 <KPIStatCard
@@ -196,14 +189,14 @@ export default function AdminDashboard() {
                     title="Sales"
                     value={totalSales}
                     icon={ShoppingBag}
-                    loading={deliveredOrdersLoading}
+                    loading={ordersLoading}
                     description="Total delivered orders"
                 />
                 <KPIStatCard
                     title="Pending Orders"
-                    value={pendingOrders?.length || 0}
+                    value={pendingOrdersCount}
                     icon={Truck}
-                    loading={pendingOrdersLoading}
+                    loading={ordersLoading}
                     description="Awaiting confirmation"
                 />
             </div>
@@ -309,4 +302,5 @@ export default function AdminDashboard() {
             </div>
         </div>
     );
-}
+
+    
