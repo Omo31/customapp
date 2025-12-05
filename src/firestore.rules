@@ -110,7 +110,7 @@ service cloud.firestore {
       allow read, list: if isAdmin();
       allow update, delete: if hasRole('notifications');
       // Allow any newly authenticated user to create the 'New User Joined' notification,
-      // but only admins can update or delete notifications.
+      // and allow server-side processes (webhooks) to create notifications.
       allow create: if request.auth != null;
     }
 

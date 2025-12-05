@@ -15,7 +15,7 @@ import {
     updatePassword,
     deleteUser,
 } from "firebase/auth";
-import { doc, serverTimestamp, writeBatch, collection } from 'firebase/firestore';
+import { doc, serverTimestamp, writeBatch, collection, addDoc } from 'firebase/firestore';
 import { useToast } from "./use-toast";
 import { useState } from "react";
 import { auth, db } from "@/firebase";
@@ -38,10 +38,10 @@ export const useAuth = () => {
   const loading = userLoading || actionLoading;
 
   const saveUserProfile = async (firebaseUser: FirebaseUser, firstName: string, lastName: string) => {
-    const batch = writeBatch(db);
+    // Separate the user profile creation from the admin notification
+    const userProfileBatch = writeBatch(db);
     const userRef = doc(db, 'users', firebaseUser.uid);
     
-    // Check if the user is the superadmin
     const isSuperAdmin = firebaseUser.email === "oluwagbengwumi@gmail.com";
     
     const userProfile: Omit<UserProfile, 'id'> = {
@@ -50,7 +50,6 @@ export const useAuth = () => {
       email: firebaseUser.email || "",
       phoneNumber: "",
       shippingAddress: "",
-      // Superadmin gets all roles, others get an empty array.
       roles: isSuperAdmin ? allAdminRoles : [],
       createdAt: serverTimestamp(),
       notificationPreferences: {
@@ -59,9 +58,8 @@ export const useAuth = () => {
       }
     };
 
-    batch.set(userRef, userProfile, { merge: true });
+    userProfileBatch.set(userRef, userProfile, { merge: true });
 
-    // Create a welcome notification for the new user
     const userNotifRef = doc(collection(db, `users/${firebaseUser.uid}/notifications`));
     const userNotif: Omit<Notification, 'id'> = {
         userId: firebaseUser.uid,
@@ -71,10 +69,13 @@ export const useAuth = () => {
         isRead: false,
         createdAt: serverTimestamp(),
     };
-    batch.set(userNotifRef, userNotif);
+    userProfileBatch.set(userNotifRef, userNotif);
 
-    // Create a notification for admins with the 'users' role
-    const adminNotifRef = doc(collection(db, `notifications`));
+    // Commit the user-specific writes first. This must succeed for the rest to continue.
+    await userProfileBatch.commit();
+    
+    // Now, separately, create the admin notification. This is the operation that was failing.
+    const adminNotifRef = collection(db, `notifications`);
     const adminNotif: Omit<Notification, 'id'> = {
         role: 'users',
         title: "New User Joined",
@@ -83,10 +84,12 @@ export const useAuth = () => {
         isRead: false,
         createdAt: serverTimestamp(),
     };
-    batch.set(adminNotifRef, adminNotif);
 
-    // Removed the silent catch. Let errors propagate to be handled by the form's catch block.
-    await batch.commit();
+    // This is a separate write, not in the batch. If it fails, it won't roll back the user creation.
+    await addDoc(adminNotifRef, adminNotif).catch(error => {
+        // We can still proceed if this fails, but we should log it.
+        console.error("Failed to create admin notification:", error);
+    });
   }
 
   const login = async (email: string, pass: string) => {
