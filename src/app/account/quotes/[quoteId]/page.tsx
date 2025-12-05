@@ -3,7 +3,7 @@
 "use client"
 
 import { useFirestore, useDoc } from "@/firebase";
-import { type Quote } from "@/types";
+import { type Quote, type QuoteItem } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -14,7 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { Separator } from "@/components/ui/separator";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState }from "react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -25,6 +25,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { doc, updateDoc, writeBatch, collection, serverTimestamp, addDoc } from "firebase/firestore";
+import { Loader2 } from "lucide-react";
+import { errorEmitter } from "@/firebase/error-emitter";
+import { FirestorePermissionError } from "@/firebase/errors";
 
 
 interface QuoteDetailsPageProps {
@@ -33,6 +37,8 @@ interface QuoteDetailsPageProps {
   }
 }
 
+type ActionType = 'accept' | 'reject' | 'cancel' | 'resubmit' | null;
+
 export default function QuoteDetailsPage({ params }: QuoteDetailsPageProps) {
     const { quoteId } = params;
     const db = useFirestore();
@@ -40,6 +46,9 @@ export default function QuoteDetailsPage({ params }: QuoteDetailsPageProps) {
     const { toast } = useToast();
     const router = useRouter();
     const [showRetryDialog, setShowRetryDialog] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [actionType, setActionType] = useState<ActionType>(null);
+
 
     const { data: quote, loading: quoteLoading } = useDoc<Quote>(db, "quotes", quoteId);
 
@@ -60,9 +69,6 @@ export default function QuoteDetailsPage({ params }: QuoteDetailsPageProps) {
         
         closePaymentModal(); 
         
-        // The webhook will create an Order document. We can try to guess the ID,
-        // but it's better to redirect the user to a page where they can see their new order appear.
-        // Redirecting to the orders list is a good start.
         router.push(`/account/orders`);
     };
 
@@ -72,8 +78,6 @@ export default function QuoteDetailsPage({ params }: QuoteDetailsPageProps) {
         amount: totalCost,
         currency: 'NGN',
         payment_options: 'card,mobilemoney,ussd',
-        // The redirect_url is a fallback for if the modal closes unexpectedly.
-        // The primary success handling is in the callback.
         redirect_url: `${typeof window !== 'undefined' ? window.location.origin : ''}/account/orders`,
         customer: {
             email: user?.email || '',
@@ -94,12 +98,102 @@ export default function QuoteDetailsPage({ params }: QuoteDetailsPageProps) {
                handlePaymentSuccess(response);
             },
             onClose: () => {
-                // This is called when the modal is closed by the user or on failure.
-                // We'll prompt the user to retry.
                 setShowRetryDialog(true);
             },
         });
     };
+
+    const handleQuoteAction = async (newStatus: "Quote Ready" | "Rejected" | "Cancelled") => {
+        if (!user || !quote) return;
+        
+        setActionType(newStatus === 'Quote Ready' ? 'accept' : newStatus === 'Rejected' ? 'reject' : 'cancel');
+        setIsSubmitting(true);
+        const quoteRef = doc(db, 'quotes', quoteId);
+
+        try {
+            await updateDoc(quoteRef, {
+                status: newStatus,
+                updatedAt: serverTimestamp(),
+            });
+            toast({
+                title: `Quote ${newStatus}`,
+                description: `You have successfully ${newStatus.toLowerCase()}ed the quote.`,
+            });
+        } catch (error) {
+            console.error(`Error ${newStatus.toLowerCase()}ing quote:`, error);
+            const permissionError = new FirestorePermissionError({
+                    path: `quotes/${quoteId}`,
+                    operation: 'update',
+                    requestResourceData: { status: newStatus }
+                });
+            errorEmitter.emit('permission-error', permissionError);
+            toast({
+                title: "Action Failed",
+                description: `Could not update the quote status.`,
+                variant: 'destructive',
+            });
+        } finally {
+            setIsSubmitting(false);
+            setActionType(null);
+        }
+    };
+    
+    const handleResubmitForRecosting = async () => {
+        if (!user || !quote) return;
+        
+        setActionType('resubmit');
+        setIsSubmitting(true);
+
+        const batch = writeBatch(db);
+        const newQuoteRef = doc(collection(db, "quotes"));
+        
+        // Create a new quote with the same data, but a new ID and reset status
+        const newQuoteData: Omit<Quote, 'id'> = {
+            ...quote,
+            status: 'Pending Review', // Reset status for admin
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
+        };
+        batch.set(newQuoteRef, newQuoteData);
+
+        // Notify admin
+        const adminNotifRef = doc(collection(db, `notifications`));
+        batch.set(adminNotifRef, {
+            role: 'quotes',
+            title: "Quote Resubmitted",
+            description: `User ${quote.customerName} resubmitted a quote for re-costing.`,
+            href: `/admin/quotes/${newQuoteRef.id}`,
+            isRead: false,
+            createdAt: serverTimestamp(),
+        });
+
+        try {
+            await batch.commit();
+            toast({
+                title: 'Quote Resubmitted',
+                description: 'Your edited quote has been sent for re-costing. You will be redirected.',
+            });
+            router.push(`/account/quotes/${newQuoteRef.id}`);
+
+        } catch (error) {
+             console.error(`Error resubmitting quote:`, error);
+            const permissionError = new FirestorePermissionError({
+                    path: `quotes`,
+                    operation: 'create',
+                    requestResourceData: newQuoteData
+                });
+            errorEmitter.emit('permission-error', permissionError);
+             toast({
+                title: "Action Failed",
+                description: `Could not resubmit the quote.`,
+                variant: 'destructive',
+            });
+        } finally {
+            setIsSubmitting(false);
+            setActionType(null);
+        }
+    };
+
 
     if (quoteLoading) {
         return (
@@ -114,16 +208,9 @@ export default function QuoteDetailsPage({ params }: QuoteDetailsPageProps) {
     if (!quote) {
         return <p>Quote not found.</p>
     }
-
-    const canPay = quote.status === 'Quote Ready' && totalCost > 0;
     
-    const serviceLabels = quote.services?.map(serviceId => {
-        // This is a placeholder. In a real app, you'd fetch service labels from settings.
-        // For now, we just format the ID.
-        return serviceId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-    });
-
-
+    const canPay = (quote.status === 'Quote Ready' || quote.status === 'Cancelled') && totalCost > 0;
+    
     return (
         <div className="space-y-6">
             <AlertDialog open={showRetryDialog} onOpenChange={setShowRetryDialog}>
@@ -223,18 +310,53 @@ export default function QuoteDetailsPage({ params }: QuoteDetailsPageProps) {
                         <span>₦{totalCost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                     </div>
                 </CardContent>
-                {canPay && (
-                    <CardFooter>
-                         <Button className="w-full" size="lg" onClick={initiatePayment}>
-                            Pay with Flutterwave
-                        </Button>
-                    </CardFooter>
-                )}
-                 {!canPay && quote.status !== 'Paid' && (
+                <CardFooter className="flex-col gap-2">
+                     {quote.status === 'Pending User Action' && (
+                        <div className="w-full space-y-2">
+                            <p className="text-sm text-center text-muted-foreground">Please review your quote. You can accept to proceed to payment, or reject if you do not wish to continue.</p>
+                            <div className="flex flex-col sm:flex-row gap-2 w-full">
+                                <Button className="w-full" size="lg" onClick={() => handleQuoteAction('Quote Ready')} disabled={isSubmitting}>
+                                    {isSubmitting && actionType === 'accept' && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                    Accept Quote
+                                </Button>
+                                <Button className="w-full" size="lg" variant="destructive" onClick={() => handleQuoteAction('Rejected')} disabled={isSubmitting}>
+                                     {isSubmitting && actionType === 'reject' && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                     Reject Quote
+                                </Button>
+                            </div>
+                        </div>
+                    )}
+                    {canPay && (
+                         <div className="w-full space-y-2">
+                            <Button className="w-full" size="lg" onClick={initiatePayment}>
+                                Pay with Flutterwave
+                            </Button>
+                            {quote.status === 'Quote Ready' && (
+                                <Button className="w-full" variant="outline" onClick={() => handleQuoteAction('Cancelled')} disabled={isSubmitting}>
+                                    {isSubmitting && actionType === 'cancel' && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                    Cancel
+                                </Button>
+                            )}
+                        </div>
+                    )}
+                    {quote.status === 'Rejected' && (
+                         <div className="w-full space-y-2 text-center">
+                            <p className="text-sm text-muted-foreground">This quote was rejected. You can resubmit it for re-costing if you wish to make changes.</p>
+                            <Button onClick={handleResubmitForRecosting} disabled={isSubmitting}>
+                                {isSubmitting && actionType === 'resubmit' && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                Edit & Resubmit for Re-costing
+                            </Button>
+                        </div>
+                    )}
+                 {!canPay && !['Pending User Action', 'Rejected', 'Paid'].includes(quote.status) && (
                     <CardFooter>
                         <p className="text-sm text-muted-foreground text-center w-full">This quote is not yet ready for payment. The status must be 'Quote Ready' and have a total cost greater than zero.</p>
                     </CardFooter>
                 )}
+                 {quote.status === 'Paid' && (
+                     <p className="text-sm text-green-600 font-medium text-center w-full">This quote has been paid. Your order has been created.</p>
+                 )}
+                </CardFooter>
             </Card>
         </div>
     )
