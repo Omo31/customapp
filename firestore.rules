@@ -38,7 +38,9 @@ service cloud.firestore {
 
     // Users Collection
     match /users/{userId} {
-      allow read, update, write: if isOwner(userId) || hasRole('users');
+      allow read: if isOwner(userId) || hasRole('users');
+      allow update: if isOwner(userId) || hasRole('users');
+      allow create: if isOwner(userId); // Users can create their own profile doc
       allow delete: if hasRole('users');
 
       // User Notifications Subcollection
@@ -47,29 +49,24 @@ service cloud.firestore {
       }
     }
     
+    // Allow admins with 'users' role to list all user documents
     match /users/{document=**} {
         allow list: if hasRole('users');
-        allow create: if isOwner(request.resource.data.userId);
     }
-
 
     // Quotes Collection
     match /quotes/{quoteId} {
-        allow read: if isOwner(resource.data.userId) || hasRole('quotes');
+        allow read: if isQuoteOwner(resource.data) || hasRole('quotes');
         allow update: if (hasRole('quotes')) || 
                         (isQuoteOwner(resource.data) && (
-                            // Allow user to accept, reject, or cancel
                             isChangingStatusTo('Quote Ready') ||
                             isChangingStatusTo('Rejected') ||
-                            isChangingStatusTo('Cancelled') ||
-                            // Allow user to resubmit a quote for re-costing
-                            (request.resource.data.status == 'Pending Review' && resource.data.status != 'Paid')
+                            isChangingStatusTo('Cancelled')
                         ));
-        allow write: if hasRole('quotes');
+        allow create: if request.auth != null; // Any authenticated user can create a quote
     }
     match /quotes/{document=**} {
         allow list: if hasRole('quotes') || isOwner(resource.data.userId);
-        allow create: if request.auth != null;
     }
     
     // Orders Collection
@@ -84,7 +81,7 @@ service cloud.firestore {
     
     // Purchase Orders Collection (Admin-only)
     match /purchaseOrders/{poId} {
-        allow read, write, create: if hasRole('purchase-orders');
+      allow read, write, create: if hasRole('purchase-orders');
     }
     match /purchaseOrders/{document=**} {
         allow list: if hasRole('purchase-orders');
@@ -106,7 +103,7 @@ service cloud.firestore {
                         );
       allow write: if hasRole('notifications');
       // Allow server-side processes (like webhooks) and admins to create notifications
-      allow create: if request.auth == null || isAdmin();
+      allow create: if hasRole('notifications') || hasRole('quotes') || hasRole('users');
     }
 
     // Settings Collection
