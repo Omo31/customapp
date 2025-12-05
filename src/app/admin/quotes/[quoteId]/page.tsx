@@ -104,7 +104,7 @@ export default function AdminQuoteDetailsPage({ params }: AdminQuoteDetailsPageP
         // 1. Update the quote document with prices and new status
         const quoteRef = doc(db, "quotes", quoteId);
         batch.update(quoteRef, {
-            status: "Quote Ready",
+            status: "Pending User Action",
             items: values.items,
             pricedServices: values.serviceCosts,
             shippingCost: values.shippingCost,
@@ -115,8 +115,8 @@ export default function AdminQuoteDetailsPage({ params }: AdminQuoteDetailsPageP
         const userNotifRef = doc(collection(db, `users/${quote.userId}/notifications`));
         batch.set(userNotifRef, {
             userId: quote.userId,
-            title: "Your Quote is Ready!",
-            description: `Your quote request #${quoteId.slice(-6)} has been updated with pricing.`,
+            title: "Your Quote is Ready for Review!",
+            description: `Your quote request #${quoteId.slice(-6)} has been updated with pricing. Please accept or reject it.`,
             href: `/account/quotes/${quoteId}`,
             isRead: false,
             createdAt: serverTimestamp(),
@@ -166,6 +166,18 @@ export default function AdminQuoteDetailsPage({ params }: AdminQuoteDetailsPageP
         return settings?.optionalServices?.find(s => s.id === serviceId)?.label || serviceId;
     });
 
+    const getBadgeVariant = (status: Quote['status']) => {
+        switch (status) {
+            case 'Pending Review':
+                return 'destructive';
+            case 'Quote Ready':
+            case 'Paid':
+                return 'default';
+            default:
+                return 'secondary';
+        }
+    }
+
     return (
         <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -177,7 +189,7 @@ export default function AdminQuoteDetailsPage({ params }: AdminQuoteDetailsPageP
                                 For: {quote.customerName} ({quote.customerEmail})
                             </CardDescription>
                         </div>
-                        <Badge variant={quote.status === 'Pending Review' ? 'destructive' : 'default'}>{quote.status}</Badge>
+                        <Badge variant={getBadgeVariant(quote.status)}>{quote.status}</Badge>
                     </CardHeader>
                     <CardContent className="grid md:grid-cols-2 gap-6">
                         <div>
