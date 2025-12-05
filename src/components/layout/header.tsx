@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useAuth } from '@/hooks/use-auth';
@@ -42,7 +41,7 @@ export default function Header() {
   const { data: adminNotifications } = useCollection<Notification>(
     db,
     user && isAdmin ? 'notifications' : '',
-    { where: ["role", "in", adminNotificationRoles] }
+    { where: ["role", "in", adminNotificationRoles], limit: 100 }
   );
   
   // Further filter admin notifications on the client for `isRead: false`
@@ -71,9 +70,12 @@ export default function Header() {
                 <Link href={isAdmin ? "/admin/notifications" : "/account/notifications"}>
                   <Bell className="h-5 w-5" />
                   {unreadCount > 0 && (
-                    <Badge variant="destructive" className="absolute -top-1 -right-1 h-4 w-4 justify-center rounded-full p-0 text-xs">
-                      {unreadCount}
-                    </Badge>
+                     <>
+                      <span className="absolute right-1 top-1 flex h-3 w-3">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-3 w-3 bg-sky-500"></span>
+                      </span>
+                     </>
                   )}
                   <span className="sr-only">Notifications</span>
                 </Link>
