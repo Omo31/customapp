@@ -44,7 +44,7 @@ export type Quote = {
   lagosLga?: string;
   shippingAddress?: string;
   shippingCost?: number;
-  status: 'Pending Review' | 'Quote Ready' | 'Accepted' | 'Rejected' | 'Paid';
+  status: 'Pending Review' | 'Pending User Action' | 'Quote Ready' | 'Rejected' | 'Cancelled' | 'Paid';
   createdAt: any; // Firestore Timestamp
   updatedAt: any; // Firestore Timestamp
 };

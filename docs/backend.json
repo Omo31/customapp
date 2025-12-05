@@ -104,7 +104,7 @@
         "shippingCost": { "type": "number" },
         "status": {
           "type": "string",
-          "enum": ["Pending Review", "Quote Ready", "Accepted", "Rejected", "Paid"]
+          "enum": ["Pending Review", "Pending User Action", "Quote Ready", "Accepted", "Rejected", "Cancelled", "Paid"]
         },
         "createdAt": {
           "type": "string",
@@ -424,6 +424,10 @@
     "/users/{userId}/notifications/{notificationId}": {
       "schema": { "$ref": "#/entities/Notification" },
       "description": "Stores notifications for a specific user."
+    },
+    "/notifications/{notificationId}": {
+      "schema": { "$ref": "#/entities/Notification" },
+      "description": "Stores notifications for admin roles."
     },
     "/settings/store": {
         "schema": { "$ref": "#/entities/StoreSettings" },

@@ -26,6 +26,14 @@ service cloud.firestore {
                getUserData().roles.size() > 0;
     }
     
+    function isQuoteOwner(quote) {
+      return isOwner(quote.userId);
+    }
+    
+    function isChangingStatusTo(status) {
+      return request.resource.data.status == status && resource.data.status != status;
+    }
+
     // --- Collection Rules ---
 
     // Users Collection
@@ -48,11 +56,19 @@ service cloud.firestore {
     // Quotes Collection
     match /quotes/{quoteId} {
         allow read: if isOwner(resource.data.userId) || hasRole('quotes');
-        allow update, write: if hasRole('quotes');
-        allow delete: if hasRole('quotes');
+        allow update: if (hasRole('quotes')) || 
+                        (isQuoteOwner(resource.data) && (
+                            // Allow user to accept, reject, or cancel
+                            isChangingStatusTo('Quote Ready') ||
+                            isChangingStatusTo('Rejected') ||
+                            isChangingStatusTo('Cancelled') ||
+                            // Allow user to resubmit a quote for re-costing
+                            (request.resource.data.status == 'Pending Review' && resource.data.status != 'Paid')
+                        ));
+        allow write: if hasRole('quotes');
     }
     match /quotes/{document=**} {
-        allow list: if hasRole('quotes');
+        allow list: if hasRole('quotes') || isOwner(resource.data.userId);
         allow create: if request.auth != null;
     }
     
@@ -62,40 +78,35 @@ service cloud.firestore {
         allow update, write: if hasRole('orders');
     }
     match /orders/{document=**} {
-        allow list: if hasRole('orders');
-        // Direct creation/deletion of orders is disallowed. They are created by the webhook.
+        allow list: if hasRole('orders') || isOwner(resource.data.userId);
         allow create, delete: if false; 
     }
     
     // Purchase Orders Collection (Admin-only)
     match /purchaseOrders/{poId} {
-        allow read, write: if hasRole('purchase-orders');
+        allow read, write, create: if hasRole('purchase-orders');
     }
     match /purchaseOrders/{document=**} {
-        allow list, create: if hasRole('purchase-orders');
+        allow list: if hasRole('purchase-orders');
     }
     
     // Expenses Collection (Admin-only)
     match /expenses/{expenseId} {
-        allow read, write: if hasRole('accounting');
+        allow read, write, create: if hasRole('accounting');
     }
     match /expenses/{document=**} {
-         allow list, create: if hasRole('accounting');
+         allow list: if hasRole('accounting');
     }
     
     // Root Notifications Collection for Admins
     match /notifications/{notificationId} {
-        // Admins can list/read notifications relevant to their roles
-        allow list, read: if isAdmin() && (
-                            (resource.data.role == 'orders' && hasRole('orders')) ||
-                            (resource.data.role == 'quotes' && hasRole('quotes')) ||
-                            (resource.data.role == 'users' && hasRole('users')) ||
-                            // Admins with the central 'notifications' role can see all admin notifications
-                            hasRole('notifications')
-                         );
-        allow write: if hasRole('notifications');
-        // Allow server-side processes (like webhooks) and admins to create notifications
-        allow create: if request.auth == null || isAdmin();
+      allow read, list: if isAdmin() && (
+                          ('role' in resource.data && hasRole(resource.data.role)) ||
+                          hasRole('notifications')
+                        );
+      allow write: if hasRole('notifications');
+      // Allow server-side processes (like webhooks) and admins to create notifications
+      allow create: if request.auth == null || isAdmin();
     }
 
     // Settings Collection
