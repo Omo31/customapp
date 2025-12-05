@@ -42,7 +42,7 @@ export default function OrdersPage() {
         startAfter: startAfter
     });
 
-    const loading = authLoading || (currentPage === 1 ? initialLoading : paginatedLoading);
+    const loading = authLoading || initialLoading || paginatedLoading;
     const currentOrders = currentPage > 1 ? paginatedOrders : initialData;
 
   return (
@@ -59,14 +59,13 @@ export default function OrdersPage() {
           <CardDescription>A list of all your orders.</CardDescription>
         </CardHeader>
         <CardContent>
-          {loading && (
+          {loading && !currentOrders ? (
              <div className="space-y-2">
                 {[...Array(PAGE_SIZE)].map((_, i) => (
                   <Skeleton key={i} className="h-12 w-full" />
                 ))}
               </div>
-          )}
-          {!loading && currentOrders && (
+          ) : (
              <Table>
                 <TableHeader>
                   <TableRow>
@@ -78,7 +77,7 @@ export default function OrdersPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {currentOrders.length > 0 ? currentOrders.map(order => (
+                  {currentOrders && currentOrders.length > 0 ? currentOrders.map(order => (
                     <TableRow key={order.id}>
                       <TableCell className="font-medium">#...{order.id?.slice(-6)}</TableCell>
                       <TableCell>{order.createdAt?.seconds ? new Date(order.createdAt.seconds * 1000).toLocaleDateString() : 'N/A'}</TableCell>

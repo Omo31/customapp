@@ -112,7 +112,7 @@ export default function NotificationsPage() {
     }
   }
 
-  const currentLoading = currentPage === 1 ? initialLoading : paginatedLoading;
+  const loading = initialLoading || paginatedLoading;
   const currentNotifications = currentPage > 1 ? paginatedNotifications : initialNotifications;
 
   return (
@@ -130,7 +130,7 @@ export default function NotificationsPage() {
           <CardDescription>All your notifications are listed below. Unread notifications are marked with a blue dot.</CardDescription>
         </CardHeader>
         <CardContent>
-          {currentLoading && (
+          {loading && !currentNotifications ? (
             <div className="space-y-4">
               {[...Array(5)].map((_, i) => (
                 <div key={i} className="flex items-center space-x-4">
@@ -142,8 +142,7 @@ export default function NotificationsPage() {
                 </div>
               ))}
             </div>
-          )}
-          {!currentLoading && currentNotifications && currentNotifications.length > 0 && (
+          ) : currentNotifications && currentNotifications.length > 0 ? (
             <div className="space-y-1">
               {currentNotifications.map((notif) => (
                 <div key={notif.id} className="flex items-center justify-between p-3 hover:bg-secondary rounded-lg transition-colors">
@@ -178,8 +177,7 @@ export default function NotificationsPage() {
                 </div>
               ))}
             </div>
-          )}
-          {!currentLoading && (!currentNotifications || currentNotifications.length === 0) && (
+          ) : (
              <div className="text-center py-12">
                 <BellRing className="mx-auto h-12 w-12 text-muted-foreground" />
                 <h3 className="mt-4 text-lg font-semibold">No New Notifications</h3>

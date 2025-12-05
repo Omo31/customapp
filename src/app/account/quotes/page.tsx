@@ -42,7 +42,7 @@ export default function QuotesPage() {
         startAfter: startAfter
     });
 
-    const loading = authLoading || (currentPage === 1 ? initialLoading : paginatedLoading);
+    const loading = authLoading || initialLoading || paginatedLoading;
     const currentQuotes = currentPage > 1 ? quotes : initialData;
 
     const getBadgeVariant = (status: Quote['status']) => {
@@ -72,14 +72,13 @@ export default function QuotesPage() {
           <CardDescription>A list of all your quote requests.</CardDescription>
         </CardHeader>
         <CardContent>
-          {loading && (
+          {loading && !currentQuotes ? (
              <div className="space-y-2">
                 {[...Array(PAGE_SIZE)].map((_, i) => (
                     <Skeleton key={i} className="h-12 w-full" />
                 ))}
               </div>
-          )}
-          {!loading && currentQuotes && (
+          ) : (
              <Table>
                 <TableHeader>
                   <TableRow>
@@ -90,7 +89,7 @@ export default function QuotesPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {currentQuotes.length > 0 ? currentQuotes.map(quote => (
+                  {currentQuotes && currentQuotes.length > 0 ? currentQuotes.map(quote => (
                     <TableRow key={quote.id}>
                       <TableCell className="font-medium">#...{quote.id?.slice(-6)}</TableCell>
                       <TableCell>{quote.createdAt?.seconds ? new Date(quote.createdAt.seconds * 1000).toLocaleDateString() : 'N/A'}</TableCell>

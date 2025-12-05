@@ -59,7 +59,7 @@ function AdminUsersContent() {
     orderBy: ["createdAt", "desc"]
   });
 
-  const loading = currentPage === 1 ? initialLoading : paginatedLoading;
+  const loading = initialLoading || paginatedLoading;
   const currentUsers = currentPage > 1 ? users : initialData;
 
 
@@ -165,14 +165,13 @@ function AdminUsersContent() {
           <CardDescription>A paginated list of all users in the system.</CardDescription>
         </CardHeader>
         <CardContent>
-          {loading && (
+          {loading && !currentUsers ? (
             <div className="space-y-2">
               {[...Array(PAGE_SIZE)].map((_, i) => (
                 <Skeleton key={i} className="h-16 w-full" />
               ))}
             </div>
-          )}
-          {!loading && currentUsers && (
+          ) : (
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
@@ -184,7 +183,7 @@ function AdminUsersContent() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {currentUsers.length > 0 ? (
+                  {currentUsers && currentUsers.length > 0 ? (
                     currentUsers.map((user) => (
                       <TableRow key={user.id}>
                         <TableCell className="font-medium">

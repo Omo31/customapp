@@ -39,7 +39,7 @@ function AdminQuotesContent() {
         startAfter: startAfter
     });
 
-    const loading = currentPage === 1 ? initialLoading : paginatedLoading;
+    const loading = initialLoading || paginatedLoading;
     const currentQuotes = currentPage > 1 ? quotes : initialData;
 
     const getBadgeVariant = (status: Quote['status']) => {
@@ -65,14 +65,13 @@ function AdminQuotesContent() {
           <CardDescription>A live list of all quote requests.</CardDescription>
         </CardHeader>
         <CardContent>
-           {loading && (
+           {loading && !currentQuotes ? (
              <div className="space-y-2">
                 {[...Array(PAGE_SIZE)].map((_, i) => (
                   <Skeleton key={i} className="h-12 w-full" />
                 ))}
               </div>
-          )}
-          {!loading && currentQuotes && (
+          ) : (
              <Table>
                 <TableHeader>
                   <TableRow>
@@ -84,7 +83,7 @@ function AdminQuotesContent() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {currentQuotes.length > 0 ? currentQuotes.map(quote => (
+                  {currentQuotes && currentQuotes.length > 0 ? currentQuotes.map(quote => (
                     <TableRow key={quote.id}>
                       <TableCell className="font-medium">{quote.customerName}</TableCell>
                       <TableCell>{new Date(quote.createdAt?.seconds * 1000).toLocaleDateString()}</TableCell>

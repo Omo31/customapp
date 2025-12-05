@@ -39,7 +39,7 @@ function AdminPurchaseOrdersContent() {
         startAfter: startAfter
     });
 
-    const loading = currentPage === 1 ? initialLoading : paginatedLoading;
+    const loading = initialLoading || paginatedLoading;
     const currentPurchaseOrders = currentPage > 1 ? purchaseOrders : initialData;
 
   return (
@@ -62,14 +62,13 @@ function AdminPurchaseOrdersContent() {
           <CardDescription>A list of all purchase orders.</CardDescription>
         </CardHeader>
         <CardContent>
-          {loading && (
+          {loading && !currentPurchaseOrders ? (
              <div className="space-y-2">
                 {[...Array(PAGE_SIZE)].map((_, i) => (
                   <Skeleton key={i} className="h-12 w-full" />
                 ))}
               </div>
-          )}
-          {!loading && currentPurchaseOrders && (
+          ) : (
              <Table>
                 <TableHeader>
                   <TableRow>
@@ -82,7 +81,7 @@ function AdminPurchaseOrdersContent() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {currentPurchaseOrders.length > 0 ? currentPurchaseOrders.map(po => (
+                  {currentPurchaseOrders && currentPurchaseOrders.length > 0 ? currentPurchaseOrders.map(po => (
                     <TableRow key={po.id}>
                       <TableCell className="font-medium">#{po.poNumber}</TableCell>
                       <TableCell>{po.supplier.name}</TableCell>

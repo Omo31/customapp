@@ -40,7 +40,7 @@ function AdminOrdersContent() {
         startAfter: startAfter
     });
     
-    const loading = currentPage === 1 ? initialLoading : paginatedLoading;
+    const loading = initialLoading || paginatedLoading;
     const currentOrders = currentPage > 1 ? orders : initialData;
 
   return (
@@ -55,14 +55,13 @@ function AdminOrdersContent() {
           <CardDescription>A live list of all orders.</CardDescription>
         </CardHeader>
         <CardContent>
-          {loading && (
+          {loading && !currentOrders ? (
              <div className="space-y-2">
                 {[...Array(PAGE_SIZE)].map((_, i) => (
                   <Skeleton key={i} className="h-12 w-full" />
                 ))}
               </div>
-          )}
-          {!loading && currentOrders && (
+          ) : (
              <Table>
                 <TableHeader>
                   <TableRow>
@@ -74,7 +73,7 @@ function AdminOrdersContent() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {currentOrders.length > 0 ? currentOrders.map(order => (
+                  {currentOrders && currentOrders.length > 0 ? currentOrders.map(order => (
                     <TableRow key={order.id}>
                       <TableCell className="font-medium">{order.customerName}</TableCell>
                       <TableCell>{new Date(order.createdAt?.seconds * 1000).toLocaleDateString()}</TableCell>

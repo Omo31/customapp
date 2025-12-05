@@ -49,7 +49,7 @@ export function ExpensesManager() {
         startAfter: startAfter
     });
 
-    const loading = currentPage === 1 ? initialLoading : paginatedLoading;
+    const loading = initialLoading || paginatedLoading;
     const currentExpenses = currentPage > 1 ? expenses : initialData;
 
   return (
@@ -78,14 +78,13 @@ export function ExpensesManager() {
         </Dialog>
       </CardHeader>
       <CardContent>
-        {loading && (
+        {loading && !currentExpenses ? (
            <div className="space-y-2">
               {[...Array(PAGE_SIZE)].map((_, i) => (
                 <Skeleton key={i} className="h-12 w-full" />
               ))}
             </div>
-        )}
-        {!loading && currentExpenses && (
+        ) : (
            <Table>
               <TableHeader>
                 <TableRow>
@@ -97,7 +96,7 @@ export function ExpensesManager() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {currentExpenses.length > 0 ? currentExpenses.map(expense => (
+                {currentExpenses && currentExpenses.length > 0 ? currentExpenses.map(expense => (
                   <TableRow key={expense.id}>
                     <TableCell className="font-medium">{expense.description}</TableCell>
                     <TableCell><Badge variant="outline">{expense.category}</Badge></TableCell>

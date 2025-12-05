@@ -51,7 +51,7 @@ function AdminNotificationsContent() {
       startAfter: startAfter
   });
   
-  const loading = currentPage === 1 ? initialLoading : paginatedLoading;
+  const loading = initialLoading || paginatedLoading;
   const currentNotifications = currentPage > 1 ? notifications : initialData;
 
   const handleMarkAsRead = async (notificationId: string) => {
@@ -87,7 +87,7 @@ function AdminNotificationsContent() {
           <CardDescription>A live feed of all notifications for your roles. Unread notifications are marked with a blue dot.</CardDescription>
         </CardHeader>
         <CardContent>
-          {loading && (
+          {loading && !currentNotifications ? (
              <div className="space-y-4">
               {[...Array(10)].map((_, i) => (
                 <div key={i} className="flex items-center space-x-4">
@@ -99,8 +99,7 @@ function AdminNotificationsContent() {
                 </div>
               ))}
             </div>
-          )}
-          {!loading && currentNotifications && currentNotifications.length > 0 && (
+          ) : currentNotifications && currentNotifications.length > 0 ? (
             <div className="space-y-1">
               {currentNotifications.map((notif) => (
                 <div key={notif.id} className="flex items-center justify-between p-3 hover:bg-secondary rounded-lg transition-colors">
@@ -135,8 +134,7 @@ function AdminNotificationsContent() {
                 </div>
               ))}
             </div>
-          )}
-          {!loading && (!currentNotifications || currentNotifications.length === 0) && (
+          ) : (
             <div className="text-center py-12">
                 <BellRing className="mx-auto h-12 w-12 text-muted-foreground" />
                 <h3 className="mt-4 text-lg font-semibold">No Notifications</h3>
