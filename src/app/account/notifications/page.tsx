@@ -9,7 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
-import { doc, updateDoc } from "firebase/firestore";
+import { doc, updateDoc, writeBatch } from "firebase/firestore";
 import { Pagination, PaginationContent, PaginationItem, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 import { BellRing, Check, Loader2 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
@@ -35,7 +35,7 @@ export default function NotificationsPage() {
   const { toast } = useToast();
   const [updatingId, setUpdatingId] = useState<string | null>(null);
 
-  const { data: initialNotifications, loading: initialLoading } = useCollection<Notification>(db, `users/${user?.uid}/notifications`, {
+  const { data: initialNotifications, loading: initialLoading } = useCollection<Notification>(db, user ? `users/${user?.uid}/notifications` : '', {
       orderBy: ["createdAt", "desc"],
       limit: PAGE_SIZE,
   });
@@ -49,7 +49,7 @@ export default function NotificationsPage() {
     startAfter,
   } = usePagination({ data: initialNotifications, pageSize: PAGE_SIZE });
 
-   const { data: paginatedNotifications, loading: paginatedLoading } = useCollection<Notification>(db, `users/${user?.uid}/notifications`, {
+   const { data: paginatedNotifications, loading: paginatedLoading } = useCollection<Notification>(db, user ? `users/${user?.uid}/notifications` : '', {
       orderBy: ["createdAt", "desc"],
       limit: PAGE_SIZE,
       startAfter: startAfter,
@@ -70,6 +70,20 @@ export default function NotificationsPage() {
       form.reset(userProfile.notificationPreferences);
     }
   }, [userProfile, form]);
+
+  // Effect to mark all notifications as read when the page is viewed
+  useEffect(() => {
+    if (initialNotifications && initialNotifications.some(n => !n.isRead)) {
+      const batch = writeBatch(db);
+      initialNotifications.forEach(notif => {
+        if (!notif.isRead) {
+          const notifRef = doc(db, `users/${user!.uid}/notifications`, notif.id!);
+          batch.update(notifRef, { isRead: true });
+        }
+      });
+      batch.commit().catch(err => console.error("Failed to mark notifications as read:", err));
+    }
+  }, [initialNotifications, db, user]);
 
 
   const handleMarkAsRead = async (notificationId: string) => {

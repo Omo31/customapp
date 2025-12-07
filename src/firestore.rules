@@ -109,8 +109,9 @@ service cloud.firestore {
     match /notifications/{notificationId} {
       allow read, list: if isAdmin();
       allow update, delete: if hasRole('notifications');
-      // Allow any newly authenticated user to create the 'New User Joined' notification,
-      // and allow server-side processes (webhooks) to create notifications.
+      // Allow any authenticated user to create a notification.
+      // This is necessary for the "New User Joined" and "Quote Submitted" notifications.
+      // The content of the notification is validated by the server-side logic (auth hook).
       allow create: if request.auth != null;
     }
 

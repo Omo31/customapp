@@ -35,7 +35,8 @@ function AdminUsersContent() {
   const { toast } = useToast();
   const router = useRouter();
 
-  const { data: initialData, loading: initialLoading } = useCollection<UserProfile>(db, "users", {
+  // Use a state to force re-render, which will re-run the collection hook
+  const { data: initialData, loading: initialLoading, error } = useCollection<UserProfile>(db, "users", {
     orderBy: ["createdAt", "desc"],
     limit: PAGE_SIZE,
   });
@@ -70,7 +71,7 @@ function AdminUsersContent() {
   ) => {
     if (typeof isChecked !== "boolean") return;
 
-    const userToUpdate = users?.find((u) => u.id === userId);
+    const userToUpdate = currentUsers?.find((u) => u.id === userId);
     if (!userToUpdate) return;
 
     // Prevent superadmin roles from being changed
@@ -232,21 +233,23 @@ function AdminUsersContent() {
             </div>
           )}
         </CardContent>
-         <CardFooter>
-            <Pagination>
-                <PaginationContent>
-                    <PaginationItem>
-                        <PaginationPrevious onClick={handlePreviousPage} aria-disabled={!canGoPrevious} className={!canGoPrevious ? "pointer-events-none opacity-50" : undefined} />
-                    </PaginationItem>
-                    <PaginationItem>
-                       <span className="p-2 text-sm">Page {currentPage}</span>
-                    </PaginationItem>
-                    <PaginationItem>
-                        <PaginationNext onClick={handleNextPage} aria-disabled={!canGoNext} className={!canGoNext ? "pointer-events-none opacity-50" : undefined} />
-                    </PaginationItem>
-                </PaginationContent>
-            </Pagination>
-        </CardFooter>
+         {currentUsers && currentUsers.length > 0 && (
+          <CardFooter>
+              <Pagination>
+                  <PaginationContent>
+                      <PaginationItem>
+                          <PaginationPrevious onClick={handlePreviousPage} aria-disabled={!canGoPrevious} className={!canGoPrevious ? "pointer-events-none opacity-50" : undefined} />
+                      </PaginationItem>
+                      <PaginationItem>
+                        <span className="p-2 text-sm">Page {currentPage}</span>
+                      </PaginationItem>
+                      <PaginationItem>
+                          <PaginationNext onClick={handleNextPage} aria-disabled={!canGoNext} className={!canGoNext ? "pointer-events-none opacity-50" : undefined} />
+                      </PaginationItem>
+                  </PaginationContent>
+              </Pagination>
+          </CardFooter>
+         )}
       </Card>
     </div>
   );

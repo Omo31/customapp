@@ -38,7 +38,6 @@ export const useAuth = () => {
   const loading = userLoading || actionLoading;
 
   const saveUserProfile = async (firebaseUser: FirebaseUser, firstName: string, lastName: string) => {
-    // Separate the user profile creation from the admin notification
     const userProfileBatch = writeBatch(db);
     const userRef = doc(db, 'users', firebaseUser.uid);
     
@@ -70,11 +69,9 @@ export const useAuth = () => {
         createdAt: serverTimestamp(),
     };
     userProfileBatch.set(userNotifRef, userNotif);
-
-    // Commit the user-specific writes first. This must succeed for the rest to continue.
+    
     await userProfileBatch.commit();
     
-    // Now, separately, create the admin notification. This is the operation that was failing.
     const adminNotifRef = collection(db, `notifications`);
     const adminNotif: Omit<Notification, 'id'> = {
         role: 'users',
@@ -84,11 +81,15 @@ export const useAuth = () => {
         isRead: false,
         createdAt: serverTimestamp(),
     };
-
-    // This is a separate write, not in the batch. If it fails, it won't roll back the user creation.
+    
     await addDoc(adminNotifRef, adminNotif).catch(error => {
-        // We can still proceed if this fails, but we should log it.
         console.error("Failed to create admin notification:", error);
+         const permissionError = new FirestorePermissionError({
+            path: `notifications`,
+            operation: 'create',
+            requestResourceData: adminNotif
+        });
+        errorEmitter.emit('permission-error', permissionError);
     });
   }
 
