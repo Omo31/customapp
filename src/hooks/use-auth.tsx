@@ -70,8 +70,11 @@ export const useAuth = () => {
     };
     userProfileBatch.set(userNotifRef, userNotif);
     
+    // This batch will create the user's profile and their own welcome notification
     await userProfileBatch.commit();
     
+    // After the user's profile is created, attempt to create the admin notification separately.
+    // This decouples the operations and ensures the user signup doesn't fail if this part does.
     const adminNotifRef = collection(db, `notifications`);
     const adminNotif: Omit<Notification, 'id'> = {
         role: 'users',
@@ -83,6 +86,7 @@ export const useAuth = () => {
     };
     
     await addDoc(adminNotifRef, adminNotif).catch(error => {
+        // If this fails, we emit a permission error but don't block the user's signup process.
         console.error("Failed to create admin notification:", error);
          const permissionError = new FirestorePermissionError({
             path: `notifications`,
