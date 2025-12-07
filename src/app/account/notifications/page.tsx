@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Skeleton } from "@/components/ui/skeleton";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { doc, updateDoc, writeBatch } from "firebase/firestore";
 import { Pagination, PaginationContent, PaginationItem, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 import { BellRing, Check, Loader2 } from "lucide-react";
@@ -72,23 +72,28 @@ export default function NotificationsPage() {
   }, [userProfile, form]);
 
   const loading = initialLoading || paginatedLoading;
-  const currentNotifications = currentPage > 1 ? paginatedNotifications : initialNotifications;
+  const currentNotifications = useMemo(() => {
+    return currentPage > 1 ? paginatedNotifications : initialNotifications;
+  }, [currentPage, paginatedNotifications, initialNotifications]);
 
   // Effect to mark all visible notifications as read when the page is viewed or data changes
   useEffect(() => {
-    if (user && currentNotifications && currentNotifications.some(n => !n.isRead)) {
-      const batch = writeBatch(db);
-      currentNotifications.forEach(notif => {
-        if (!notif.isRead && notif.id) {
-          const notifRef = doc(db, `users/${user.uid}/notifications`, notif.id);
-          batch.update(notifRef, { isRead: true });
-        }
-      });
-      
-      batch.commit().catch(err => {
-        // This might fail silently if rules are restrictive, but it's not critical.
-        console.error("Failed to mark notifications as read:", err);
-      });
+    if (user && currentNotifications && currentNotifications.length > 0) {
+      const unreadNotifications = currentNotifications.filter(n => !n.isRead);
+      if (unreadNotifications.length > 0) {
+        const batch = writeBatch(db);
+        unreadNotifications.forEach(notif => {
+          if (notif.id) {
+            const notifRef = doc(db, `users/${user.uid}/notifications`, notif.id);
+            batch.update(notifRef, { isRead: true });
+          }
+        });
+        
+        batch.commit().catch(err => {
+          // This might fail silently if rules are restrictive, but it's not critical.
+          console.error("Failed to mark notifications as read:", err);
+        });
+      }
     }
   }, [currentNotifications, db, user]);
 
