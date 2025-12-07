@@ -71,6 +71,7 @@ export type UserProfile = {
   phoneNumber?: string;
   shippingAddress?: string;
   roles: string[];
+  disabled?: boolean;
   notificationPreferences?: {
     marketingEmails?: boolean;
     quoteAndOrderUpdates?: boolean;

@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useFirestore, useCollection } from "@/firebase";
@@ -20,12 +21,13 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
 import { Label } from "@/components/ui/label";
-import { Eye, Download } from "lucide-react";
+import { Eye, Download, UserX } from "lucide-react";
 import { useState } from "react";
 import { Pagination, PaginationContent, PaginationItem, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 import { useRouter } from "next/navigation";
 import { usePagination } from "@/hooks/use-pagination";
 import ProtectedRoute from "@/components/auth/protected-route";
+import { Switch } from "@/components/ui/switch";
 
 
 const PAGE_SIZE = 10;
@@ -113,6 +115,28 @@ function AdminUsersContent() {
     }
   };
 
+  const handleDisableUser = async (userId: string, isDisabled: boolean) => {
+     const userToUpdate = currentUsers?.find((u) => u.id === userId);
+     if (!userToUpdate) return;
+
+     if (userToUpdate.email === 'oluwagbengwumi@gmail.com') {
+        toast({ title: "Action Forbidden", description: "The superadmin account cannot be disabled.", variant: "destructive" });
+        router.refresh();
+        return;
+     }
+
+     try {
+        const userRef = doc(db, 'users', userId);
+        await updateDoc(userRef, { disabled: isDisabled });
+        toast({
+            title: `User ${isDisabled ? 'Disabled' : 'Enabled'}`,
+            description: `${userToUpdate.firstName} has been ${isDisabled ? 'disabled' : 'enabled'}.`,
+        });
+     } catch (error) {
+        toast({ title: "Error", description: "Could not update user status.", variant: "destructive" });
+     }
+  }
+
   const handleDownloadCsv = () => {
     if (!allUsers) {
         toast({ title: 'No user data to download.', variant: 'destructive' });
@@ -186,9 +210,12 @@ function AdminUsersContent() {
                 <TableBody>
                   {currentUsers && currentUsers.length > 0 ? (
                     currentUsers.map((user) => (
-                      <TableRow key={user.id}>
+                      <TableRow key={user.id} className={user.disabled ? "bg-muted/50" : ""}>
                         <TableCell className="font-medium">
-                          <div className="font-medium">{user.firstName} {user.lastName}</div>
+                          <div className="font-medium flex items-center gap-2">
+                            {user.disabled && <UserX className="h-4 w-4 text-destructive" />}
+                            {user.firstName} {user.lastName}
+                          </div>
                           <div className="text-sm text-muted-foreground md:hidden">{user.email}</div>
                         </TableCell>
                         <TableCell className="hidden md:table-cell">{user.email}</TableCell>
@@ -211,7 +238,13 @@ function AdminUsersContent() {
                             ))}
                           </div>
                         </TableCell>
-                        <TableCell className="text-right">
+                        <TableCell className="text-right space-x-2">
+                           <Switch
+                            aria-label={`Disable user ${user.firstName}`}
+                            checked={!!user.disabled}
+                            onCheckedChange={(isChecked) => handleDisableUser(user.id!, isChecked)}
+                            disabled={user.email === 'oluwagbengwumi@gmail.com'}
+                           />
                           <Button asChild variant="outline" size="sm">
                             <Link href={`/admin/users/${user.id}`}>
                               <Eye className="mr-0 h-4 w-4 md:mr-2" />
