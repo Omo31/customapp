@@ -63,16 +63,13 @@ service cloud.firestore {
       allow create: if request.auth.uid == userId;
       // Only admins can delete.
       allow delete: if hasRole('users');
+      // Admins with the 'users' role can list all user documents
+      allow list: if hasRole('users');
 
       // User Notifications Subcollection
       match /notifications/{notificationId} {
         allow read, write, create, list: if isOwner(userId) && isNotDisabled();
       }
-    }
-    
-    // Allow admins with 'users' role to list all user documents
-    match /users/{document=**} {
-        allow list: if hasRole('users');
     }
 
     // Quotes Collection

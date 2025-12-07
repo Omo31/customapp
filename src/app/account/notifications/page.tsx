@@ -71,11 +71,14 @@ export default function NotificationsPage() {
     }
   }, [userProfile, form]);
 
+  const loading = initialLoading || paginatedLoading;
+  const currentNotifications = currentPage > 1 ? paginatedNotifications : initialNotifications;
+
   // Effect to mark all notifications as read when the page is viewed
   useEffect(() => {
-    if (initialNotifications && initialNotifications.some(n => !n.isRead)) {
+    if (currentNotifications && currentNotifications.some(n => !n.isRead)) {
       const batch = writeBatch(db);
-      initialNotifications.forEach(notif => {
+      currentNotifications.forEach(notif => {
         if (!notif.isRead) {
           const notifRef = doc(db, `users/${user!.uid}/notifications`, notif.id!);
           batch.update(notifRef, { isRead: true });
@@ -83,7 +86,7 @@ export default function NotificationsPage() {
       });
       batch.commit().catch(err => console.error("Failed to mark notifications as read:", err));
     }
-  }, [initialNotifications, db, user]);
+  }, [currentNotifications, db, user]);
 
 
   const handleMarkAsRead = async (notificationId: string) => {
@@ -125,9 +128,6 @@ export default function NotificationsPage() {
         });
     }
   }
-
-  const loading = initialLoading || paginatedLoading;
-  const currentNotifications = currentPage > 1 ? paginatedNotifications : initialNotifications;
 
   return (
     <div className="space-y-6">

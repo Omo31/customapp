@@ -37,11 +37,14 @@ function AdminUsersContent() {
   const { toast } = useToast();
   const router = useRouter();
 
-  // Use a state to force re-render, which will re-run the collection hook
+  // This state is used as a key to force a re-render of the useCollection hooks,
+  // ensuring we get fresh data after a role change reverts.
+  const [refreshKey, setRefreshKey] = useState(0);
+
   const { data: initialData, loading: initialLoading, error } = useCollection<UserProfile>(db, "users", {
     orderBy: ["createdAt", "desc"],
     limit: PAGE_SIZE,
-  });
+  }, [refreshKey]);
 
   const {
     currentPage,
@@ -56,11 +59,11 @@ function AdminUsersContent() {
     orderBy: ["createdAt", "desc"],
     limit: PAGE_SIZE,
     startAfter: startAfter
-  });
+  }, [refreshKey, startAfter]);
   
   const { data: allUsers, loading: allUsersLoading } = useCollection<UserProfile>(db, "users", {
     orderBy: ["createdAt", "desc"]
-  });
+  }, [refreshKey]);
 
   const loading = initialLoading || paginatedLoading;
   const currentUsers = currentPage > 1 ? users : initialData;
@@ -83,9 +86,8 @@ function AdminUsersContent() {
         description: "Cannot change the roles of the superadmin.",
         variant: "destructive"
       });
-      // We need to trigger a re-render to revert the checkbox state visually
-      // This is a bit of a hack, but it works without complex state management.
-      router.refresh(); 
+      // Force a re-render to visually revert the checkbox
+      setRefreshKey(prev => prev + 1);
       return;
     }
 
@@ -121,7 +123,7 @@ function AdminUsersContent() {
 
      if (userToUpdate.email === 'oluwagbengwumi@gmail.com') {
         toast({ title: "Action Forbidden", description: "The superadmin account cannot be disabled.", variant: "destructive" });
-        router.refresh();
+        setRefreshKey(prev => prev + 1);
         return;
      }
 
