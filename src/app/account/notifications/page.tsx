@@ -74,17 +74,21 @@ export default function NotificationsPage() {
   const loading = initialLoading || paginatedLoading;
   const currentNotifications = currentPage > 1 ? paginatedNotifications : initialNotifications;
 
-  // Effect to mark all notifications as read when the page is viewed
+  // Effect to mark all visible notifications as read when the page is viewed or data changes
   useEffect(() => {
-    if (currentNotifications && currentNotifications.some(n => !n.isRead)) {
+    if (user && currentNotifications && currentNotifications.some(n => !n.isRead)) {
       const batch = writeBatch(db);
       currentNotifications.forEach(notif => {
-        if (!notif.isRead) {
-          const notifRef = doc(db, `users/${user!.uid}/notifications`, notif.id!);
+        if (!notif.isRead && notif.id) {
+          const notifRef = doc(db, `users/${user.uid}/notifications`, notif.id);
           batch.update(notifRef, { isRead: true });
         }
       });
-      batch.commit().catch(err => console.error("Failed to mark notifications as read:", err));
+      
+      batch.commit().catch(err => {
+        // This might fail silently if rules are restrictive, but it's not critical.
+        console.error("Failed to mark notifications as read:", err);
+      });
     }
   }, [currentNotifications, db, user]);
 
