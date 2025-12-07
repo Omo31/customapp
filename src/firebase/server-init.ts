@@ -1,16 +1,20 @@
-
-import { initializeApp, getApps, getApp, cert } from 'firebase-admin/app';
+import { initializeApp, getApps, getApp, cert, App } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 
 const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT_KEY
   ? JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY)
   : undefined;
 
-const adminApp = !getApps().length
-  ? initializeApp({
-      credential: cert(serviceAccount!),
-    })
-  : getApp();
+let adminApp: App;
+
+if (getApps().length === 0) {
+  adminApp = initializeApp({
+    credential: serviceAccount ? cert(serviceAccount) : undefined,
+  });
+} else {
+  adminApp = getApp();
+}
+
 
 const db = getFirestore(adminApp);
 
