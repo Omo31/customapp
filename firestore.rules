@@ -22,10 +22,16 @@ service cloud.firestore {
     function isOwner(userId) {
       return request.auth != null && request.auth.uid == userId && isNotDisabled();
     }
+    
+    function isSuperAdmin() {
+      return request.auth != null &&
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+             'superadmin' in getUserData(request.auth.uid).roles;
+    }
 
     function hasRole(role) {
         // Superadmin always has the role.
-        if (request.auth.token.email == 'oluwagbengwumi@gmail.com') {
+        if (isSuperAdmin()) {
             return true;
         }
         return request.auth != null &&
@@ -36,7 +42,7 @@ service cloud.firestore {
     
     function isAdmin() {
         // An admin is anyone with at least one role.
-        if (request.auth.token.email == 'oluwagbengwumi@gmail.com') {
+        if (isSuperAdmin()) {
             return true;
         }
         return request.auth != null && 
@@ -58,7 +64,8 @@ service cloud.firestore {
     // Users Collection
     match /users/{userId} {
       allow read: if hasRole('users') || (isOwner(userId) && isNotDisabled());
-      allow update: if hasRole('users') || (isOwner(userId) && isNotDisabled());
+      // A user cannot change their own roles. Superadmin can change anyone's roles.
+      allow update: if (isOwner(userId) && isNotDisabled() && !('roles' in request.resource.data)) || hasRole('users');
       allow create: if request.auth.uid == userId;
       allow delete: if hasRole('users');
       allow list: if hasRole('users');
@@ -80,7 +87,7 @@ service cloud.firestore {
                       ));
       allow create: if request.auth != null && isNotDisabled();
       // Admins can list all quotes. Regular users can only list their own.
-      allow list: if (hasRole('quotes')) || (request.auth != null && request.query.where[0] == 'userId' && request.query.where[2] == request.auth.uid && isNotDisabled());
+      allow list: if hasRole('quotes') || (request.auth != null && request.query.where[0] == 'userId' && request.query.where[2] == request.auth.uid && isNotDisabled());
     }
     
     // Orders Collection
@@ -89,7 +96,7 @@ service cloud.firestore {
       allow write, update: if hasRole('orders');
       allow create, delete: if false; 
       // Admins can list all orders. Regular users can only list their own.
-      allow list: if (hasRole('orders')) || (request.auth != null && request.query.where[0] == 'userId' && request.query.where[2] == request.auth.uid && isNotDisabled());
+      allow list: if hasRole('orders') || (request.auth != null && request.query.where[0] == 'userId' && request.query.where[2] == request.auth.uid && isNotDisabled());
     }
     
     // Purchase Orders Collection (Admin-only)

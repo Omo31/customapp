@@ -21,13 +21,14 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
 import { Label } from "@/components/ui/label";
-import { Eye, Download, UserX } from "lucide-react";
+import { Eye, Download, UserX, ShieldBan } from "lucide-react";
 import { useState } from "react";
 import { Pagination, PaginationContent, PaginationItem, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 import { useRouter } from "next/navigation";
 import { usePagination } from "@/hooks/use-pagination";
 import ProtectedRoute from "@/components/auth/protected-route";
 import { Switch } from "@/components/ui/switch";
+import { useAuth } from "@/hooks/use-auth";
 
 
 const PAGE_SIZE = 10;
@@ -36,6 +37,7 @@ function AdminUsersContent() {
   const db = useFirestore();
   const { toast } = useToast();
   const router = useRouter();
+  const { user: currentUser, hasRole } = useAuth();
 
   // This state is used as a key to force a re-render of the useCollection hooks,
   // ensuring we get fresh data after a role change reverts.
@@ -74,21 +76,31 @@ function AdminUsersContent() {
     role: string,
     isChecked: boolean | "indeterminate"
   ) => {
-    if (typeof isChecked !== "boolean") return;
+    if (typeof isChecked !== "boolean" || !currentUser) return;
 
     const userToUpdate = currentUsers?.find((u) => u.id === userId);
     if (!userToUpdate) return;
-
-    // Prevent superadmin roles from being changed
-    if (userToUpdate.email === 'oluwagbengwumi@gmail.com') {
+    
+    // Prevent non-superadmins from changing superadmin role
+    if (role === 'superadmin' && !hasRole('superadmin')) {
       toast({
         title: "Action Forbidden",
-        description: "Cannot change the roles of the superadmin.",
+        description: "Only a superadmin can grant or revoke the superadmin role.",
         variant: "destructive"
       });
-      // Force a re-render to visually revert the checkbox
       setRefreshKey(prev => prev + 1);
       return;
+    }
+    
+    // Prevent user from removing their own 'users' role and locking themselves out
+    if (userId === currentUser.uid && role === 'users' && !isChecked) {
+        toast({
+            title: "Action Prevented",
+            description: "You cannot remove your own 'Users' management role.",
+            variant: "destructive"
+        });
+        setRefreshKey(prev => prev + 1); // Revert checkbox
+        return;
     }
 
     const currentRoles = userToUpdate.roles || [];
@@ -121,8 +133,8 @@ function AdminUsersContent() {
      const userToUpdate = currentUsers?.find((u) => u.id === userId);
      if (!userToUpdate) return;
 
-     if (userToUpdate.email === 'oluwagbengwumi@gmail.com') {
-        toast({ title: "Action Forbidden", description: "The superadmin account cannot be disabled.", variant: "destructive" });
+     if (userToUpdate.roles.includes('superadmin') && !hasRole('superadmin')) {
+        toast({ title: "Action Forbidden", description: "The superadmin account cannot be disabled by a non-superadmin.", variant: "destructive" });
         setRefreshKey(prev => prev + 1);
         return;
      }
@@ -231,7 +243,7 @@ function AdminUsersContent() {
                                   onCheckedChange={(isChecked) =>
                                     handleRoleChange(user.id!, role, isChecked)
                                   }
-                                  disabled={user.email === 'oluwagbengwumi@gmail.com'}
+                                  disabled={role === 'superadmin' && !hasRole('superadmin')}
                                 />
                                 <Label htmlFor={`${user.id}-${role}`} className="text-sm font-medium capitalize leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
                                   {role.replace('-', ' ')}
@@ -245,7 +257,7 @@ function AdminUsersContent() {
                             aria-label={`Disable user ${user.firstName}`}
                             checked={!!user.disabled}
                             onCheckedChange={(isChecked) => handleDisableUser(user.id!, isChecked)}
-                            disabled={user.email === 'oluwagbengwumi@gmail.com'}
+                            disabled={user.roles?.includes('superadmin') && !hasRole('superadmin')}
                            />
                           <Button asChild variant="outline" size="sm">
                             <Link href={`/admin/users/${user.id}`}>

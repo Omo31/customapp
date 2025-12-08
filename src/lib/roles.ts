@@ -1,3 +1,4 @@
+
 export const allAdminNavItems = [
   { title: "Dashboard", href: "/admin/dashboard", role: "dashboard" },
   { title: "Orders", href: "/admin/orders", role: "orders" },
@@ -10,7 +11,11 @@ export const allAdminNavItems = [
   { title: "Settings", href: "/admin/settings", role: "settings" },
 ];
 
-export const allAdminRoles = allAdminNavItems.map(item => item.role);
+// Combine nav roles with special roles like 'superadmin'
+const navRoles = allAdminNavItems.map(item => item.role);
+const specialRoles = ["superadmin"];
+
+export const allAdminRoles = [...navRoles, ...specialRoles];
 
 export function getRoleFromPath(path: string): string | undefined {
   const item = allAdminNavItems.find(item => item.href === path);

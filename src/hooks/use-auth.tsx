@@ -41,7 +41,9 @@ export const useAuth = () => {
     const userProfileBatch = writeBatch(db);
     const userRef = doc(db, 'users', firebaseUser.uid);
     
-    const isSuperAdmin = firebaseUser.email === "oluwagbengwumi@gmail.com";
+    // Check if this is the very first user signing up
+    const isFirstUser = (await db.collection('users').limit(1).get()).empty;
+    const isSuperAdmin = isFirstUser || firebaseUser.email === "oluwagbengwumi@gmail.com";
     
     const userProfile: Omit<UserProfile, 'id'> = {
       firstName,

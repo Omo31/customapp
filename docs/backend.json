@@ -32,7 +32,7 @@
           "description": "A list of roles assigned to the user.",
           "items": {
             "type": "string",
-            "enum": ["dashboard", "orders", "quotes", "users", "purchase-orders", "accounting", "analytics", "notifications", "settings"]
+            "enum": ["dashboard", "orders", "quotes", "users", "purchase-orders", "accounting", "analytics", "notifications", "settings", "superadmin"]
           }
         },
         "notificationPreferences": {
