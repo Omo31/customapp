@@ -6,20 +6,16 @@ service cloud.firestore {
     // --- Helper Functions ---
     // NOTE: All functions are declared at the top level, inside the first match block.
 
-    // Gets the profile document for a given user ID. Defaults to the requesting user.
     function getUserData(userId) {
       let uid = userId ? userId : request.auth.uid;
       return get(/databases/$(database)/documents/users/$(uid)).data;
     }
 
-    // Checks if the requesting user's account is NOT disabled.
-    // This is critical for almost all security checks.
     function isNotDisabled() {
       // If the `disabled` field does not exist or is not true, the user is considered active.
       return getUserData(request.auth.uid).disabled != true;
     }
 
-    // Checks if the requesting user is the owner of a document and is not disabled.
     function isOwner(userId) {
       return request.auth != null && request.auth.uid == userId && isNotDisabled();
     }
