@@ -35,6 +35,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
 import { Textarea } from "@/components/ui/textarea"
+import { Label } from "@/components/ui/label"
 
 const profileFormSchema = z.object({
   firstName: z.string().min(1, "First name is required."),
@@ -357,7 +358,7 @@ export default function ProfilePage() {
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <div className="space-y-2">
-                        <FormLabel htmlFor="delete-confirm-password">Password</FormLabel>
+                        <Label htmlFor="delete-confirm-password">Password</Label>
                         <Input 
                             id="delete-confirm-password"
                             type="password"
