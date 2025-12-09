@@ -26,7 +26,8 @@ const useMemoFirebase = <T,>(factory: () => T | null, deps: any[]): T | null => 
 export const useCollection = <T,>(
   db: Firestore,
   path: string,
-  options: UseCollectionOptions = {}
+  options: UseCollectionOptions = {},
+  deps: any[] = []
 ) => {
   const [data, setData] = useState<WithDoc<T>[] | null>(null);
   const [loading, setLoading] = useState(true);
@@ -38,7 +39,10 @@ export const useCollection = <T,>(
     const constraints: QueryConstraint[] = [];
 
     if (options.where) {
-      if (options.where[2] === '' || options.where[2] === undefined) {
+      if (Array.isArray(options.where[2]) && options.where[2].length === 0) {
+        return null;
+      }
+      if (options.where[2] === '' || options.where[2] === undefined || options.where[2] === null) {
           return null; 
       }
       constraints.push(where(options.where[0], options.where[1], options.where[2]));
@@ -57,11 +61,11 @@ export const useCollection = <T,>(
     }
 
     return query(collection(db, path), ...constraints);
-  }, [db, path, JSON.stringify(options)]); // Simple deep dependency check
+  }, [db, path, JSON.stringify(options), ...deps]); // Simple deep dependency check
 
 
   useEffect(() => {
-    if (!queryRef) {
+    if (queryRef === null) {
       setData([]);
       setLoading(false);
       return;
@@ -103,6 +107,12 @@ export const useCollectionGroup = <T,>(
 
         const constraints: QueryConstraint[] = [];
 
+	if (options.where) {
+         if (options.where[2] === '' || options.where[2] === undefined) {
+          return null; 
+         }
+
+
         if (options.where) {
             constraints.push(where(options.where[0], options.where[1], options.where[2]));
         }
@@ -120,6 +130,7 @@ export const useCollectionGroup = <T,>(
         }
         
         return query(collectionGroup(db, path), ...constraints);
+      }
     }, [db, path, JSON.stringify(options)]);
 
     useEffect(() => {
