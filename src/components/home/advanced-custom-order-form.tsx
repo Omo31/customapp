@@ -91,6 +91,7 @@ export function AdvancedCustomOrderForm() {
     defaultValues: {
       items: [{ name: "", quantity: "1", unit: "", customUnit: "" }],
       services: [],
+      additionalNotes: "",
       customerName: "",
       customerEmail: "",
       customerPhone: "",
@@ -134,6 +135,7 @@ export function AdvancedCustomOrderForm() {
     const quoteRef = doc(collection(db, "quotes"));
     const newQuoteData = {
       ...values,
+      additionalNotes: values.additionalNotes || '',
       userId: user.uid,
       shippingCost: watchDeliveryOption === 'delivery-lagos' ? selectedLgaFee : 0,
       status: 'Pending Review',
