@@ -16,6 +16,11 @@ service cloud.firestore {
         // This function should only be called after verifying the user document exists.
         return getUserData(request.auth.uid).disabled != true;
     }
+
+    function userExists(userId) {
+        let uid = userId != null ? userId : request.auth.uid;
+        return exists(/databases/$(database)/documents/users/$(uid));
+    }
     
     function isOwner(userId) {
       return request.auth != null && request.auth.uid == userId;
@@ -24,7 +29,7 @@ service cloud.firestore {
     function isSuperAdmin() {
       // User must be authenticated, their profile must exist, and they must have the 'superadmin' role.
       return request.auth != null &&
-             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+             userExists(request.auth.uid) &&
              get(/databases/$(database)/documents/users/$(request.auth.uid)).data.roles.hasAny(['superadmin']);
     }
 
@@ -32,7 +37,7 @@ service cloud.firestore {
         // Superadmin bypasses role checks OR the user has the specific role and is not disabled.
         return isSuperAdmin() || (
                request.auth != null &&
-               exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+               userExists(request.auth.uid) &&
                get(/databases/$(database)/documents/users/$(request.auth.uid)).data.roles.hasAny([role]) &&
                get(/databases/$(database)/documents/users/$(request.auth.uid)).data.disabled != true
         );
@@ -42,7 +47,7 @@ service cloud.firestore {
         // Superadmin bypasses role checks OR the user has at least one role and is not disabled.
         return isSuperAdmin() || (
                request.auth != null && 
-               exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+               userExists(request.auth.uid) &&
                get(/databases/$(database)/documents/users/$(request.auth.uid)).data.roles.size() > 0 &&
                get(/databases/$(database)/documents/users/$(request.auth.uid)).data.disabled != true
         );
@@ -92,8 +97,9 @@ service cloud.firestore {
                           isChangingStatusTo('Rejected') ||
                           isChangingStatusTo('Cancelled')
                       ));
-      allow create: if request.auth != null && isNotDisabled();
-      allow list: if hasRole('quotes') || (request.auth != null && request.query.where[0] == 'userId' && request.query.where[2] == request.auth.uid && isNotDisabled());
+      // A user must be authenticated and their user profile must exist and not be disabled.
+      allow create: if request.auth != null && userExists(request.auth.uid) && isNotDisabled();
+      allow list: if hasRole('quotes') || (request.auth != null && request.query.where[0] == 'userId' && request.query.where[2] == request.auth.uid && userExists(request.auth.uid) && isNotDisabled());
     }
     
     // Orders Collection
@@ -103,7 +109,7 @@ service cloud.firestore {
       allow create, delete: if false; 
       
       // Regular users can list their own orders. Admins with 'orders' role can list all orders.
-      allow list: if hasRole('orders') || (request.auth != null && request.query.where[0] == 'userId' && request.query.where[2] == request.auth.uid && isNotDisabled());
+      allow list: if hasRole('orders') || (request.auth != null && request.query.where[0] == 'userId' && request.query.where[2] == request.auth.uid && userExists(request.auth.uid) && isNotDisabled());
     }
     
     // Purchase Orders Collection (Admin-only)
