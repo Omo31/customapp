@@ -25,7 +25,7 @@ service cloud.firestore {
       // User must be authenticated, their profile must exist, and they must have the 'superadmin' role.
       return request.auth != null &&
              exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-             'superadmin' in get(/databases/$(database)/documents/users/$(request.auth.uid)).data.roles;
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.roles.hasAny(['superadmin']);
     }
 
     function hasRole(role) {
@@ -33,7 +33,7 @@ service cloud.firestore {
         return isSuperAdmin() || (
                request.auth != null &&
                exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-               role in get(/databases/$(database)/documents/users/$(request.auth.uid)).data.roles &&
+               get(/databases/$(database)/documents/users/$(request.auth.uid)).data.roles.hasAny([role]) &&
                get(/databases/$(database)/documents/users/$(request.auth.uid)).data.disabled != true
         );
     }
@@ -73,7 +73,8 @@ service cloud.firestore {
       
       allow delete: if hasRole('users');
       
-      // Separate rule for listing the entire collection
+      // Separate rule for listing the entire collection. This is CRITICAL for real-time updates.
+      // It ONLY checks the permission of the person making the request.
       allow list: if hasRole('users');
 
       // User Notifications Subcollection
