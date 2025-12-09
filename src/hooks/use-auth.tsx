@@ -15,14 +15,13 @@ import {
     updatePassword,
     deleteUser,
 } from "firebase/auth";
-import { doc, serverTimestamp, writeBatch, collection, addDoc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, serverTimestamp, writeBatch, collection, setDoc } from 'firebase/firestore';
 import { useToast } from "./use-toast";
 import { useState } from "react";
 import { auth, db } from "@/firebase";
 import type { UserProfile, Notification } from "@/types";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { FirestorePermissionError } from "@/firebase/errors";
-import { allAdminRoles } from "@/lib/roles";
 import { useRouter } from "next/navigation";
 
 
@@ -41,35 +40,27 @@ export const useAuth = () => {
       const userRef = doc(db, 'users', firebaseUser.uid);
       
       try {
-        // Attempt to create the user document. This is allowed by security rules.
+        // Create the user profile document. Roles will be handled by the backend function.
         const userProfile: Omit<UserProfile, 'id'> = {
             firstName,
             lastName,
             email: firebaseUser.email || "",
             phoneNumber: "",
             shippingAddress: "",
-            roles: [], // Start with no roles
+            roles: [], // Start with no roles. Cloud Function will add admin roles if necessary.
             createdAt: serverTimestamp(),
             notificationPreferences: {
                 marketingEmails: false,
                 quoteAndOrderUpdates: true,
             }
         };
-        await setDoc(userRef, userProfile);
+        
+        const batch = writeBatch(db);
+        
+        // 1. Set the user profile
+        batch.set(userRef, userProfile);
 
-        // Now, check if this user should be superadmin. This is a separate step.
-        // In a transaction for safety, but a simple get/update would also work.
-        // This part would ideally be a cloud function for absolute security.
-        const isSuperAdminByEmail = firebaseUser.email === "oluwagbengwumi@gmail.com";
-        if (isSuperAdminByEmail) {
-             const userProfileBatch = writeBatch(db);
-             userProfileBatch.update(userRef, { roles: ["superadmin", ...allAdminRoles.filter(r => r !== 'superadmin')] });
-             await userProfileBatch.commit();
-        }
-
-
-        // Create welcome notifications
-        const notifBatch = writeBatch(db);
+        // 2. Create the welcome notification for the user
         const userNotifRef = doc(collection(db, `users/${firebaseUser.uid}/notifications`));
         const userNotif: Omit<Notification, 'id'> = {
             userId: firebaseUser.uid,
@@ -79,8 +70,9 @@ export const useAuth = () => {
             isRead: false,
             createdAt: serverTimestamp(),
         };
-        notifBatch.set(userNotifRef, userNotif);
+        batch.set(userNotifRef, userNotif);
         
+        // 3. Create the notification for admins
         const adminNotifRef = doc(collection(db, `notifications`));
         const adminNotif: Omit<Notification, 'id'> = {
             role: 'users',
@@ -90,12 +82,14 @@ export const useAuth = () => {
             isRead: false,
             createdAt: serverTimestamp(),
         };
-        notifBatch.set(adminNotifRef, adminNotif);
-        await notifBatch.commit();
+        batch.set(adminNotifRef, adminNotif);
+        
+        // Commit all writes at once
+        await batch.commit();
 
       } catch (error: any) {
-         // This will catch errors from both setDoc and the notification writes
          console.error("Error during user profile/notification creation: ", error);
+         // This will catch errors from the batch commit
          // We're throwing so the calling signup function can catch it and show a toast
          throw new Error("Failed to initialize user profile. Please try again.");
       }
@@ -129,7 +123,7 @@ export const useAuth = () => {
         displayName: `${firstName} ${lastName}`
       });
       
-      // The saveUserProfile is now more robust.
+      // This function no longer does any permission-sensitive checks.
       await saveUserProfile(userCredential.user, firstName, lastName);
       
       await sendEmailVerification(userCredential.user);
