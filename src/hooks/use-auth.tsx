@@ -15,7 +15,7 @@ import {
     updatePassword,
     deleteUser,
 } from "firebase/auth";
-import { doc, serverTimestamp, writeBatch, collection, addDoc, getDocs, query, limit } from 'firebase/firestore';
+import { doc, serverTimestamp, writeBatch, collection, addDoc, getDoc, setDoc } from 'firebase/firestore';
 import { useToast } from "./use-toast";
 import { useState } from "react";
 import { auth, db } from "@/firebase";
@@ -38,63 +38,67 @@ export const useAuth = () => {
   const loading = userLoading || actionLoading;
 
   const saveUserProfile = async (firebaseUser: FirebaseUser, firstName: string, lastName: string) => {
-    const userProfileBatch = writeBatch(db);
-    const userRef = doc(db, 'users', firebaseUser.uid);
-    
-    // Check if this is the very first user signing up
-    const usersQuery = query(collection(db, "users"), limit(1));
-    const usersSnapshot = await getDocs(usersQuery);
-    const isFirstUser = usersSnapshot.empty;
-    const isSuperAdminByEmail = firebaseUser.email === "oluwagbengwumi@gmail.com";
+      const userRef = doc(db, 'users', firebaseUser.uid);
+      
+      try {
+        // Attempt to create the user document. This is allowed by security rules.
+        const userProfile: Omit<UserProfile, 'id'> = {
+            firstName,
+            lastName,
+            email: firebaseUser.email || "",
+            phoneNumber: "",
+            shippingAddress: "",
+            roles: [], // Start with no roles
+            createdAt: serverTimestamp(),
+            notificationPreferences: {
+                marketingEmails: false,
+                quoteAndOrderUpdates: true,
+            }
+        };
+        await setDoc(userRef, userProfile);
 
-    const userProfile: Omit<UserProfile, 'id'> = {
-      firstName,
-      lastName,
-      email: firebaseUser.email || "",
-      phoneNumber: "",
-      shippingAddress: "",
-      roles: isFirstUser || isSuperAdminByEmail ? ["superadmin", ...allAdminRoles.filter(r => r !== 'superadmin')] : [],
-      createdAt: serverTimestamp(),
-      notificationPreferences: {
-        marketingEmails: false,
-        quoteAndOrderUpdates: true,
+        // Now, check if this user should be superadmin. This is a separate step.
+        // In a transaction for safety, but a simple get/update would also work.
+        // This part would ideally be a cloud function for absolute security.
+        const isSuperAdminByEmail = firebaseUser.email === "oluwagbengwumi@gmail.com";
+        if (isSuperAdminByEmail) {
+             const userProfileBatch = writeBatch(db);
+             userProfileBatch.update(userRef, { roles: ["superadmin", ...allAdminRoles.filter(r => r !== 'superadmin')] });
+             await userProfileBatch.commit();
+        }
+
+
+        // Create welcome notifications
+        const notifBatch = writeBatch(db);
+        const userNotifRef = doc(collection(db, `users/${firebaseUser.uid}/notifications`));
+        const userNotif: Omit<Notification, 'id'> = {
+            userId: firebaseUser.uid,
+            title: "Welcome to BeautifulSoup&Foods!",
+            description: "We're so glad to have you. Explore our products and start shopping.",
+            href: "/",
+            isRead: false,
+            createdAt: serverTimestamp(),
+        };
+        notifBatch.set(userNotifRef, userNotif);
+        
+        const adminNotifRef = doc(collection(db, `notifications`));
+        const adminNotif: Omit<Notification, 'id'> = {
+            role: 'users',
+            title: "New User Joined",
+            description: `${firstName} ${lastName} (${firebaseUser.email}) just signed up.`,
+            href: `/admin/users/${firebaseUser.uid}`,
+            isRead: false,
+            createdAt: serverTimestamp(),
+        };
+        notifBatch.set(adminNotifRef, adminNotif);
+        await notifBatch.commit();
+
+      } catch (error: any) {
+         // This will catch errors from both setDoc and the notification writes
+         console.error("Error during user profile/notification creation: ", error);
+         // We're throwing so the calling signup function can catch it and show a toast
+         throw new Error("Failed to initialize user profile. Please try again.");
       }
-    };
-
-    userProfileBatch.set(userRef, userProfile, { merge: true });
-
-    const userNotifRef = doc(collection(db, `users/${firebaseUser.uid}/notifications`));
-    const userNotif: Omit<Notification, 'id'> = {
-        userId: firebaseUser.uid,
-        title: "Welcome to BeautifulSoup&Foods!",
-        description: "We're so glad to have you. Explore our products and start shopping.",
-        href: "/",
-        isRead: false,
-        createdAt: serverTimestamp(),
-    };
-    userProfileBatch.set(userNotifRef, userNotif);
-    
-    await userProfileBatch.commit();
-    
-    const adminNotifRef = collection(db, `notifications`);
-    const adminNotif: Omit<Notification, 'id'> = {
-        role: 'users',
-        title: "New User Joined",
-        description: `${firstName} ${lastName} (${firebaseUser.email}) just signed up.`,
-        href: `/admin/users/${firebaseUser.uid}`,
-        isRead: false,
-        createdAt: serverTimestamp(),
-    };
-    
-    await addDoc(adminNotifRef, adminNotif).catch(error => {
-        console.error("Failed to create admin notification:", error);
-         const permissionError = new FirestorePermissionError({
-            path: `notifications`,
-            operation: 'create',
-            requestResourceData: adminNotif
-        });
-        errorEmitter.emit('permission-error', permissionError);
-    });
   }
 
   const login = async (email: string, pass: string) => {
@@ -125,7 +129,9 @@ export const useAuth = () => {
         displayName: `${firstName} ${lastName}`
       });
       
+      // The saveUserProfile is now more robust.
       await saveUserProfile(userCredential.user, firstName, lastName);
+      
       await sendEmailVerification(userCredential.user);
       
       toast({

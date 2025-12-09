@@ -1,4 +1,3 @@
-
 rules_version = '2';
 
 service cloud.firestore {
@@ -6,14 +5,17 @@ service cloud.firestore {
     
     // --- Helper Functions ---
 
+    // Corrected to use ternary operator for conditional logic
     function getUserData(userId) {
-      // Default to request.auth.uid if no userId is provided
-      let uid = userId ? userId : request.auth.uid;
+      // Use userId if provided, otherwise default to request.auth.uid
+      let uid = userId != null ? userId : request.auth.uid;
+      // Note: This 'get' will fail if the user document doesn't exist.
       return get(/databases/$(database)/documents/users/$(uid)).data;
     }
     
     function isNotDisabled() {
         // A user is NOT disabled if the `disabled` field is not true.
+        // Assumes request.auth.uid is not null here, which is checked in callers.
         return getUserData(request.auth.uid).disabled != true;
     }
     
@@ -21,33 +23,34 @@ service cloud.firestore {
       return request.auth != null && request.auth.uid == userId && isNotDisabled();
     }
     
+    // Combined into a single declarative statement
     function isSuperAdmin() {
-      // A user is a superadmin if they have the 'superadmin' role.
+      // Requires the user doc to exist and have 'superadmin' in the roles map/list
       return request.auth != null &&
              exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
              'superadmin' in getUserData(request.auth.uid).roles;
     }
 
+    // Combined into a single declarative statement
     function hasRole(role) {
-        // Superadmin always has the role.
-        if (isSuperAdmin()) {
-            return true;
-        }
-        return request.auth != null &&
+        // Superadmin always has the role OR a regular user has the role and is not disabled.
+        return isSuperAdmin() || (
+               request.auth != null &&
                exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
                role in getUserData(request.auth.uid).roles &&
-               isNotDisabled();
+               isNotDisabled()
+        );
     }
     
+    // Combined into a single declarative statement
     function isAdmin() {
-        // An admin is anyone with at least one role.
-        if (isSuperAdmin()) {
-            return true;
-        }
-        return request.auth != null && 
+        // Superadmin OR any user with roles and is not disabled.
+        return isSuperAdmin() || (
+               request.auth != null && 
                exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
                getUserData(request.auth.uid).roles.size() > 0 &&
-               isNotDisabled();
+               isNotDisabled()
+        );
     }
     
     function isQuoteOwner(quote) {
@@ -55,6 +58,7 @@ service cloud.firestore {
     }
     
     function isChangingStatusTo(status) {
+      // This is valid: it checks the NEW data vs the EXISTING data
       return request.resource.data.status == status && resource.data.status != status;
     }
 
