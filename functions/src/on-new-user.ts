@@ -25,16 +25,15 @@ export const grantSuperAdminRole = onUserCreate(async (event) => {
     const userDocRef = getFirestore().collection("users").doc(uid);
 
     try {
-      // The user profile document is created on the client-side during signup.
-      // This function will now UPDATE that document to add the roles.
-      // Using .update() is safer as it won't overwrite other fields if they exist.
-      await userDocRef.update({
+      // Use .set() with { merge: true } to either create the document if it doesn't exist,
+      // or update it if it already exists, without overwriting other fields.
+      // This is more robust than .update() which fails if the document is missing.
+      await userDocRef.set({
         roles: ALL_ROLES,
-      });
+      }, { merge: true });
       logger.info(`Successfully granted superadmin role to ${uid}`);
     } catch (error) {
-      logger.error(`Error granting superadmin role to ${uid}. The user document may not exist yet or there was a permission issue. Error:`, error);
-      // You might want to add retry logic or more robust error handling here in a production app.
+      logger.error(`Error granting superadmin role to ${uid}. Error:`, error);
     }
   } else {
     logger.info(`New user ${email} registered. No special roles assigned.`);
