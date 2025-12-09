@@ -108,17 +108,15 @@ export default function QuoteDetailsPage({ params }: QuoteDetailsPageProps) {
         
         setActionType(newStatus === 'Quote Ready' ? 'accept' : newStatus === 'Rejected' ? 'reject' : 'cancel');
         setIsSubmitting(true);
-        const batch = writeBatch(db);
-
-        // 1. Update the quote status
+        
         const quoteRef = doc(db, 'quotes', quoteId);
+        const adminNotifRef = doc(collection(db, 'notifications'));
+
+        const batch = writeBatch(db);
         batch.update(quoteRef, {
             status: newStatus,
             updatedAt: serverTimestamp(),
         });
-
-        // 2. Create notification for admins
-        const adminNotifRef = doc(collection(db, 'notifications'));
         batch.set(adminNotifRef, {
             role: 'quotes',
             title: `User ${newStatus} Quote`,
@@ -134,8 +132,8 @@ export default function QuoteDetailsPage({ params }: QuoteDetailsPageProps) {
                 title: `Quote ${newStatus}`,
                 description: `You have successfully ${newStatus.toLowerCase()}ed the quote.`,
             });
-        } catch (error) {
-            console.error(`Error ${newStatus.toLowerCase()}ing quote:`, error);
+        } catch (serverError) {
+            console.error(`Error ${newStatus.toLowerCase()}ing quote:`, serverError);
             const permissionError = new FirestorePermissionError({
                     path: `quotes/${quoteId}`,
                     operation: 'update',
@@ -144,7 +142,7 @@ export default function QuoteDetailsPage({ params }: QuoteDetailsPageProps) {
             errorEmitter.emit('permission-error', permissionError);
             toast({
                 title: "Action Failed",
-                description: `Could not update the quote status.`,
+                description: `Could not update the quote status. Please check your permissions.`,
                 variant: 'destructive',
             });
         } finally {
@@ -159,20 +157,17 @@ export default function QuoteDetailsPage({ params }: QuoteDetailsPageProps) {
         setActionType('resubmit');
         setIsSubmitting(true);
 
-        const batch = writeBatch(db);
         const newQuoteRef = doc(collection(db, "quotes"));
-        
-        // Create a new quote with the same data, but a new ID and reset status
         const newQuoteData: Omit<Quote, 'id'> = {
             ...quote,
             status: 'Pending Review', // Reset status for admin
             createdAt: serverTimestamp(),
             updatedAt: serverTimestamp(),
         };
-        batch.set(newQuoteRef, newQuoteData);
-
-        // Notify admin
         const adminNotifRef = doc(collection(db, `notifications`));
+
+        const batch = writeBatch(db);
+        batch.set(newQuoteRef, newQuoteData);
         batch.set(adminNotifRef, {
             role: 'quotes',
             title: "Quote Resubmitted",
@@ -190,8 +185,8 @@ export default function QuoteDetailsPage({ params }: QuoteDetailsPageProps) {
             });
             router.push(`/account/quotes/${newQuoteRef.id}`);
 
-        } catch (error) {
-             console.error(`Error resubmitting quote:`, error);
+        } catch (serverError) {
+             console.error(`Error resubmitting quote:`, serverError);
             const permissionError = new FirestorePermissionError({
                     path: `quotes`,
                     operation: 'create',
@@ -200,7 +195,7 @@ export default function QuoteDetailsPage({ params }: QuoteDetailsPageProps) {
             errorEmitter.emit('permission-error', permissionError);
              toast({
                 title: "Action Failed",
-                description: `Could not resubmit the quote.`,
+                description: `Could not resubmit the quote. Please check your permissions.`,
                 variant: 'destructive',
             });
         } finally {
