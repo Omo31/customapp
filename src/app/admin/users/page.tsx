@@ -215,6 +215,7 @@ function AdminUsersContent() {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead>User ID</TableHead>
                     <TableHead>Name</TableHead>
                     <TableHead className="hidden md:table-cell">Email</TableHead>
                     <TableHead>Manage Roles</TableHead>
@@ -225,6 +226,9 @@ function AdminUsersContent() {
                   {currentUsers && currentUsers.length > 0 ? (
                     currentUsers.map((user) => (
                       <TableRow key={user.id} className={user.disabled ? "bg-muted/50" : ""}>
+                        <TableCell>
+                          <div className="font-mono text-xs text-muted-foreground">{user.id}</div>
+                        </TableCell>
                         <TableCell className="font-medium">
                           <div className="font-medium flex items-center gap-2">
                             {user.disabled && <UserX className="h-4 w-4 text-destructive" />}
@@ -270,7 +274,7 @@ function AdminUsersContent() {
                     ))
                   ) : (
                     <TableRow>
-                      <TableCell colSpan={4} className="text-center">
+                      <TableCell colSpan={5} className="text-center">
                         No users found.
                       </TableCell>
                     </TableRow>
