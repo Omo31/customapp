@@ -5,7 +5,6 @@ service cloud.firestore {
   match /databases/{database}/documents {
     
     // --- Helper Functions ---
-    // All helper functions must be declared at the top of this block.
 
     function getUserData(userId) {
       // Default to request.auth.uid if no userId is provided
@@ -15,7 +14,6 @@ service cloud.firestore {
     
     function isNotDisabled() {
         // A user is NOT disabled if the `disabled` field is not true.
-        // This allows users without the field (old users) or with `disabled: false` to pass.
         return getUserData(request.auth.uid).disabled != true;
     }
     
@@ -24,6 +22,7 @@ service cloud.firestore {
     }
     
     function isSuperAdmin() {
+      // A user is a superadmin if they have the 'superadmin' role.
       return request.auth != null &&
              exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
              'superadmin' in getUserData(request.auth.uid).roles;
@@ -64,10 +63,10 @@ service cloud.firestore {
     // Users Collection
     match /users/{userId} {
       allow read: if hasRole('users') || (isOwner(userId) && isNotDisabled());
-      // A user cannot change their own roles. Superadmin can change anyone's roles.
       allow update: if (isOwner(userId) && isNotDisabled() && !('roles' in request.resource.data)) || hasRole('users');
       allow create: if request.auth.uid == userId;
       allow delete: if hasRole('users');
+      // Only users with the 'users' role can list all users.
       allow list: if hasRole('users');
 
       // User Notifications Subcollection

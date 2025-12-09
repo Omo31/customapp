@@ -45,6 +45,8 @@ export const AuthUserProvider = ({ children }: { children: ReactNode }) => {
             setUser(combinedUser);
             setRoles(userRoles);
           } else {
+            // This case might happen briefly during signup before the profile is created.
+            // We set a basic user object.
             const basicUser: User = {
               uid: firebaseUser.uid,
               email: firebaseUser.email,
@@ -59,6 +61,8 @@ export const AuthUserProvider = ({ children }: { children: ReactNode }) => {
           setLoading(false);
         }, (error) => {
             console.error("Error fetching user profile:", error);
+            // If profile fails to load, sign out to prevent inconsistent state
+            auth.signOut();
             setUser(null);
             setRoles([]);
             setLoading(false);
@@ -75,8 +79,6 @@ export const AuthUserProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const hasRole = (role: string) => {
-    // Superadmin has all roles
-    if (user?.email === 'oluwagbengwumi@gmail.com') return true;
     return roles.includes(role);
   };
 

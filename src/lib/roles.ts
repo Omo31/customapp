@@ -13,7 +13,8 @@ export const allAdminNavItems = [
 
 // Combine nav roles with special roles like 'superadmin'
 const navRoles = allAdminNavItems.map(item => item.role);
-const specialRoles = ["superadmin"];
+// 'superadmin' is a special role that grants all permissions but isn't a nav item itself.
+const specialRoles = ["superadmin"]; 
 
 export const allAdminRoles = [...navRoles, ...specialRoles];
 

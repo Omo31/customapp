@@ -15,7 +15,7 @@ import {
     updatePassword,
     deleteUser,
 } from "firebase/auth";
-import { doc, serverTimestamp, writeBatch, collection, addDoc } from 'firebase/firestore';
+import { doc, serverTimestamp, writeBatch, collection, addDoc, getDocs, query, limit } from 'firebase/firestore';
 import { useToast } from "./use-toast";
 import { useState } from "react";
 import { auth, db } from "@/firebase";
@@ -29,7 +29,7 @@ import { useRouter } from "next/navigation";
 // This hook is now a wrapper around the core Firebase user state
 // to provide login/signup/logout functions with loading states.
 export const useAuth = () => {
-  const { user, loading: userLoading, roles, hasRole } = useUser();
+  const { user, loading: userLoading, roles, hasRole: userHasRole } = useUser();
   const [actionLoading, setActionLoading] = useState(false);
   const { toast } = useToast();
   const router = useRouter();
@@ -42,16 +42,18 @@ export const useAuth = () => {
     const userRef = doc(db, 'users', firebaseUser.uid);
     
     // Check if this is the very first user signing up
-    const isFirstUser = (await db.collection('users').limit(1).get()).empty;
-    const isSuperAdmin = isFirstUser || firebaseUser.email === "oluwagbengwumi@gmail.com";
-    
+    const usersQuery = query(collection(db, "users"), limit(1));
+    const usersSnapshot = await getDocs(usersQuery);
+    const isFirstUser = usersSnapshot.empty;
+    const isSuperAdminByEmail = firebaseUser.email === "oluwagbengwumi@gmail.com";
+
     const userProfile: Omit<UserProfile, 'id'> = {
       firstName,
       lastName,
       email: firebaseUser.email || "",
       phoneNumber: "",
       shippingAddress: "",
-      roles: isSuperAdmin ? allAdminRoles : [],
+      roles: isFirstUser || isSuperAdminByEmail ? ["superadmin", ...allAdminRoles.filter(r => r !== 'superadmin')] : [],
       createdAt: serverTimestamp(),
       notificationPreferences: {
         marketingEmails: false,
@@ -72,11 +74,8 @@ export const useAuth = () => {
     };
     userProfileBatch.set(userNotifRef, userNotif);
     
-    // This batch will create the user's profile and their own welcome notification
     await userProfileBatch.commit();
     
-    // After the user's profile is created, attempt to create the admin notification separately.
-    // This decouples the operations and ensures the user signup doesn't fail if this part does.
     const adminNotifRef = collection(db, `notifications`);
     const adminNotif: Omit<Notification, 'id'> = {
         role: 'users',
@@ -88,7 +87,6 @@ export const useAuth = () => {
     };
     
     await addDoc(adminNotifRef, adminNotif).catch(error => {
-        // If this fails, we emit a permission error but don't block the user's signup process.
         console.error("Failed to create admin notification:", error);
          const permissionError = new FirestorePermissionError({
             path: `notifications`,
@@ -104,9 +102,7 @@ export const useAuth = () => {
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, pass);
       if (!userCredential.user.emailVerified) {
-        // Log the user out immediately
         await firebaseSignOut(auth);
-        // Throw a specific error for the form to catch
         throw new Error("Please verify your email before logging in. Check your inbox (and spam folder).");
       }
     } catch (error: any) {
@@ -115,7 +111,6 @@ export const useAuth = () => {
         description: error.message || 'An unexpected error occurred.',
         variant: 'destructive',
       });
-      // Re-throw to be caught by the form
       throw error;
     } finally {
       setActionLoading(false);
@@ -130,20 +125,15 @@ export const useAuth = () => {
         displayName: `${firstName} ${lastName}`
       });
       
-      // Create the user profile document in Firestore & a welcome notification
       await saveUserProfile(userCredential.user, firstName, lastName);
-      
-      // Send verification email
       await sendEmailVerification(userCredential.user);
       
-      // Inform the user
       toast({
           title: "Verification Email Sent",
           description: "Please check your inbox (and spam folder) to verify your email before logging in.",
           duration: 8000,
       });
 
-      // Sign the user out so they have to verify before logging in
       await firebaseSignOut(auth);
 
     } catch (error: any)       {
@@ -153,7 +143,6 @@ export const useAuth = () => {
         description: error.message || 'An unexpected error occurred.',
         variant: 'destructive',
       });
-      // Re-throw to be caught by the form
       throw error;
     } finally {
       setActionLoading(false);
@@ -190,7 +179,6 @@ export const useAuth = () => {
         description: error.message || 'An unexpected error occurred.',
         variant: 'destructive',
       });
-      // Re-throw to be caught by the form
       throw error;
     } finally {
       setActionLoading(false);
@@ -215,7 +203,6 @@ export const useAuth = () => {
 
         toast({ title: "Password Changed", description: "Your password has been updated successfully. Please log in again." });
         
-        // Log the user out for security
         await firebaseSignOut(auth);
         router.push('/login');
 
@@ -246,8 +233,6 @@ export const useAuth = () => {
 
         await reauthenticateWithCredential(currentUser, credential);
         
-        // Note: This only deletes the user from Firebase Auth. 
-        // Associated Firestore data will be orphaned. A Cloud Function is needed for full cleanup.
         await deleteUser(currentUser);
 
         toast({ title: "Account Deleted", description: "Your account has been permanently deleted." });
@@ -266,6 +251,14 @@ export const useAuth = () => {
     }
   }
 
+  const hasRole = (role: string) => {
+    // If the user has the 'superadmin' role, they have all permissions.
+    if (userHasRole('superadmin')) return true;
+    // Otherwise, check for the specific role.
+    return userHasRole(role);
+  };
+  
+  const isAdmin = (roles?.length || 0) > 0;
 
-  return { user, loading, login, signup, logout, resetPassword, changePassword, deleteUserAccount, roles, hasRole, isAdmin: (roles?.length || 0) > 0 };
+  return { user, loading, login, signup, logout, resetPassword, changePassword, deleteUserAccount, roles, hasRole, isAdmin };
 };
