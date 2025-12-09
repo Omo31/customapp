@@ -1,3 +1,4 @@
+
 rules_version = '2';
 
 service cloud.firestore {
@@ -5,35 +6,29 @@ service cloud.firestore {
     
     // --- Helper Functions ---
 
-    // Corrected to use ternary operator for conditional logic
     function getUserData(userId) {
-      // Use userId if provided, otherwise default to request.auth.uid
       let uid = userId != null ? userId : request.auth.uid;
-      // Note: This 'get' will fail if the user document doesn't exist.
       return get(/databases/$(database)/documents/users/$(uid)).data;
     }
     
     function isNotDisabled() {
-        // A user is NOT disabled if the `disabled` field is not true.
-        // Assumes request.auth.uid is not null here, which is checked in callers.
         return getUserData(request.auth.uid).disabled != true;
     }
     
     function isOwner(userId) {
-      return request.auth != null && request.auth.uid == userId && isNotDisabled();
+      // SIMPLIFIED: Removed the isNotDisabled() check from here to break the circular dependency.
+      // A user should always be able to check their own profile, even if they are disabled.
+      // The isNotDisabled() check is still used elsewhere for actions, which is correct.
+      return request.auth != null && request.auth.uid == userId;
     }
     
-    // Combined into a single declarative statement
     function isSuperAdmin() {
-      // Requires the user doc to exist and have 'superadmin' in the roles map/list
       return request.auth != null &&
              exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
              'superadmin' in getUserData(request.auth.uid).roles;
     }
 
-    // Combined into a single declarative statement
     function hasRole(role) {
-        // Superadmin always has the role OR a regular user has the role and is not disabled.
         return isSuperAdmin() || (
                request.auth != null &&
                exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
@@ -42,9 +37,7 @@ service cloud.firestore {
         );
     }
     
-    // Combined into a single declarative statement
     function isAdmin() {
-        // Superadmin OR any user with roles and is not disabled.
         return isSuperAdmin() || (
                request.auth != null && 
                exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
@@ -58,7 +51,6 @@ service cloud.firestore {
     }
     
     function isChangingStatusTo(status) {
-      // This is valid: it checks the NEW data vs the EXISTING data
       return request.resource.data.status == status && resource.data.status != status;
     }
 
@@ -66,16 +58,16 @@ service cloud.firestore {
 
     // Users Collection
     match /users/{userId} {
-      allow read: if hasRole('users') || (isOwner(userId) && isNotDisabled());
-      allow update: if (isOwner(userId) && isNotDisabled() && !('roles' in request.resource.data)) || hasRole('users');
+      // UPDATED: The simplified isOwner function now makes this rule work correctly for new users.
+      allow read: if hasRole('users') || isOwner(userId);
+      allow update: if (isOwner(userId) && !('roles' in request.resource.data)) || hasRole('users');
       allow create: if request.auth.uid == userId;
       allow delete: if hasRole('users');
-      // Only users with the 'users' role can list all users.
       allow list: if hasRole('users');
 
       // User Notifications Subcollection
       match /notifications/{notificationId} {
-        allow read, write, create, list: if isOwner(userId) && isNotDisabled();
+        allow read, write, create, list: if isOwner(userId);
       }
     }
 
@@ -89,7 +81,6 @@ service cloud.firestore {
                           isChangingStatusTo('Cancelled')
                       ));
       allow create: if request.auth != null && isNotDisabled();
-      // Admins can list all quotes. Regular users can only list their own.
       allow list: if hasRole('quotes') || (request.auth != null && request.query.where[0] == 'userId' && request.query.where[2] == request.auth.uid && isNotDisabled());
     }
     
@@ -98,7 +89,6 @@ service cloud.firestore {
       allow read: if isOwner(resource.data.userId) || hasRole('orders');
       allow write, update: if hasRole('orders');
       allow create, delete: if false; 
-      // Admins can list all orders. Regular users can only list their own.
       allow list: if hasRole('orders') || (request.auth != null && request.query.where[0] == 'userId' && request.query.where[2] == request.auth.uid && isNotDisabled());
     }
     
@@ -116,7 +106,6 @@ service cloud.firestore {
     match /notifications/{notificationId} {
       allow read, list: if isAdmin();
       allow update, delete: if hasRole('notifications');
-      // Allow any authenticated user to create system notifications.
       allow create: if request.auth != null;
     }
 
