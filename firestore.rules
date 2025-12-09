@@ -27,7 +27,7 @@ service cloud.firestore {
       // User must be authenticated, their profile must exist, and they must have the 'superadmin' role.
       return request.auth != null &&
              exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-             'superadmin' in getUserData(request.auth.uid).roles;
+             'superadmin' in get(/databases/$(database)/documents/users/$(request.auth.uid)).data.roles;
     }
 
     function hasRole(role) {
@@ -35,8 +35,8 @@ service cloud.firestore {
         return isSuperAdmin() || (
                request.auth != null &&
                exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-               role in getUserData(request.auth.uid).roles &&
-               isNotDisabled()
+               role in get(/databases/$(database)/documents/users/$(request.auth.uid)).data.roles &&
+               get(/databases/$(database)/documents/users/$(request.auth.uid)).data.disabled != true
         );
     }
     
@@ -45,8 +45,8 @@ service cloud.firestore {
         return isSuperAdmin() || (
                request.auth != null && 
                exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-               getUserData(request.auth.uid).roles.size() > 0 &&
-               isNotDisabled()
+               get(/databases/$(database)/documents/users/$(request.auth.uid)).data.roles.size() > 0 &&
+               get(/databases/$(database)/documents/users/$(request.auth.uid)).data.disabled != true
         );
     }
     
