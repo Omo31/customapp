@@ -217,7 +217,7 @@ function AdminUsersContent() {
                   <TableRow>
                     <TableHead>User ID</TableHead>
                     <TableHead>Name</TableHead>
-                    <TableHead className="hidden md:table-cell">Email</TableHead>
+                    <TableHead>Email</TableHead>
                     <TableHead>Manage Roles</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
@@ -234,9 +234,8 @@ function AdminUsersContent() {
                             {user.disabled && <UserX className="h-4 w-4 text-destructive" />}
                             {user.firstName} {user.lastName}
                           </div>
-                          <div className="text-sm text-muted-foreground md:hidden">{user.email}</div>
                         </TableCell>
-                        <TableCell className="hidden md:table-cell">{user.email}</TableCell>
+                        <TableCell>{user.email}</TableCell>
                         <TableCell>
                           <div className="flex flex-col md:flex-row md:flex-wrap gap-x-4 gap-y-2">
                             {allAdminRoles.map((role) => (
