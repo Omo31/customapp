@@ -45,8 +45,8 @@ export const AuthUserProvider = ({ children }: { children: ReactNode }) => {
             setUser(combinedUser);
             setRoles(userRoles);
           } else {
-            // This case might happen briefly during signup before the profile is created.
-            // We set a basic user object.
+            // This case can happen briefly during signup or if profile creation fails.
+            // We set a basic user object without profile data.
             const basicUser: User = {
               uid: firebaseUser.uid,
               email: firebaseUser.email,
@@ -61,8 +61,8 @@ export const AuthUserProvider = ({ children }: { children: ReactNode }) => {
           setLoading(false);
         }, (error) => {
             console.error("Error fetching user profile:", error);
-            // If profile fails to load, sign out to prevent inconsistent state
-            auth.signOut();
+            // Don't sign out automatically. This could be a temporary network issue.
+            // Allow the app to handle the 'no profile' state gracefully.
             setUser(null);
             setRoles([]);
             setLoading(false);

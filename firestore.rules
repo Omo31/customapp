@@ -12,23 +12,26 @@ service cloud.firestore {
     }
     
     function isNotDisabled() {
+        // A user is not disabled if the 'disabled' field is not true.
+        // This function should only be called after verifying the user document exists.
         return getUserData(request.auth.uid).disabled != true;
     }
     
     function isOwner(userId) {
-      // SIMPLIFIED: Removed the isNotDisabled() check from here to break the circular dependency.
-      // A user should always be able to check their own profile, even if they are disabled.
-      // The isNotDisabled() check is still used elsewhere for actions, which is correct.
+      // Simplified: The isNotDisabled() check is removed from here to prevent circular dependencies.
+      // It's applied in higher-level rules where appropriate.
       return request.auth != null && request.auth.uid == userId;
     }
     
     function isSuperAdmin() {
+      // User must be authenticated, their profile must exist, and they must have the 'superadmin' role.
       return request.auth != null &&
              exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
              'superadmin' in getUserData(request.auth.uid).roles;
     }
 
     function hasRole(role) {
+        // Superadmin bypasses role checks OR the user has the specific role and is not disabled.
         return isSuperAdmin() || (
                request.auth != null &&
                exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
@@ -38,6 +41,7 @@ service cloud.firestore {
     }
     
     function isAdmin() {
+        // Superadmin bypasses role checks OR the user has at least one role and is not disabled.
         return isSuperAdmin() || (
                request.auth != null && 
                exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
@@ -51,6 +55,7 @@ service cloud.firestore {
     }
     
     function isChangingStatusTo(status) {
+      // Checks if the 'status' field is being changed to a specific value.
       return request.resource.data.status == status && resource.data.status != status;
     }
 
@@ -58,10 +63,17 @@ service cloud.firestore {
 
     // Users Collection
     match /users/{userId} {
-      // UPDATED: The simplified isOwner function now makes this rule work correctly for new users.
+      // Admins with 'users' role can read any profile.
+      // A user can read their own profile. The isNotDisabled check is applied at the hasRole/isAdmin level, not here.
       allow read: if hasRole('users') || isOwner(userId);
+      
+      // An owner can update their own profile, but cannot change their own roles.
+      // An admin with the 'users' role can update any profile (including roles).
       allow update: if (isOwner(userId) && !('roles' in request.resource.data)) || hasRole('users');
+
+      // A user can only create their own document. This is crucial for signup.
       allow create: if request.auth.uid == userId;
+      
       allow delete: if hasRole('users');
       allow list: if hasRole('users');
 
@@ -106,6 +118,7 @@ service cloud.firestore {
     match /notifications/{notificationId} {
       allow read, list: if isAdmin();
       allow update, delete: if hasRole('notifications');
+      // Any authenticated user can create a notification for admins (e.g., on signup).
       allow create: if request.auth != null;
     }
 

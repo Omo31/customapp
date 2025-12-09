@@ -91,7 +91,13 @@ export const useAuth = () => {
          console.error("Error during user profile/notification creation: ", error);
          // This will catch errors from the batch commit
          // We're throwing so the calling signup function can catch it and show a toast
-         throw new Error("Failed to initialize user profile. Please try again.");
+         const permissionError = new FirestorePermissionError({
+                path: `users/${firebaseUser.uid}`,
+                operation: 'create',
+                requestResourceData: 'Multiple Documents (Batch Write)'
+         });
+         errorEmitter.emit('permission-error', permissionError);
+         throw new Error("Failed to initialize user profile. Please check permissions.");
       }
   }
 
@@ -117,16 +123,20 @@ export const useAuth = () => {
 
   const signup = async (email: string, pass: string, firstName: string, lastName: string) => {
     setActionLoading(true);
+    let createdUser: FirebaseUser | null = null;
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
-      await updateProfile(userCredential.user, {
+      createdUser = userCredential.user;
+
+      await updateProfile(createdUser, {
         displayName: `${firstName} ${lastName}`
       });
       
-      // This function no longer does any permission-sensitive checks.
-      await saveUserProfile(userCredential.user, firstName, lastName);
+      // CRITICAL: Save profile immediately after creation and before any other async operations.
+      // The on-create Cloud Function for role assignment depends on this document existing.
+      await saveUserProfile(createdUser, firstName, lastName);
       
-      await sendEmailVerification(userCredential.user);
+      await sendEmailVerification(createdUser);
       
       toast({
           title: "Verification Email Sent",
@@ -134,10 +144,14 @@ export const useAuth = () => {
           duration: 8000,
       });
 
+      // Sign out to force the user to verify their email
       await firebaseSignOut(auth);
 
     } catch (error: any)       {
        console.error("Signup Error:", error);
+       // If the user was created in Auth but something else failed, they might be left in a weird state.
+       // However, we don't delete them here because they might have just used an existing email.
+       // The error message from Firebase is usually sufficient (e.g., "email-already-in-use").
        toast({
         title: 'Sign Up Failed',
         description: error.message || 'An unexpected error occurred.',
