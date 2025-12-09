@@ -18,8 +18,6 @@ service cloud.firestore {
     }
     
     function isOwner(userId) {
-      // Simplified: The isNotDisabled() check is removed from here to prevent circular dependencies.
-      // It's applied in higher-level rules where appropriate.
       return request.auth != null && request.auth.uid == userId;
     }
     
@@ -63,8 +61,7 @@ service cloud.firestore {
 
     // Users Collection
     match /users/{userId} {
-      // Admins with 'users' role can read any profile.
-      // A user can read their own profile. The isNotDisabled check is applied at the hasRole/isAdmin level, not here.
+      // Admins with 'users' role can read any profile. A user can read their own profile.
       allow read: if hasRole('users') || isOwner(userId);
       
       // An owner can update their own profile, but cannot change their own roles.
@@ -75,6 +72,8 @@ service cloud.firestore {
       allow create: if request.auth.uid == userId;
       
       allow delete: if hasRole('users');
+      
+      // Separate rule for listing the entire collection
       allow list: if hasRole('users');
 
       // User Notifications Subcollection
@@ -101,6 +100,8 @@ service cloud.firestore {
       allow read: if isOwner(resource.data.userId) || hasRole('orders');
       allow write, update: if hasRole('orders');
       allow create, delete: if false; 
+      
+      // Regular users can list their own orders. Admins with 'orders' role can list all orders.
       allow list: if hasRole('orders') || (request.auth != null && request.query.where[0] == 'userId' && request.query.where[2] == request.auth.uid && isNotDisabled());
     }
     
