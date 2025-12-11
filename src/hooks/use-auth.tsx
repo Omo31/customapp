@@ -82,21 +82,8 @@ export const useAuth = () => {
       };
       batch.set(adminNotifRef, adminNotif);
       
-      try {
-        await batch.commit();
-      } catch (error: any) {
-         console.error("Error during user profile/notification creation: ", error);
-         // This will catch errors from the batch commit
-         // We're throwing so the calling signup function can catch it and show a toast
-         const permissionError = new FirestorePermissionError({
-                path: `users/${firebaseUser.uid}`,
-                operation: 'create',
-                requestResourceData: 'Multiple Documents (Batch Write)'
-         });
-         errorEmitter.emit('permission-error', permissionError);
-         // Re-throw the error to be caught by the signup function's catch block
-         throw new Error("Failed to initialize user profile. Please check permissions.");
-      }
+      // The calling function (signup) will handle the try/catch block
+      await batch.commit();
   }
 
   const login = async (email: string, pass: string) => {
@@ -130,9 +117,20 @@ export const useAuth = () => {
         displayName: `${firstName} ${lastName}`
       });
       
-      // CRITICAL: Save profile immediately after creation and before any other async operations.
-      // The on-create Cloud Function for role assignment depends on this document existing.
-      await saveUserProfile(createdUser, firstName, lastName);
+      // CRITICAL: This operation must be wrapped in a try/catch.
+      // If it fails, we need to delete the user from Auth to avoid inconsistency.
+      try {
+        await saveUserProfile(createdUser, firstName, lastName);
+      } catch (dbError: any) {
+        console.error("Database user profile creation failed:", dbError);
+        // This is a critical failure. The user exists in Auth but not in Firestore.
+        // We must delete the Auth user to allow them to try signing up again.
+        if (createdUser) {
+          await deleteUser(createdUser);
+        }
+        // Re-throw a more user-friendly error.
+        throw new Error("Failed to create user profile in database. Please try signing up again.");
+      }
       
       await sendEmailVerification(createdUser);
       
@@ -147,9 +145,6 @@ export const useAuth = () => {
 
     } catch (error: any)       {
        console.error("Signup Error:", error);
-       // If the user was created in Auth but something else failed, they might be left in a weird state.
-       // However, we don't delete them here because they might have just used an existing email.
-       // The error message from Firebase is usually sufficient (e.g., "email-already-in-use").
        toast({
         title: 'Sign Up Failed',
         description: error.message || 'An unexpected error occurred.',
@@ -244,6 +239,10 @@ export const useAuth = () => {
         if (!currentUser) throw new Error("No user is currently signed in.");
 
         await reauthenticateWithCredential(currentUser, credential);
+        
+        // Before deleting the Auth user, you might want to delete their Firestore data.
+        // This part is complex and depends on what data you want to remove.
+        // For now, we just delete the auth user.
         
         await deleteUser(currentUser);
 
