@@ -16,7 +16,7 @@ import { Separator } from "@/components/ui/separator";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Loader2 } from "lucide-react";
 import { errorEmitter } from "@/firebase/error-emitter";
@@ -211,7 +211,7 @@ export default function AdminQuoteDetailsPage({ params }: AdminQuoteDetailsPageP
                         <CardTitle>Price Requested Items</CardTitle>
                         <CardDescription>Enter the unit cost for each item the user requested.</CardDescription>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="space-y-4">
                         <div className="space-y-4">
                             {fields.map((item, index) => (
                                 <div key={item.id} className="grid grid-cols-5 items-end gap-4 p-4 border rounded-md">
