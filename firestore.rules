@@ -44,11 +44,12 @@ service cloud.firestore {
     }
     
     function isAdmin() {
-        // Superadmin bypasses role checks OR the user has at least one role and is not disabled.
+        // An admin is a user who is not disabled and has more roles than just 'customer', or has a role other than 'customer'.
+        // This correctly excludes users who are only customers. Superadmin bypasses this.
         return isSuperAdmin() || (
                request.auth != null && 
                userExists(request.auth.uid) &&
-               get(/databases/$(database)/documents/users/$(request.auth.uid)).data.roles.size() > 0 &&
+               get(/databases/$(database)/documents/users/$(request.auth.uid)).data.roles.removeAll(['customer']).size() > 0 &&
                get(/databases/$(database)/documents/users/$(request.auth.uid)).data.disabled != true
         );
     }
