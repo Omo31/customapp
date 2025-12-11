@@ -100,7 +100,7 @@ export default function AdminQuoteDetailsPage({ params }: AdminQuoteDetailsPageP
         }, 0);
         const newServicesTotal = Object.values(watchedServices).reduce((total, cost) => total + (cost || 0), 0);
         const newServiceCharge = newItemsTotal * 0.06;
-        const newGrandTotal = newItemsTotal + newServicesTotal + newServiceCharge + (watchedShipping || 0);
+        const newGrandTotal = newItemsTotal + newServicesTotal + newServiceCharge + Number(watchedShipping || 0);
 
         form.setValue('itemsTotal', newItemsTotal);
         form.setValue('servicesTotal', newServicesTotal);
@@ -337,7 +337,7 @@ export default function AdminQuoteDetailsPage({ params }: AdminQuoteDetailsPageP
                             </div>
                              <div className="flex justify-between">
                                 <span className="text-muted-foreground">Shipping</span>
-                                <span>₦{form.getValues('shippingCost').toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                <span>₦{Number(form.getValues('shippingCost')).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                             </div>
                             <Separator />
                              <div className="flex justify-between text-lg font-bold">
