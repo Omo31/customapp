@@ -29,9 +29,12 @@ import { doc, updateDoc, writeBatch, collection, serverTimestamp, addDoc } from 
 import { Loader2 } from "lucide-react";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { FirestorePermissionError } from "@/firebase/errors";
+import type { FlutterwavePaymentButtonProps } from "@/components/flutterwave-payment-button";
 
-const useFlutterwave = dynamic(() => import('flutterwave-react-v3').then(mod => mod.useFlutterwave), { ssr: false });
-const closePaymentModal = dynamic(() => import('flutterwave-react-v3').then(mod => mod.closePaymentModal), { ssr: false });
+const FlutterwavePaymentButton = dynamic(
+    () => import('@/components/flutterwave-payment-button').then(mod => mod.FlutterwavePaymentButton),
+    { ssr: false, loading: () => <Button className="w-full" size="lg" disabled>Loading Payment...</Button> }
+);
 
 
 interface QuoteDetailsPageProps {
@@ -48,9 +51,8 @@ export default function QuoteDetailsPage({ params }: QuoteDetailsPageProps) {
     const { user } = useAuth();
     const { toast } = useToast();
     const router = useRouter();
-    const [showRetryDialog, setShowRetryDialog] = useState(false);
-    const [isSubmitting, setIsSubmitting] = useState(false);
     const [actionType, setActionType] = useState<ActionType>(null);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
 
     const { data: quote, loading: quoteLoading } = useDoc<Quote>(db, "quotes", quoteId);
@@ -62,24 +64,17 @@ export default function QuoteDetailsPage({ params }: QuoteDetailsPageProps) {
     const totalCost = itemsTotal + servicesTotal + serviceCharge + shippingCost;
 
 
-    const handlePaymentSuccess = (response: any) => {
-        // The webhook will now handle database updates.
-        // We just need to show a confirmation message and redirect to the order page.
+    const handlePaymentSuccess = () => {
         toast({
             title: "Payment Successful!",
             description: "Your order is being created. You will be notified once it's confirmed.",
         });
-        
-        if (closePaymentModal) {
-            (closePaymentModal as () => void)();
-        }
-        
         router.push(`/account/orders`);
     };
 
-    const flutterwaveConfig = {
-        public_key: process.env.NEXT_PUBLIC_FLUTTERWAVE_PUBLIC_KEY || '',
-        tx_ref: quoteId, // Use the quote ID as the transaction reference
+    const flutterwaveConfig: Omit<FlutterwavePaymentButtonProps, 'onSuccess' | 'onClose'> = {
+        publicKey: process.env.NEXT_PUBLIC_FLUTTERWAVE_PUBLIC_KEY || '',
+        tx_ref: quoteId,
         amount: totalCost,
         currency: 'NGN',
         payment_options: 'card,mobilemoney,ussd',
@@ -93,19 +88,6 @@ export default function QuoteDetailsPage({ params }: QuoteDetailsPageProps) {
             description: `Payment for Quote #${quoteId.slice(-6)}`,
             logo: 'https://www.beautifulsoupandfoods.com/logo.png', // Replace with your logo URL
         },
-    };
-
-    const handleFlutterwavePayment = useFlutterwave(flutterwaveConfig);
-
-    const initiatePayment = () => {
-        handleFlutterwavePayment({
-            callback: (response) => {
-               handlePaymentSuccess(response);
-            },
-            onClose: () => {
-                setShowRetryDialog(true);
-            },
-        });
     };
 
     const handleQuoteAction = async (newStatus: "Quote Ready" | "Rejected" | "Cancelled") => {
@@ -125,7 +107,7 @@ export default function QuoteDetailsPage({ params }: QuoteDetailsPageProps) {
         batch.set(adminNotifRef, {
             role: 'quotes',
             title: `User ${newStatus} Quote`,
-            description: `${user.displayName} has ${newStatus.toLowerCase()} quote #${quoteId.slice(-6)}.`,
+            description: `${user.displayName} has ${newStatus.toLowerCase()}ed quote #${quoteId.slice(-6)}.`,
             href: `/admin/quotes/${quoteId}`,
             isRead: false,
             createdAt: serverTimestamp(),
@@ -228,21 +210,6 @@ export default function QuoteDetailsPage({ params }: QuoteDetailsPageProps) {
     
     return (
         <div className="space-y-6">
-            <AlertDialog open={showRetryDialog} onOpenChange={setShowRetryDialog}>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                    <AlertDialogTitle>Payment Incomplete</AlertDialogTitle>
-                    <AlertDialogDescription>
-                        The payment process was not completed. Would you like to try again?
-                    </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={initiatePayment}>Retry Payment</AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
-
             <Card>
                 <CardHeader className="flex flex-row items-start justify-between">
                     <div>
@@ -343,9 +310,10 @@ export default function QuoteDetailsPage({ params }: QuoteDetailsPageProps) {
                     )}
                     {canPay && (
                          <div className="w-full space-y-2">
-                            <Button className="w-full" size="lg" onClick={initiatePayment}>
-                                Pay with Flutterwave
-                            </Button>
+                             <FlutterwavePaymentButton
+                                {...flutterwaveConfig}
+                                onSuccess={handlePaymentSuccess}
+                             />
                             {quote.status === 'Quote Ready' && (
                                 <Button className="w-full" variant="outline" onClick={() => handleQuoteAction('Cancelled')} disabled={isSubmitting}>
                                     {isSubmitting && actionType === 'cancel' && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
