@@ -28,7 +28,7 @@ import { useRouter } from "next/navigation";
 import { usePagination } from "@/hooks/use-pagination";
 import ProtectedRoute from "@/components/auth/protected-route";
 import { Switch } from "@/components/ui/switch";
-import { useAuth } from "@/hooks/use-auth";
+import { useAuth } from "@/hooks/use-auth.tsx";
 
 
 const PAGE_SIZE = 10;
