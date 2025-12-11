@@ -9,7 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { useFlutterwave, closePaymentModal } from "flutterwave-react-v3";
+import dynamic from 'next/dynamic';
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { Separator } from "@/components/ui/separator";
@@ -29,6 +29,9 @@ import { doc, updateDoc, writeBatch, collection, serverTimestamp, addDoc } from 
 import { Loader2 } from "lucide-react";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { FirestorePermissionError } from "@/firebase/errors";
+
+const useFlutterwave = dynamic(() => import('flutterwave-react-v3').then(mod => mod.useFlutterwave), { ssr: false });
+const closePaymentModal = dynamic(() => import('flutterwave-react-v3').then(mod => mod.closePaymentModal), { ssr: false });
 
 
 interface QuoteDetailsPageProps {
@@ -67,7 +70,9 @@ export default function QuoteDetailsPage({ params }: QuoteDetailsPageProps) {
             description: "Your order is being created. You will be notified once it's confirmed.",
         });
         
-        closePaymentModal(); 
+        if (closePaymentModal) {
+            (closePaymentModal as () => void)();
+        }
         
         router.push(`/account/orders`);
     };
