@@ -39,6 +39,7 @@ export function FlutterwavePaymentButton(props: FlutterwavePaymentButtonProps) {
     const { onSuccess, ...config } = props;
     const [showRetryDialog, setShowRetryDialog] = useState(false);
 
+    // IMPORTANT: The hook is called *inside* the click handler, not at the top level.
     const handleFlutterwavePayment = useFlutterwave(config);
 
     const initiatePayment = () => {
