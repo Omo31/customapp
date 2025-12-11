@@ -1,5 +1,4 @@
 
-
 "use client"
 
 import * as React from "react"
@@ -124,9 +123,12 @@ export default function AdminQuoteDetailsPage({ params }: AdminQuoteDetailsPageP
 
         // 1. Update the quote document with prices and new status
         const quoteRef = doc(db, "quotes", quoteId);
+        
+        const itemsToSave = values.items.map(({ total, ...rest }) => rest);
+
         batch.update(quoteRef, {
             status: "Pending User Action",
-            items: values.items.map(item => ({...item, total: undefined })), // Remove temporary 'total' field
+            items: itemsToSave,
             pricedServices: values.serviceCosts,
             shippingCost: values.shippingCost,
             updatedAt: serverTimestamp(),
@@ -302,7 +304,7 @@ export default function AdminQuoteDetailsPage({ params }: AdminQuoteDetailsPageP
 
                  <Card>
                     <CardHeader>
-                        <CardTitle>Shipping & Final Costs</CardTitle>
+                        <CardTitle>Shipping &amp; Final Costs</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
                         {quote.deliveryOption === 'quote' && (
@@ -361,3 +363,5 @@ export default function AdminQuoteDetailsPage({ params }: AdminQuoteDetailsPageP
         </Form>
     )
 }
+
+    
