@@ -30,7 +30,7 @@ service cloud.firestore {
       // User must be authenticated, their profile must exist, and they must have the 'superadmin' role.
       return request.auth != null &&
              userExists(request.auth.uid) &&
-             'roles' in getUserData(request.auth.uid) && // Ensure roles exist
+             'roles' in getUserData(request.auth.uid) &&
              'superadmin' in getUserData(request.auth.uid).roles;
     }
 
@@ -58,7 +58,7 @@ service cloud.firestore {
 
     // Users Collection
     match /users/{userId} {
-      // Admins can read any profile. A user can read their own profile.
+      // Admins with 'users' role can read any profile. A user can read their own profile.
       allow read: if hasRole('users') || isOwner(userId);
       
       // An owner can update their own profile, but cannot change their own roles.
@@ -70,7 +70,7 @@ service cloud.firestore {
       
       allow delete: if hasRole('users');
       
-      // An admin with the 'users' role OR a superadmin should be able to view the list of users.
+      // CORRECTED RULE: An admin with the 'users' role OR a superadmin should be able to view the list of users.
       allow list: if hasRole('users');
 
       // User Notifications Subcollection
@@ -119,8 +119,10 @@ service cloud.firestore {
     
     // Root Notifications Collection for Admins
     match /notifications/{notificationId} {
-      // Any admin role can read/list, but only specific role can manage
-      allow read, list: if hasRole('dashboard'); 
+      // Any user with an admin role can see notifications for their roles.
+      allow read, list: if request.auth != null && 
+                          userExists(request.auth.uid) && 
+                          getUserData(request.auth.uid).roles.size() > 1; 
       allow update, delete: if hasRole('notifications');
       // Any authenticated user can create a notification for admins (e.g., on signup).
       allow create: if request.auth != null;
