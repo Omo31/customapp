@@ -97,8 +97,8 @@ service cloud.firestore {
                           isChangingStatusTo('Rejected') ||
                           isChangingStatusTo('Cancelled')
                       ));
-      // A user must be authenticated and their user profile must exist and not be disabled.
-      allow create: if request.auth != null && userExists(request.auth.uid) && isNotDisabled();
+      // Any authenticated user can create a quote.
+      allow create: if request.auth != null;
       allow list: if hasRole('quotes') || (request.auth != null && request.query.where[0] == 'userId' && request.query.where[2] == request.auth.uid && userExists(request.auth.uid) && isNotDisabled());
     }
     
