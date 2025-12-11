@@ -29,6 +29,7 @@ import { usePagination } from "@/hooks/use-pagination";
 import ProtectedRoute from "@/components/auth/protected-route";
 import { Switch } from "@/components/ui/switch";
 import { useAuth } from "@/hooks/use-auth.tsx";
+import { Badge } from "@/components/ui/badge";
 
 
 const PAGE_SIZE = 10;
@@ -217,7 +218,7 @@ function AdminUsersContent() {
                   <TableRow>
                     <TableHead>User ID</TableHead>
                     <TableHead>Name</TableHead>
-                    <TableHead>Email</TableHead>
+                    <TableHead>Roles</TableHead>
                     <TableHead>Manage Roles</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
@@ -234,8 +235,15 @@ function AdminUsersContent() {
                             {user.disabled && <UserX className="h-4 w-4 text-destructive" />}
                             {user.firstName} {user.lastName}
                           </div>
+                           <div className="text-sm text-muted-foreground">{user.email}</div>
                         </TableCell>
-                        <TableCell>{user.email}</TableCell>
+                        <TableCell>
+                            <div className="flex flex-wrap gap-1 max-w-xs">
+                                {user.roles && user.roles.length > 0 ? user.roles.map(role => (
+                                    <Badge key={role} variant={role === 'superadmin' ? 'destructive' : 'secondary'} className="capitalize">{role.replace('-', ' ')}</Badge>
+                                )) : <span className="text-xs text-muted-foreground">No roles</span>}
+                            </div>
+                        </TableCell>
                         <TableCell>
                           <div className="flex flex-col md:flex-row md:flex-wrap gap-x-4 gap-y-2">
                             {allAdminRoles.map((role) => (
