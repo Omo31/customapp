@@ -72,7 +72,7 @@ export default function QuoteDetailsPage({ params }: QuoteDetailsPageProps) {
         router.push(`/account/orders`);
     };
 
-    const flutterwaveConfig: Omit<FlutterwavePaymentButtonProps, 'onSuccess' | 'onClose'> = {
+    const flutterwaveConfig: Omit<FlutterwavePaymentButtonProps, 'onSuccess'> = {
         publicKey: process.env.NEXT_PUBLIC_FLUTTERWAVE_PUBLIC_KEY || '',
         tx_ref: quoteId,
         amount: totalCost,
