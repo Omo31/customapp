@@ -39,7 +39,7 @@ service cloud.firestore {
                request.auth != null &&
                userExists(request.auth.uid) &&
                get(/databases/$(database)/documents/users/$(request.auth.uid)).data.roles.hasAny([role]) &&
-               get(/databases/$(database)/documents/users/$(request.auth.uid)).data.disabled != true
+               isNotDisabled()
         );
     }
     
@@ -51,7 +51,7 @@ service cloud.firestore {
                request.auth != null && 
                userExists(request.auth.uid) &&
                get(/databases/$(database)/documents/users/$(request.auth.uid)).data.roles.removeAll(['customer']).size() > 0 &&
-               get(/databases/$(database)/documents/users/$(request.auth.uid)).data.disabled != true
+               isNotDisabled()
         );
     }
     
@@ -68,7 +68,7 @@ service cloud.firestore {
 
     // Users Collection
     match /users/{userId} {
-      // Admins with 'users' role can read any profile. A user can read their own profile.
+      // Admins can read any profile. A user can read their own profile.
       allow read: if hasRole('users') || isOwner(userId);
       
       // An owner can update their own profile, but cannot change their own roles.
