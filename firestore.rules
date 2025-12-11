@@ -58,25 +58,17 @@ service cloud.firestore {
 
     // Users Collection
     match /users/{userId} {
-      // Admins with 'users' role can read any profile. A user can read their own profile.
       allow read: if hasRole('users') || isOwner(userId);
-      
-      // An owner can update their own profile, but cannot change their own roles.
-      // An admin with the 'users' role can update any profile (including roles).
       allow update: if (isOwner(userId) && !('roles' in request.resource.data)) || hasRole('users');
-
-      // A user can only create their own document. This is crucial for signup.
       allow create: if request.auth.uid == userId;
-      
       allow delete: if hasRole('users');
       
-      // CORRECTED RULE: An admin with the 'users' role OR a superadmin should be able to view the list of users.
+      // Allow admins with the 'users' role to list all users.
       allow list: if hasRole('users');
 
       // User Notifications Subcollection
       match /notifications/{notificationId} {
         allow read, list: if isOwner(userId);
-        // An admin with 'quotes' or 'orders' role can create notifications for the user
         allow create: if isOwner(userId) || hasRole('quotes') || hasRole('orders');
         allow update: if isOwner(userId);
         allow delete: if isOwner(userId);
@@ -92,7 +84,6 @@ service cloud.firestore {
                           isChangingStatusTo('Rejected') ||
                           isChangingStatusTo('Cancelled')
                       ));
-      // Any authenticated user can create a quote.
       allow create: if request.auth != null;
       allow list: if hasRole('quotes') || (request.auth != null && request.query.where[0] == 'userId' && request.query.where[2] == request.auth.uid && userExists(request.auth.uid) && isNotDisabled());
     }
@@ -103,7 +94,6 @@ service cloud.firestore {
       allow write, update: if hasRole('orders');
       allow create, delete: if false; 
       
-      // Regular users can list their own orders. Admins with 'orders' role can list all orders.
       allow list: if hasRole('orders') || (request.auth != null && request.query.where[0] == 'userId' && request.query.where[2] == request.auth.uid && userExists(request.auth.uid) && isNotDisabled());
     }
     
@@ -119,12 +109,18 @@ service cloud.firestore {
     
     // Root Notifications Collection for Admins
     match /notifications/{notificationId} {
-      // Any user with an admin role can see notifications for their roles.
-      allow read, list: if request.auth != null && 
-                          userExists(request.auth.uid) && 
-                          getUserData(request.auth.uid).roles.size() > 1; 
+      // Admins can read notifications for their roles.
+      allow read: if hasRole(resource.data.role);
+
+      // Admins can list notifications that are relevant to their roles.
+      allow list: if request.auth != null &&
+                    userExists(request.auth.uid) &&
+                    isNotDisabled() &&
+                    getUserData(request.auth.uid).roles.size() > 1 &&
+                    request.query.where[2].hasAny(getUserData(request.auth.uid).roles);
+                          
       allow update, delete: if hasRole('notifications');
-      // Any authenticated user can create a notification for admins (e.g., on signup).
+      // Any authenticated user can create a notification for admins (e.g., on signup or quote submission).
       allow create: if request.auth != null;
     }
 
