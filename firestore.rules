@@ -44,16 +44,13 @@ service cloud.firestore {
     }
     
     function isAdmin() {
-        // An admin is a user who is not disabled and has at least one role other than 'customer'.
-        // The simplest way to check this is to see if the size of their roles list is greater than 1,
-        // or if their single role is not 'customer'.
-        return isSuperAdmin() || (
-               request.auth != null && 
-               userExists(request.auth.uid) &&
-               isNotDisabled() &&
-               (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.roles.size() > 1 || 
-                (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.roles.size() == 1 && !get(/databases/$(database)/documents/users/$(request.auth.uid)).data.roles.hasAny(['customer'])))
-        );
+      // An admin has more than one role (e.g., ['customer', 'users']), while a customer only has one.
+      return isSuperAdmin() || (
+             request.auth != null &&
+             userExists(request.auth.uid) &&
+             isNotDisabled() &&
+             getUserData(request.auth.uid).roles.size() > 1
+      );
     }
     
     function isQuoteOwner(quote) {
