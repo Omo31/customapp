@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { collection, doc, serverTimestamp, writeBatch } from "firebase/firestore";
 import { Separator } from "@/components/ui/separator";
-import { useForm, useFieldArray } from "react-hook-form";
+import { useForm, useFieldArray, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -28,12 +28,17 @@ const quoteItemSchema = z.object({
     unit: z.string(),
     customUnit: z.string().optional(),
     unitCost: z.coerce.number().min(0, "Cost must be a positive number.").default(0),
+    total: z.coerce.number().optional(),
 });
 
 const formSchema = z.object({
     items: z.array(quoteItemSchema),
     serviceCosts: z.record(z.coerce.number().min(0, "Cost must be a positive number.").default(0)),
     shippingCost: z.coerce.number().min(0, "Cost must be a positive number.").default(0),
+    itemsTotal: z.coerce.number().default(0),
+    servicesTotal: z.coerce.number().default(0),
+    serviceCharge: z.coerce.number().default(0),
+    grandTotal: z.coerce.number().default(0),
 });
 
 
@@ -57,6 +62,10 @@ export default function AdminQuoteDetailsPage({ params }: AdminQuoteDetailsPageP
             items: [],
             serviceCosts: {},
             shippingCost: 0,
+            itemsTotal: 0,
+            servicesTotal: 0,
+            serviceCharge: 0,
+            grandTotal: 0,
         },
     });
 
@@ -73,28 +82,40 @@ export default function AdminQuoteDetailsPage({ params }: AdminQuoteDetailsPageP
             }, {} as Record<string, number>) || {};
 
             form.reset({
-                items: quote.items.map(item => ({ ...item, unitCost: item.unitCost || 0 })),
+                items: quote.items.map(item => ({ ...item, unitCost: item.unitCost || 0, total: (item.unitCost || 0) * Number(item.quantity) })),
                 serviceCosts: serviceCosts,
                 shippingCost: quote.shippingCost || 0,
             });
         }
     }, [quote, form]);
 
-    const watchedItems = form.watch("items");
-    const watchedServices = form.watch("serviceCosts");
-    const watchedShipping = form.watch("shippingCost");
+    const watchedItems = useWatch({ control: form.control, name: "items" });
+    const watchedServices = useWatch({ control: form.control, name: "serviceCosts" });
+    const watchedShipping = useWatch({ control: form.control, name: "shippingCost" });
 
-    const itemsTotal = React.useMemo(() => {
-        return watchedItems.reduce((total, item) => total + (item.unitCost * Number(item.quantity)), 0);
-    }, [watchedItems]);
+    React.useEffect(() => {
+        const newItemsTotal = watchedItems.reduce((total, item) => {
+             const itemTotal = (item.unitCost || 0) * Number(item.quantity);
+             return total + itemTotal;
+        }, 0);
+        const newServicesTotal = Object.values(watchedServices).reduce((total, cost) => total + (cost || 0), 0);
+        const newServiceCharge = newItemsTotal * 0.06;
+        const newGrandTotal = newItemsTotal + newServicesTotal + newServiceCharge + (watchedShipping || 0);
 
-    const servicesTotal = React.useMemo(() => {
-        return Object.values(watchedServices).reduce((total, cost) => total + cost, 0);
-    }, [watchedServices]);
+        form.setValue('itemsTotal', newItemsTotal);
+        form.setValue('servicesTotal', newServicesTotal);
+        form.setValue('serviceCharge', newServiceCharge);
+        form.setValue('grandTotal', newGrandTotal);
 
-    const serviceCharge = itemsTotal * 0.06;
+        watchedItems.forEach((item, index) => {
+            const currentItemTotal = (item.unitCost || 0) * Number(item.quantity);
+            if (form.getValues(`items.${index}.total`) !== currentItemTotal) {
+                 form.setValue(`items.${index}.total`, currentItemTotal);
+            }
+        });
 
-    const grandTotal = itemsTotal + servicesTotal + serviceCharge + watchedShipping;
+    }, [watchedItems, watchedServices, watchedShipping, form]);
+
 
     async function onSubmit(values: z.infer<typeof formSchema>) {
         if (!quote) return;
@@ -105,7 +126,7 @@ export default function AdminQuoteDetailsPage({ params }: AdminQuoteDetailsPageP
         const quoteRef = doc(db, "quotes", quoteId);
         batch.update(quoteRef, {
             status: "Pending User Action",
-            items: values.items,
+            items: values.items.map(item => ({...item, total: undefined })), // Remove temporary 'total' field
             pricedServices: values.serviceCosts,
             shippingCost: values.shippingCost,
             updatedAt: serverTimestamp(),
@@ -214,14 +235,14 @@ export default function AdminQuoteDetailsPage({ params }: AdminQuoteDetailsPageP
                     <CardContent className="space-y-4">
                         <div className="space-y-4">
                             {fields.map((item, index) => (
-                                <div key={item.id} className="grid grid-cols-5 items-end gap-4 p-4 border rounded-md">
-                                    <div className="col-span-5 md:col-span-2">
+                                <div key={item.id} className="grid grid-cols-1 md:grid-cols-5 items-end gap-4 p-4 border rounded-md">
+                                    <div className="md:col-span-2">
                                         <p className="font-medium">{item.name}</p>
                                         <p className="text-sm text-muted-foreground">
                                             Qty: {item.quantity} {item.unit === 'Other' ? item.customUnit : item.unit}
                                         </p>
                                     </div>
-                                    <div className="col-span-5 md:col-span-3">
+                                    <div className="md:col-span-2">
                                          <FormField
                                             control={form.control}
                                             name={`items.${index}.unitCost`}
@@ -235,6 +256,14 @@ export default function AdminQuoteDetailsPage({ params }: AdminQuoteDetailsPageP
                                                 </FormItem>
                                             )}
                                         />
+                                    </div>
+                                    <div className="md:col-span-1">
+                                         <FormItem>
+                                            <FormLabel>Item Total (₦)</FormLabel>
+                                            <FormControl>
+                                                <Input type="number" readOnly value={form.getValues(`items.${index}.total`) || 0} />
+                                            </FormControl>
+                                         </FormItem>
                                     </div>
                                 </div>
                             ))}
@@ -296,24 +325,24 @@ export default function AdminQuoteDetailsPage({ params }: AdminQuoteDetailsPageP
                         <div className="space-y-2 text-sm">
                             <div className="flex justify-between">
                                 <span className="text-muted-foreground">Items Total</span>
-                                <span>₦{itemsTotal.toLocaleString()}</span>
+                                <span>₦{form.getValues('itemsTotal').toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                             </div>
                              <div className="flex justify-between">
                                 <span className="text-muted-foreground">Services Total</span>
-                                <span>₦{servicesTotal.toLocaleString()}</span>
+                                <span>₦{form.getValues('servicesTotal').toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                             </div>
                             <div className="flex justify-between">
                                 <span className="text-muted-foreground">Service Charge (6%)</span>
-                                <span>₦{serviceCharge.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                <span>₦{form.getValues('serviceCharge').toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                             </div>
                              <div className="flex justify-between">
                                 <span className="text-muted-foreground">Shipping</span>
-                                <span>₦{watchedShipping.toLocaleString()}</span>
+                                <span>₦{form.getValues('shippingCost').toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                             </div>
                             <Separator />
                              <div className="flex justify-between text-lg font-bold">
                                 <span>Grand Total</span>
-                                <span>₦{grandTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                <span>₦{form.getValues('grandTotal').toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                             </div>
                         </div>
                     </CardContent>
@@ -332,5 +361,3 @@ export default function AdminQuoteDetailsPage({ params }: AdminQuoteDetailsPageP
         </Form>
     )
 }
-
-    
