@@ -31,7 +31,7 @@ service cloud.firestore {
       return request.auth != null &&
              userExists(request.auth.uid) &&
              'roles' in getUserData(request.auth.uid) &&
-             'superadmin' in getUserData(request.auth.uid).roles;
+             getUserData(request.auth.uid).roles.hasAny(['superadmin']);
     }
 
     function hasRole(role) {
@@ -63,7 +63,7 @@ service cloud.firestore {
       allow create: if request.auth.uid == userId;
       allow delete: if hasRole('users');
       
-      // Allow admins with the 'users' role to list all users.
+      // Admins with the 'users' role can list all users.
       allow list: if hasRole('users');
 
       // User Notifications Subcollection
@@ -85,6 +85,7 @@ service cloud.firestore {
                           isChangingStatusTo('Cancelled')
                       ));
       allow create: if request.auth != null;
+      // Admins with 'quotes' role can list all quotes. Customers can list their own.
       allow list: if hasRole('quotes') || (request.auth != null && request.query.where[0] == 'userId' && request.query.where[2] == request.auth.uid && userExists(request.auth.uid) && isNotDisabled());
     }
     
@@ -94,6 +95,7 @@ service cloud.firestore {
       allow write, update: if hasRole('orders');
       allow create, delete: if false; 
       
+      // Admins with 'orders' role can list all orders. Customers can list their own.
       allow list: if hasRole('orders') || (request.auth != null && request.query.where[0] == 'userId' && request.query.where[2] == request.auth.uid && userExists(request.auth.uid) && isNotDisabled());
     }
     
@@ -109,16 +111,9 @@ service cloud.firestore {
     
     // Root Notifications Collection for Admins
     match /notifications/{notificationId} {
-      // Admins can read notifications for their roles.
       allow read: if hasRole(resource.data.role);
-
-      // Admins can list notifications that are relevant to their roles.
-      allow list: if request.auth != null &&
-                    userExists(request.auth.uid) &&
-                    isNotDisabled() &&
-                    getUserData(request.auth.uid).roles.size() > 1 &&
-                    request.query.where[2].hasAny(getUserData(request.auth.uid).roles);
-                          
+      // Any admin with the 'notifications' role can list all admin notifications.
+      allow list: if hasRole('notifications');                 
       allow update, delete: if hasRole('notifications');
       // Any authenticated user can create a notification for admins (e.g., on signup or quote submission).
       allow create: if request.auth != null;
