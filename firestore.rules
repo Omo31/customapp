@@ -78,9 +78,8 @@ service cloud.firestore {
       
       allow delete: if hasRole('users');
       
-      // Separate rule for listing the entire collection. This is CRITICAL for real-time updates.
-      // It ONLY checks the permission of the person making the request.
-      allow list: if hasRole('users');
+      // An admin should be able to view the list of users.
+      allow list: if isAdmin();
 
       // User Notifications Subcollection
       match /notifications/{notificationId} {
