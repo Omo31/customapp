@@ -84,7 +84,11 @@ service cloud.firestore {
 
       // User Notifications Subcollection
       match /notifications/{notificationId} {
-        allow read, write, create, list: if isOwner(userId);
+        allow read, list: if isOwner(userId);
+        // An admin with 'quotes' or 'orders' role can create notifications for the user
+        allow create: if isOwner(userId) || hasRole('quotes') || hasRole('orders');
+        allow update: if isOwner(userId);
+        allow delete: if isOwner(userId);
       }
     }
 
