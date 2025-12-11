@@ -44,7 +44,7 @@ service cloud.firestore {
     }
     
     function isAdmin() {
-      // An admin has more than one role (e.g., ['customer', 'users']), while a customer only has one.
+      // An admin is a superadmin OR a user with more than one role (e.g., 'customer' + 'users').
       return isSuperAdmin() || (
              request.auth != null &&
              userExists(request.auth.uid) &&
