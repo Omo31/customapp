@@ -45,7 +45,6 @@ service cloud.firestore {
     
     function isAdmin() {
         // An admin is a user who is not disabled and has more roles than just 'customer'.
-        // The safest way to check is to remove 'customer' and see if any other roles remain.
         // Superadmin always bypasses this.
         return isSuperAdmin() || (
                request.auth != null && 
