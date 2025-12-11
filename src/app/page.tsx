@@ -10,7 +10,6 @@ import { ArrowRight, ShoppingCart } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import * as allLucideIcons from 'lucide-react';
-import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 
 function YoutubeEmbed({ url }: { url: string }) {
   const videoId = url.split('v=')[1]?.split('&')[0] || url.split('/').pop();
@@ -140,40 +139,28 @@ export default function Home() {
                     A selection of our finest products, curated just for you.
                 </p>
             </div>
-            <Carousel
-              opts={{
-                align: "start",
-                loop: true,
-              }}
-              className="w-full max-w-6xl mx-auto"
-            >
-              <CarouselContent>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {settings.featuredProducts.map((product, index) => (
-                  <CarouselItem key={index} className="md:basis-1/2 lg:basis-1/3">
-                    <div className="p-1">
-                      <Card className="transform transition-transform duration-300 hover:scale-105 hover:shadow-xl overflow-hidden h-full flex flex-col">
-                        <CardContent className="p-0 flex-grow flex flex-col">
-                          <div className="relative h-64 w-full">
-                            <Image
-                              src={product.imageUrl || `https://picsum.photos/seed/${10 + index}/400/300`}
-                              alt={product.description || 'Featured Product'}
-                              fill
-                              style={{ objectFit: 'cover' }}
-                            />
-                          </div>
-                          <div className="p-4 flex flex-col flex-grow">
-                              <p className="text-muted-foreground text-sm flex-grow">{product.description}</p>
-                              {product.price && <p className="font-bold text-lg mt-2">{product.price}</p>}
-                          </div>
-                        </CardContent>
-                      </Card>
-                    </div>
-                  </CarouselItem>
+                  <div key={index} className="p-1">
+                    <Card className="transform transition-transform duration-300 hover:scale-105 hover:shadow-xl overflow-hidden h-full flex flex-col">
+                      <CardContent className="p-0 flex-grow flex flex-col">
+                        <div className="relative h-64 w-full">
+                          <Image
+                            src={product.imageUrl || `https://picsum.photos/seed/${10 + index}/400/300`}
+                            alt={product.description || 'Featured Product'}
+                            fill
+                            style={{ objectFit: 'cover' }}
+                          />
+                        </div>
+                        <div className="p-4 flex flex-col flex-grow">
+                            <p className="text-muted-foreground text-sm flex-grow">{product.description}</p>
+                            {product.price && <p className="font-bold text-lg mt-2">{product.price}</p>}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
                 ))}
-              </CarouselContent>
-              <CarouselPrevious />
-              <CarouselNext />
-            </Carousel>
+            </div>
           </div>
         </section>
       )}
