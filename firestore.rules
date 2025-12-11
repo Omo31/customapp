@@ -30,7 +30,8 @@ service cloud.firestore {
       // User must be authenticated, their profile must exist, and they must have the 'superadmin' role.
       return request.auth != null &&
              userExists(request.auth.uid) &&
-             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.roles.hasAny(['superadmin']);
+             'roles' in getUserData(request.auth.uid) && // Ensure roles exist
+             'superadmin' in getUserData(request.auth.uid).roles;
     }
 
     function hasRole(role) {
@@ -38,21 +39,12 @@ service cloud.firestore {
         return isSuperAdmin() || (
                request.auth != null &&
                userExists(request.auth.uid) &&
-               get(/databases/$(database)/documents/users/$(request.auth.uid)).data.roles.hasAny([role]) &&
+               'roles' in getUserData(request.auth.uid) && // Ensure roles exist
+               getUserData(request.auth.uid).roles.hasAny([role]) &&
                isNotDisabled()
         );
     }
-    
-    function isAdmin() {
-      // An admin is a superadmin OR a user with more than one role (e.g., 'customer' + 'users').
-      return isSuperAdmin() || (
-             request.auth != null &&
-             userExists(request.auth.uid) &&
-             isNotDisabled() &&
-             getUserData(request.auth.uid).roles.size() > 1
-      );
-    }
-    
+        
     function isQuoteOwner(quote) {
       return isOwner(quote.userId);
     }
@@ -78,8 +70,8 @@ service cloud.firestore {
       
       allow delete: if hasRole('users');
       
-      // An admin should be able to view the list of users.
-      allow list: if isAdmin();
+      // An admin with the 'users' role OR a superadmin should be able to view the list of users.
+      allow list: if hasRole('users');
 
       // User Notifications Subcollection
       match /notifications/{notificationId} {
@@ -127,7 +119,8 @@ service cloud.firestore {
     
     // Root Notifications Collection for Admins
     match /notifications/{notificationId} {
-      allow read, list: if isAdmin();
+      // Any admin role can read/list, but only specific role can manage
+      allow read, list: if hasRole('dashboard'); 
       allow update, delete: if hasRole('notifications');
       // Any authenticated user can create a notification for admins (e.g., on signup).
       allow create: if request.auth != null;
