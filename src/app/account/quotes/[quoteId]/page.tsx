@@ -81,7 +81,7 @@ export default function QuoteDetailsPage({ params }: QuoteDetailsPageProps) {
         redirect_url: `${typeof window !== 'undefined' ? window.location.origin : ''}/account/orders`,
         customer: {
             email: user?.email || '',
-            name: user?.displayName || '',
+            name: quote?.customerName || user?.displayName || '',
         },
         customizations: {
             title: 'BeautifulSoup&Foods',

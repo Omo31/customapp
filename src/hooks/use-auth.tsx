@@ -39,54 +39,51 @@ export const useAuth = () => {
   const saveUserProfile = async (firebaseUser: FirebaseUser, firstName: string, lastName: string) => {
       const userRef = doc(db, 'users', firebaseUser.uid);
       
+      const userProfile: Omit<UserProfile, 'id'> = {
+          firstName,
+          lastName,
+          email: firebaseUser.email || "",
+          phoneNumber: "",
+          shippingAddress: "",
+          roles: [], // Start with no roles. Cloud Function will add admin roles if necessary.
+          createdAt: serverTimestamp(),
+          notificationPreferences: {
+              marketingEmails: false,
+              quoteAndOrderUpdates: true,
+          }
+      };
+      
+      const batch = writeBatch(db);
+      
+      // 1. Set the user profile
+      batch.set(userRef, userProfile);
+
+      // 2. Create the welcome notification for the user
+      const userNotifRef = doc(collection(db, `users/${firebaseUser.uid}/notifications`));
+      const userNotif: Omit<Notification, 'id'> = {
+          userId: firebaseUser.uid,
+          title: "Welcome to BeautifulSoup&Foods!",
+          description: "We're so glad to have you. Explore our products and start shopping.",
+          href: "/",
+          isRead: false,
+          createdAt: serverTimestamp(),
+      };
+      batch.set(userNotifRef, userNotif);
+      
+      // 3. Create the notification for admins
+      const adminNotifRef = doc(collection(db, `notifications`));
+      const adminNotif: Omit<Notification, 'id'> = {
+          role: 'users',
+          title: "New User Joined",
+          description: `${firstName} ${lastName} (${firebaseUser.email}) just signed up.`,
+          href: `/admin/users/${firebaseUser.uid}`,
+          isRead: false,
+          createdAt: serverTimestamp(),
+      };
+      batch.set(adminNotifRef, adminNotif);
+      
       try {
-        // Create the user profile document. Roles will be handled by the backend function.
-        const userProfile: Omit<UserProfile, 'id'> = {
-            firstName,
-            lastName,
-            email: firebaseUser.email || "",
-            phoneNumber: "",
-            shippingAddress: "",
-            roles: [], // Start with no roles. Cloud Function will add admin roles if necessary.
-            createdAt: serverTimestamp(),
-            notificationPreferences: {
-                marketingEmails: false,
-                quoteAndOrderUpdates: true,
-            }
-        };
-        
-        const batch = writeBatch(db);
-        
-        // 1. Set the user profile
-        batch.set(userRef, userProfile);
-
-        // 2. Create the welcome notification for the user
-        const userNotifRef = doc(collection(db, `users/${firebaseUser.uid}/notifications`));
-        const userNotif: Omit<Notification, 'id'> = {
-            userId: firebaseUser.uid,
-            title: "Welcome to BeautifulSoup&Foods!",
-            description: "We're so glad to have you. Explore our products and start shopping.",
-            href: "/",
-            isRead: false,
-            createdAt: serverTimestamp(),
-        };
-        batch.set(userNotifRef, userNotif);
-        
-        // 3. Create the notification for admins
-        const adminNotifRef = doc(collection(db, `notifications`));
-        const adminNotif: Omit<Notification, 'id'> = {
-            role: 'users',
-            title: "New User Joined",
-            description: `${firstName} ${lastName} (${firebaseUser.email}) just signed up.`,
-            href: `/admin/users/${firebaseUser.uid}`,
-            isRead: false,
-            createdAt: serverTimestamp(),
-        };
-        batch.set(adminNotifRef, adminNotif);
-        
-        // Commit all writes at once
         await batch.commit();
-
       } catch (error: any) {
          console.error("Error during user profile/notification creation: ", error);
          // This will catch errors from the batch commit
@@ -97,6 +94,7 @@ export const useAuth = () => {
                 requestResourceData: 'Multiple Documents (Batch Write)'
          });
          errorEmitter.emit('permission-error', permissionError);
+         // Re-throw the error to be caught by the signup function's catch block
          throw new Error("Failed to initialize user profile. Please check permissions.");
       }
   }
