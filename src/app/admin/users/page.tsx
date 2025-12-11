@@ -216,6 +216,7 @@ function AdminUsersContent() {
                   <TableRow>
                     <TableHead>User ID</TableHead>
                     <TableHead>Name</TableHead>
+                    <TableHead>Email</TableHead>
                     <TableHead>Roles</TableHead>
                     <TableHead>Manage Roles</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
@@ -233,7 +234,9 @@ function AdminUsersContent() {
                             {user.disabled && <UserX className="h-4 w-4 text-destructive" />}
                             {user.firstName} {user.lastName}
                           </div>
-                           <div className="text-sm text-muted-foreground">{user.email}</div>
+                        </TableCell>
+                        <TableCell>
+                            <div className="text-sm text-muted-foreground">{user.email}</div>
                         </TableCell>
                         <TableCell>
                             <div className="flex flex-wrap gap-1 max-w-xs">
@@ -279,7 +282,7 @@ function AdminUsersContent() {
                     ))
                   ) : (
                     <TableRow>
-                      <TableCell colSpan={5} className="text-center">
+                      <TableCell colSpan={6} className="text-center">
                         No users found.
                       </TableCell>
                     </TableRow>
