@@ -15,19 +15,17 @@ const ALL_ROLES = [
   "accounting", "analytics", "notifications", "settings", "superadmin",
 ];
 
-export const grantSuperAdminRole = onUserCreate(async (event) => {
+export const onNewUser = onUserCreate(async (event) => {
   const user = event.data; // The user record created
   const { email, uid } = user;
 
+  const userDocRef = getFirestore().collection("users").doc(uid);
+
   if (email === SUPER_ADMIN_EMAIL) {
     logger.info(`New user ${email} is the designated superadmin. Granting all roles.`);
-
-    const userDocRef = getFirestore().collection("users").doc(uid);
-
+    
     try {
-      // Use .set() with { merge: true } to either create the document if it doesn't exist,
-      // or update it if it already exists, without overwriting other fields.
-      // This is more robust than .update() which fails if the document is missing.
+      // Set roles for the superadmin. This will merge with any existing profile data.
       await userDocRef.set({
         roles: ALL_ROLES,
       }, { merge: true });
@@ -36,6 +34,17 @@ export const grantSuperAdminRole = onUserCreate(async (event) => {
       logger.error(`Error granting superadmin role to ${uid}. Error:`, error);
     }
   } else {
-    logger.info(`New user ${email} registered. No special roles assigned.`);
+    logger.info(`New user ${email} registered. Assigning default 'customer' role.`);
+    
+    try {
+        // Set the default 'customer' role. This will merge with the profile data
+        // created on the client, ensuring we don't overwrite it.
+         await userDocRef.set({
+            roles: ["customer"],
+        }, { merge: true });
+        logger.info(`Successfully assigned 'customer' role to ${uid}`);
+    } catch (error) {
+        logger.error(`Error assigning default role to ${uid}. Error:`, error);
+    }
   }
 });

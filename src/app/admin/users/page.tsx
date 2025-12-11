@@ -21,10 +21,9 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
 import { Label } from "@/components/ui/label";
-import { Eye, Download, UserX, ShieldBan } from "lucide-react";
+import { Eye, Download, UserX } from "lucide-react";
 import { useState } from "react";
 import { Pagination, PaginationContent, PaginationItem, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
-import { useRouter } from "next/navigation";
 import { usePagination } from "@/hooks/use-pagination";
 import ProtectedRoute from "@/components/auth/protected-route";
 import { Switch } from "@/components/ui/switch";
@@ -37,14 +36,13 @@ const PAGE_SIZE = 10;
 function AdminUsersContent() {
   const db = useFirestore();
   const { toast } = useToast();
-  const router = useRouter();
   const { user: currentUser, hasRole } = useAuth();
 
   // This state is used as a key to force a re-render of the useCollection hooks,
   // ensuring we get fresh data after a role change reverts.
   const [refreshKey, setRefreshKey] = useState(0);
 
-  const { data: initialData, loading: initialLoading, error } = useCollection<UserProfile>(db, "users", {
+  const { data: initialData, loading: initialLoading } = useCollection<UserProfile>(db, "users", {
     orderBy: ["createdAt", "desc"],
     limit: PAGE_SIZE,
   }, [refreshKey]);
@@ -240,7 +238,7 @@ function AdminUsersContent() {
                         <TableCell>
                             <div className="flex flex-wrap gap-1 max-w-xs">
                                 {user.roles && user.roles.length > 0 ? user.roles.map(role => (
-                                    <Badge key={role} variant={role === 'superadmin' ? 'destructive' : 'secondary'} className="capitalize">{role.replace('-', ' ')}</Badge>
+                                    <Badge key={role} variant={role === 'superadmin' ? 'destructive' : role === 'customer' ? 'outline' : 'secondary'} className="capitalize">{role.replace('-', ' ')}</Badge>
                                 )) : <span className="text-xs text-muted-foreground">No roles</span>}
                             </div>
                         </TableCell>
@@ -254,7 +252,7 @@ function AdminUsersContent() {
                                   onCheckedChange={(isChecked) =>
                                     handleRoleChange(user.id!, role, isChecked)
                                   }
-                                  disabled={role === 'superadmin' && !hasRole('superadmin')}
+                                  disabled={(role === 'superadmin' && !hasRole('superadmin')) || (role === 'customer')}
                                 />
                                 <Label htmlFor={`${user.id}-${role}`} className="text-sm font-medium capitalize leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
                                   {role.replace('-', ' ')}
