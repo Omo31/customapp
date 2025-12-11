@@ -12,8 +12,6 @@ service cloud.firestore {
     }
     
     function isNotDisabled() {
-        // A user is not disabled if the 'disabled' field is not true.
-        // This function should only be called after verifying the user document exists.
         return getUserData(request.auth.uid).disabled != true;
     }
 
@@ -27,7 +25,6 @@ service cloud.firestore {
     }
     
     function isSuperAdmin() {
-      // User must be authenticated, their profile must exist, and they must have the 'superadmin' role.
       return request.auth != null &&
              userExists(request.auth.uid) &&
              'roles' in getUserData(request.auth.uid) &&
@@ -35,11 +32,10 @@ service cloud.firestore {
     }
 
     function hasRole(role) {
-        // Superadmin bypasses role checks OR the user has the specific role and is not disabled.
         return isSuperAdmin() || (
                request.auth != null &&
                userExists(request.auth.uid) &&
-               'roles' in getUserData(request.auth.uid) && // Ensure roles exist
+               'roles' in getUserData(request.auth.uid) &&
                getUserData(request.auth.uid).roles.hasAny([role]) &&
                isNotDisabled()
         );
@@ -50,23 +46,18 @@ service cloud.firestore {
     }
     
     function isChangingStatusTo(status) {
-      // Checks if the 'status' field is being changed to a specific value.
       return request.resource.data.status == status && resource.data.status != status;
     }
 
     // --- Collection Rules ---
 
-    // Users Collection
     match /users/{userId} {
       allow read: if hasRole('users') || isOwner(userId);
       allow update: if (isOwner(userId) && !('roles' in request.resource.data)) || hasRole('users');
       allow create: if request.auth.uid == userId;
       allow delete: if hasRole('users');
-      
-      // Admins with the 'users' role can list all users.
       allow list: if hasRole('users');
 
-      // User Notifications Subcollection
       match /notifications/{notificationId} {
         allow read, list: if isOwner(userId);
         allow create: if isOwner(userId) || hasRole('quotes') || hasRole('orders');
@@ -75,7 +66,6 @@ service cloud.firestore {
       }
     }
 
-    // Quotes Collection
     match /quotes/{quoteId} {
       allow read: if isQuoteOwner(resource.data) || hasRole('quotes');
       allow update: if hasRole('quotes') || 
@@ -85,41 +75,31 @@ service cloud.firestore {
                           isChangingStatusTo('Cancelled')
                       ));
       allow create: if request.auth != null;
-      // Admins with 'quotes' role can list all quotes. Customers can list their own.
-      allow list: if hasRole('quotes') || (request.auth != null && request.query.where[0] == 'userId' && request.query.where[2] == request.auth.uid && userExists(request.auth.uid) && isNotDisabled());
+      allow list: if hasRole('quotes');
     }
     
-    // Orders Collection
     match /orders/{orderId} {
       allow read: if isOwner(resource.data.userId) || hasRole('orders');
       allow write, update: if hasRole('orders');
       allow create, delete: if false; 
-      
-      // Admins with 'orders' role can list all orders. Customers can list their own.
-      allow list: if hasRole('orders') || (request.auth != null && request.query.where[0] == 'userId' && request.query.where[2] == request.auth.uid && userExists(request.auth.uid) && isNotDisabled());
+      allow list: if hasRole('orders');
     }
     
-    // Purchase Orders Collection (Admin-only)
     match /purchaseOrders/{poId} {
       allow read, write, create, list: if hasRole('purchase-orders');
     }
     
-    // Expenses Collection (Admin-only)
     match /expenses/{expenseId} {
       allow read, write, create, list: if hasRole('accounting');
     }
     
-    // Root Notifications Collection for Admins
     match /notifications/{notificationId} {
       allow read: if hasRole(resource.data.role);
-      // Any admin with the 'notifications' role can list all admin notifications.
       allow list: if hasRole('notifications');                 
       allow update, delete: if hasRole('notifications');
-      // Any authenticated user can create a notification for admins (e.g., on signup or quote submission).
       allow create: if request.auth != null;
     }
 
-    // Settings Collection
     match /settings/{settingId} {
       allow read: if true;
       allow write: if hasRole('settings');
