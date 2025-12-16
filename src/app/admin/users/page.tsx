@@ -110,6 +110,11 @@ function AdminUsersContent() {
     } else {
       newRoles = currentRoles.filter((r) => r !== role);
     }
+    
+    // Ensure 'customer' role is present if no other roles exist.
+    if (newRoles.filter(r => r !== 'customer').length === 0 && !newRoles.includes('customer')) {
+        newRoles.push('customer');
+    }
 
     try {
       const userRef = doc(db, "users", userId);
@@ -255,7 +260,7 @@ function AdminUsersContent() {
                                   onCheckedChange={(isChecked) =>
                                     handleRoleChange(user.id!, role, isChecked)
                                   }
-                                  disabled={(role === 'superadmin' && !hasRole('superadmin')) || (role === 'customer')}
+                                  disabled={role === 'superadmin' && !hasRole('superadmin')}
                                 />
                                 <Label htmlFor={`${user.id}-${role}`} className="text-sm font-medium capitalize leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
                                   {role.replace('-', ' ')}
