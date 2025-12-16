@@ -1,5 +1,25 @@
 
 
+// Defines roles that can be managed in the admin user interface.
+// 'superadmin' is intentionally excluded as it's a special role
+// and should not be granted or revoked lightly from the UI.
+export const allAdminRoles = [
+  "dashboard",
+  "orders",
+  "quotes",
+  "users",
+  "purchase-orders",
+  "accounting",
+  "analytics",
+  "notifications",
+  "settings",
+];
+
+// All possible roles in the system, including special ones.
+export const allRoles = [...allAdminRoles, "superadmin", "customer"];
+
+// Navigation items for the admin sidebar. This controls what links appear.
+// The `useAuth` hook uses these roles to filter the nav items based on user permissions.
 export const allAdminNavItems = [
   { title: "Dashboard", href: "/admin/dashboard", role: "dashboard" },
   { title: "Orders", href: "/admin/orders", role: "orders" },
@@ -12,13 +32,7 @@ export const allAdminNavItems = [
   { title: "Settings", href: "/admin/settings", role: "settings" },
 ];
 
-// All roles that can be managed by an admin.
-export const allAdminRoles = allAdminNavItems.map(item => item.role);
-
-// All possible roles in the system, including special ones.
-export const allRoles = [...allAdminRoles, "superadmin", "customer"];
-
 export function getRoleFromPath(path: string): string | undefined {
-  const item = allAdminNavItems.find(item => item.href === path);
+  const item = allAdminNavItems.find(item => path.startsWith(item.href));
   return item?.role;
 }

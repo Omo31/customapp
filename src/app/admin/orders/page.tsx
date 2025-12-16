@@ -1,4 +1,5 @@
 
+
 "use client"
 
 import { useFirestore, useCollection } from "@/firebase";
@@ -13,16 +14,22 @@ import Link from "next/link";
 import { Eye } from "lucide-react";
 import { usePagination } from "@/hooks/use-pagination";
 import ProtectedRoute from "@/components/auth/protected-route";
+import { useAuth } from "@/hooks/use-auth";
 
 const PAGE_SIZE = 10;
 
 
 function AdminOrdersContent() {
     const db = useFirestore();
+    const { hasRole } = useAuth();
     
+    // The 'disabled' flag ensures we only run the query if the user has the correct role.
+    const shouldFetchOrders = hasRole('orders');
+
     const { data: initialData, loading: initialLoading } = useCollection<Order>(db, "orders", {
         orderBy: ["createdAt", "desc"],
         limit: PAGE_SIZE,
+        disabled: !shouldFetchOrders,
     });
 
     const {
@@ -37,7 +44,8 @@ function AdminOrdersContent() {
     const { data: orders, loading: paginatedLoading } = useCollection<Order>(db, "orders", {
         orderBy: ["createdAt", "desc"],
         limit: PAGE_SIZE,
-        startAfter: startAfter
+        startAfter: startAfter,
+        disabled: !shouldFetchOrders,
     });
     
     const loading = initialLoading || paginatedLoading;

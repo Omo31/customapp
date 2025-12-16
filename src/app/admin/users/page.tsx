@@ -42,7 +42,7 @@ function AdminUsersContent() {
   // ensuring we get fresh data after a role change reverts.
   const [refreshKey, setRefreshKey] = useState(0);
 
-  // The 'enabled' flag ensures we only run the query if the user has the correct role.
+  // The 'disabled' flag ensures we only run the query if the user has the correct role.
   const shouldFetchUsers = hasRole('users');
 
   const { data: initialData, loading: initialLoading } = useCollection<UserProfile>(db, "users", {
@@ -101,7 +101,7 @@ function AdminUsersContent() {
     }
     
     // Prevent user from removing their own 'users' role and locking themselves out
-    if (userId === currentUser.uid && role === 'users' && !isChecked) {
+    if (userId === currentUser.uid && role === 'users' && !isChecked && !hasRole('superadmin')) {
         toast({
             title: "Action Prevented",
             description: "You cannot remove your own 'Users' management role.",
