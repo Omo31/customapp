@@ -269,7 +269,8 @@ export const useAuth = () => {
     return userHasRole(role);
   };
   
-  const isAdmin = (roles?.length || 0) > 0;
+  const isAdmin = (roles?.filter(role => role !== 'customer').length || 0) > 0;
+
 
   return { user, loading, login, signup, logout, resetPassword, changePassword, deleteUserAccount, roles, hasRole, isAdmin };
 };

@@ -25,10 +25,12 @@ export const AuthUserProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [roles, setRoles] = useState<string[]>([]);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser: FirebaseUser | null) => {
       if (firebaseUser) {
+        setIsLoggingOut(false);
         const userRef = doc(db, 'users', firebaseUser.uid);
         const unsubProfile = onSnapshot(userRef, (docSnap) => {
           if (docSnap.exists()) {
@@ -60,13 +62,20 @@ export const AuthUserProvider = ({ children }: { children: ReactNode }) => {
           }
           setLoading(false);
         }, (error) => {
-            console.error("Error fetching user profile:", error);
-            // Don't sign out automatically. This could be a temporary network issue.
-            // Allow the app to handle the 'no profile' state gracefully.
+            // During logout, a permission error is expected as the user is no longer authenticated.
+            // We check the isLoggingOut flag to suppress this specific, benign error.
+            if (!isLoggingOut) {
+              console.error("Error fetching user profile:", error);
+            }
             setUser(null);
             setRoles([]);
             setLoading(false);
         });
+        
+        auth.beforeSignOut(async () => {
+            setIsLoggingOut(true);
+        });
+        
         return () => unsubProfile();
       } else {
         setUser(null);
@@ -76,7 +85,7 @@ export const AuthUserProvider = ({ children }: { children: ReactNode }) => {
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [isLoggingOut]);
 
   const hasRole = (role: string) => {
     return roles.includes(role);
