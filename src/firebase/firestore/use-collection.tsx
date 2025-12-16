@@ -8,7 +8,7 @@ import { errorEmitter } from '../error-emitter';
 import { FirestorePermissionError } from '../errors';
 
 export interface UseCollectionOptions {
-    where?: [string, any, any];
+    where?: [string, any, any] | [string, any, any][];
     orderBy?: [string, 'asc' | 'desc'];
     limit?: number;
     startAfter?: DocumentSnapshot<DocumentData> | null;
@@ -36,17 +36,41 @@ export const useCollection = <T,>(
   const queryRef = useMemoFirebase(() => {
     if (!db || !path) return null;
     
+    let effectivePath = path;
     const constraints: QueryConstraint[] = [];
 
+    // Check for empty 'in' or 'array-contains-any' queries
     if (options.where) {
-      if (Array.isArray(options.where[2]) && options.where[2].length === 0) {
-        return null;
-      }
-      if (options.where[2] === '' || options.where[2] === undefined || options.where[2] === null) {
-          return null; 
-      }
-      constraints.push(where(options.where[0], options.where[1], options.where[2]));
+        const whereConditions = Array.isArray(options.where[0]) ? options.where as [string, any, any][] : [options.where as [string, any, any]];
+        for (const condition of whereConditions) {
+            const [field, op, value] = condition;
+            if (['in', 'array-contains-any'].includes(op) && (!Array.isArray(value) || value.length === 0)) {
+                return null; // Firestore 'in' queries cannot have an empty array.
+            }
+             if (value === '' || value === undefined || value === null) {
+                if (op !== '==' && op !== '!=') {
+                    // Only allow null/empty checks for simple equality
+                } else {
+                    return null;
+                }
+            }
+        }
     }
+
+
+    if (options.where) {
+        if (Array.isArray(options.where[0])) {
+            // It's an array of where clauses
+            (options.where as [string, any, any][]).forEach(w => {
+                constraints.push(where(w[0], w[1], w[2]));
+            });
+        } else {
+            // It's a single where clause
+            const w = options.where as [string, any, any];
+            constraints.push(where(w[0], w[1], w[2]));
+        }
+    }
+
     if (options.orderBy) {
         constraints.push(orderBy(options.orderBy[0], options.orderBy[1]));
     }
@@ -60,7 +84,7 @@ export const useCollection = <T,>(
         constraints.push(limit(options.limit));
     }
 
-    return query(collection(db, path), ...constraints);
+    return query(collection(db, effectivePath), ...constraints);
   }, [db, path, JSON.stringify(options), ...deps]); // Simple deep dependency check
 
 
