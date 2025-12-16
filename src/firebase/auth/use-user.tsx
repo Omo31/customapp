@@ -46,7 +46,7 @@ export const AuthUserProvider = ({ children }: { children: ReactNode }) => {
             setRoles(userRoles);
           } else {
             // This case can happen briefly during signup or if profile creation fails.
-            // We set a basic user object without profile data.
+            // We set a basic user object without profile data and wait for the profile to be created.
             const basicUser: User = {
               uid: firebaseUser.uid,
               email: firebaseUser.email,
@@ -65,6 +65,8 @@ export const AuthUserProvider = ({ children }: { children: ReactNode }) => {
             if (error.code !== 'permission-denied') {
               console.error("Error fetching user profile:", error);
             }
+            // If there's an error (like permission denied), it's safe to assume
+            // we should treat the user as logged out or without a profile.
             setUser(null);
             setRoles([]);
             setLoading(false);
