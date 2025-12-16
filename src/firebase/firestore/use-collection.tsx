@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -13,6 +14,7 @@ export interface UseCollectionOptions {
     limit?: number;
     startAfter?: DocumentSnapshot<DocumentData> | null;
     endBefore?: DocumentSnapshot<DocumentData> | null;
+    disabled?: boolean;
 }
 
 // Add a 'doc' property to the generic type T to hold the snapshot
@@ -34,6 +36,9 @@ export const useCollection = <T,>(
   const [error, setError] = useState<Error | null>(null);
   
   const queryRef = useMemoFirebase(() => {
+    // If the query is explicitly disabled, don't run it.
+    if (options.disabled) return null;
+    
     if (!db || !path) return null;
     
     let effectivePath = path;
@@ -89,6 +94,12 @@ export const useCollection = <T,>(
 
 
   useEffect(() => {
+    if (options.disabled) {
+      setData([]);
+      setLoading(false);
+      return;
+    }
+    
     if (queryRef === null) {
       setData([]);
       setLoading(false);
@@ -112,7 +123,7 @@ export const useCollection = <T,>(
     });
 
     return () => unsubscribe();
-  }, [queryRef, path]);
+  }, [queryRef, path, options.disabled]);
 
   return { data, loading, error };
 };
@@ -127,6 +138,7 @@ export const useCollectionGroup = <T,>(
     const [error, setError] = useState<Error | null>(null);
 
     const queryRef = useMemoFirebase(() => {
+        if (options.disabled) return null;
         if (!db || !path) return null;
 
         const constraints: QueryConstraint[] = [];
@@ -158,6 +170,12 @@ export const useCollectionGroup = <T,>(
     }, [db, path, JSON.stringify(options)]);
 
     useEffect(() => {
+        if (options.disabled) {
+            setData([]);
+            setLoading(false);
+            return;
+        }
+
         if (!queryRef) {
             setData([]);
             setLoading(false);
@@ -181,7 +199,7 @@ export const useCollectionGroup = <T,>(
         });
 
         return () => unsubscribe();
-    }, [queryRef, path]);
+    }, [queryRef, path, options.disabled]);
     
     return { data, loading, error };
 };

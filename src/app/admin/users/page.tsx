@@ -42,9 +42,14 @@ function AdminUsersContent() {
   // ensuring we get fresh data after a role change reverts.
   const [refreshKey, setRefreshKey] = useState(0);
 
+  // The 'enabled' flag ensures we only run the query if the user has the correct role.
+  const shouldFetchUsers = hasRole('users');
+
   const { data: initialData, loading: initialLoading } = useCollection<UserProfile>(db, "users", {
     orderBy: ["createdAt", "desc"],
     limit: PAGE_SIZE,
+    // Disable the query if the user doesn't have the role
+    disabled: !shouldFetchUsers
   }, [refreshKey]);
 
   const {
@@ -59,11 +64,15 @@ function AdminUsersContent() {
   const { data: users, loading: paginatedLoading } = useCollection<UserProfile>(db, "users", {
     orderBy: ["createdAt", "desc"],
     limit: PAGE_SIZE,
-    startAfter: startAfter
+    startAfter: startAfter,
+    // Disable the query if the user doesn't have the role
+    disabled: !shouldFetchUsers
   }, [refreshKey, startAfter]);
   
   const { data: allUsers, loading: allUsersLoading } = useCollection<UserProfile>(db, "users", {
-    orderBy: ["createdAt", "desc"]
+    orderBy: ["createdAt", "desc"],
+    // Disable the query if the user doesn't have the role
+    disabled: !shouldFetchUsers
   }, [refreshKey]);
 
   const loading = initialLoading || paginatedLoading;
@@ -260,7 +269,7 @@ function AdminUsersContent() {
                                   onCheckedChange={(isChecked) =>
                                     handleRoleChange(user.id!, role, isChecked)
                                   }
-                                  disabled={role === 'superadmin' && !hasRole('superadmin')}
+                                  disabled={(role === 'superadmin' && !hasRole('superadmin')) || user.id === currentUser?.uid && role === 'superadmin'}
                                 />
                                 <Label htmlFor={`${user.id}-${role}`} className="text-sm font-medium capitalize leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
                                   {role.replace('-', ' ')}
@@ -274,7 +283,7 @@ function AdminUsersContent() {
                             aria-label={`Disable user ${user.firstName}`}
                             checked={!!user.disabled}
                             onCheckedChange={(isChecked) => handleDisableUser(user.id!, isChecked)}
-                            disabled={user.roles?.includes('superadmin') && !hasRole('superadmin')}
+                            disabled={(user.roles?.includes('superadmin') && !hasRole('superadmin')) || user.id === currentUser?.uid}
                            />
                           <Button asChild variant="outline" size="sm">
                             <Link href={`/admin/users/${user.id}`}>

@@ -8,19 +8,21 @@ export default function ProtectedRoute({ children, requiredRole }: { children: R
   const { user, loading, hasRole } = useAuth();
   const router = useRouter();
 
+  const isAuthorized = user && (!requiredRole || hasRole(requiredRole));
+
   useEffect(() => {
     if (!loading) {
       if (!user) {
         // Not logged in, redirect to login
         router.push('/login');
-      } else if (requiredRole && !hasRole(requiredRole)) {
+      } else if (!isAuthorized) {
         // Logged in, but does not have the required role
         router.push('/'); // Or redirect to an 'unauthorized' page
       }
     }
-  }, [user, loading, router, requiredRole, hasRole]);
+  }, [user, loading, isAuthorized, router]);
 
-  if (loading || !user || (requiredRole && !hasRole(requiredRole))) {
+  if (loading || !isAuthorized) {
     return (
       <div className="flex flex-col items-center justify-center h-[calc(100vh-10rem)]">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
