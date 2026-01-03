@@ -25,7 +25,8 @@ export const onNewUser = onUserCreate(async (event: { data: UserRecord }) => {
     logger.info(`New user ${email} is the designated superadmin. Granting all roles.`);
     
     try {
-      // Set roles for the superadmin. This will merge with any existing profile data.
+      // Use set with merge to safely add roles, avoiding race conditions.
+      // This will create the document if it doesn't exist, or update it if it does.
       await userDocRef.set({
         roles: ALL_ROLES,
       }, { merge: true });
@@ -37,9 +38,8 @@ export const onNewUser = onUserCreate(async (event: { data: UserRecord }) => {
     logger.info(`New user ${email} registered. Assigning default 'customer' role.`);
     
     try {
-        // Set the default 'customer' role. This will merge with the profile data
-        // created on the client, ensuring we don't overwrite it.
-         await userDocRef.set({
+        // Use set with merge for consistency and safety.
+        await userDocRef.set({
             roles: ["customer"],
         }, { merge: true });
         logger.info(`Successfully assigned 'customer' role to ${uid}`);
