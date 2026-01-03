@@ -39,13 +39,13 @@ export const useAuth = () => {
   const saveUserProfile = async (firebaseUser: FirebaseUser, firstName: string, lastName: string) => {
       const userRef = doc(db, 'users', firebaseUser.uid);
       
-      const userProfile: Omit<UserProfile, 'id'> = {
+      // The client no longer sets any roles. This is now handled exclusively by the backend Cloud Function.
+      const userProfile: Omit<UserProfile, 'id' | 'roles'> = {
           firstName,
           lastName,
           email: firebaseUser.email || "",
           phoneNumber: "",
           shippingAddress: "",
-          roles: [], // Start with no roles. Cloud Function will add admin roles if necessary.
           createdAt: serverTimestamp(),
           notificationPreferences: {
               marketingEmails: false,
@@ -55,8 +55,8 @@ export const useAuth = () => {
       
       const batch = writeBatch(db);
       
-      // 1. Set the user profile
-      batch.set(userRef, userProfile);
+      // 1. Set the user profile (without roles)
+      batch.set(userRef, userProfile, { merge: true });
 
       // 2. Create the welcome notification for the user
       const userNotifRef = doc(collection(db, `users/${firebaseUser.uid}/notifications`));
