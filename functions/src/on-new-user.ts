@@ -1,5 +1,5 @@
 
-import { onUserCreate } from "firebase-functions/v2/auth";
+import { onUserCreate, UserRecord } from "firebase-functions/v2/auth";
 import * as logger from "firebase-functions/logger";
 import { getFirestore } from "firebase-admin/firestore";
 import { initializeApp, getApps } from "firebase-admin/app";
@@ -15,7 +15,7 @@ const ALL_ROLES = [
   "accounting", "analytics", "notifications", "settings", "superadmin",
 ];
 
-export const onNewUser = onUserCreate(async (event) => {
+export const onNewUser = onUserCreate(async (event: { data: UserRecord }) => {
   const user = event.data; // The user record created
   const { email, uid } = user;
 
