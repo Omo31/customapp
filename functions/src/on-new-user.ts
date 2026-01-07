@@ -1,4 +1,3 @@
-
 import { onUserCreate, UserRecord } from "firebase-functions/v2/auth";
 import * as logger from "firebase-functions/logger";
 import { getFirestore } from "firebase-admin/firestore";
