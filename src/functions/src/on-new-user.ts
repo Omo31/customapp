@@ -9,7 +9,6 @@ if (getApps().length === 0) {
   initializeApp();
 }
 
-const SUPER_ADMIN_EMAIL = "oluwagbengwumi@gmail.com";
 const ALL_ROLES = [
   "dashboard", "orders", "quotes", "users", "purchase-orders",
   "accounting", "analytics", "notifications", "settings", "superadmin",
@@ -21,12 +20,14 @@ export const onNewUser = onUserCreate(async (event: { data: UserRecord }) => {
 
   const userDocRef = getFirestore().collection("users").doc(uid);
 
-  if (email === SUPER_ADMIN_EMAIL) {
+  // Check for the SUPER_ADMIN_EMAIL environment variable
+  const superAdminEmail = process.env.SUPER_ADMIN_EMAIL;
+
+  if (email && email === superAdminEmail) {
     logger.info(`New user ${email} is the designated superadmin. Granting all roles.`);
     
     try {
       // Use set with merge to safely add roles, avoiding race conditions.
-      // This will create the document if it doesn't exist, or update it if it does.
       await userDocRef.set({
         roles: ALL_ROLES,
       }, { merge: true });

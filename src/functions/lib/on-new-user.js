@@ -10,7 +10,6 @@ const app_1 = require("firebase-admin/app");
 if ((0, app_1.getApps)().length === 0) {
     (0, app_1.initializeApp)();
 }
-const SUPER_ADMIN_EMAIL = "oluwagbengwumi@gmail.com";
 const ALL_ROLES = [
     "dashboard", "orders", "quotes", "users", "purchase-orders",
     "accounting", "analytics", "notifications", "settings", "superadmin",
@@ -19,11 +18,12 @@ exports.onNewUser = (0, auth_1.onUserCreate)(async (event) => {
     const user = event.data; // The user record created
     const { email, uid } = user;
     const userDocRef = (0, firestore_1.getFirestore)().collection("users").doc(uid);
-    if (email === SUPER_ADMIN_EMAIL) {
+    // Check for the SUPER_ADMIN_EMAIL environment variable
+    const superAdminEmail = process.env.SUPER_ADMIN_EMAIL;
+    if (email && email === superAdminEmail) {
         logger.info(`New user ${email} is the designated superadmin. Granting all roles.`);
         try {
             // Use set with merge to safely add roles, avoiding race conditions.
-            // This will create the document if it doesn't exist, or update it if it does.
             await userDocRef.set({
                 roles: ALL_ROLES,
             }, { merge: true });
