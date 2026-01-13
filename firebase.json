@@ -6,10 +6,6 @@
   "storage": {
     "rules": "storage.rules"
   },
-  "functions": {
-    "source": "src/functions",
-    "runtime": "nodejs20"
-  },
   "apphosting": {
     "source": ".",
     "ignore": [
@@ -17,5 +13,9 @@
       "**/.*",
       "**/node_modules/**"
     ]
+  },
+  "functions": {
+    "source": "src/functions",
+    "runtime": "nodejs20"
   }
 }
