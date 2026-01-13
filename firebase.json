@@ -7,7 +7,8 @@
     "rules": "storage.rules"
   },
   "functions": {
-    "source": "functions"
+    "source": "home_user/studio/functions",
+    "runtime": "nodejs20"
   },
   "apphosting": {
     "source": ".",

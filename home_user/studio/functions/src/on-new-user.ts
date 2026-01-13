@@ -1,5 +1,6 @@
 
-import { onUserCreate, UserRecord } from "firebase-functions/v2/auth";
+import { onUserCreate } from "firebase-functions/v2/auth";
+import type { UserRecord } from "firebase-functions/v2/auth";
 import * as logger from "firebase-functions/logger";
 import { getFirestore } from "firebase-admin/firestore";
 import { initializeApp, getApps } from "firebase-admin/app";
