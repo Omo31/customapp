@@ -1,6 +1,6 @@
 
 import { NextRequest, NextResponse } from 'next/server';
-import { doc, writeBatch, collection, serverTimestamp, getDoc } from 'firebase-firestore';
+import { doc, writeBatch, collection, serverTimestamp, getDoc } from 'firebase-admin/firestore';
 import { db } from '@/firebase/server-init'; // We'll need a server-side admin init
 import { type Quote } from '@/types';
 
@@ -52,31 +52,39 @@ export async function POST(req: NextRequest) {
                 return NextResponse.json({ status: 'error', message: 'tx_ref is missing' }, { status: 400 });
             }
 
-            // 1. VERIFY THE TRANSACTION with Flutterwave's API to be sure
-            const verificationResponse = await verifyTransaction(transactionId);
+            // 1. FETCH THE QUOTE to ensure it exists and isn't already paid
+            const quoteRef = doc(db, 'quotes', quoteId);
+            const quoteSnap = await getDoc(quoteRef);
+
+            if (!quoteSnap.exists()) {
+                console.error(`Webhook Error: Quote ${quoteId} not found.`);
+                return NextResponse.json({ status: 'error', message: 'Quote not found' }, { status: 404 });
+            }
+
+            const quote = quoteSnap.data() as Quote;
+
+            if (quote.status === 'Paid') {
+                // This payment has already been processed. Acknowledge and exit.
+                console.log(`Webhook Info: Quote ${quoteId} is already paid. Acknowledging webhook.`);
+                return NextResponse.json({ status: 'success', message: 'Already processed' });
+            }
+            
+            // Calculate the expected total cost from the quote for server-side verification
+            const itemsTotal = quote.items.reduce((acc, item) => acc + (item.unitCost || 0) * Number(item.quantity), 0);
+            const servicesTotal = quote.pricedServices ? Object.values(quote.pricedServices).reduce((acc, cost) => acc + cost, 0) : 0;
+            const serviceCharge = itemsTotal * 0.06;
+            const shippingCost = quote.shippingCost || 0;
+            const expectedTotalCost = itemsTotal + servicesTotal + serviceCharge + shippingCost;
+
+
+            // 2. VERIFY THE TRANSACTION with Flutterwave's API to be sure
+            const verificationResponse = await verifyTransaction(String(transactionId));
             
             if (
                 verificationResponse.status === 'success' &&
-                verificationResponse.data.amount >= amount && // Check if amount paid is >= expected
+                verificationResponse.data.amount >= expectedTotalCost && // SECURITY: Check if amount paid is >= expected server-calculated total
                 verificationResponse.data.currency === currency
             ) {
-                // 2. FETCH THE QUOTE to ensure it exists and isn't already paid
-                const quoteRef = doc(db, 'quotes', quoteId);
-                const quoteSnap = await getDoc(quoteRef);
-
-                if (!quoteSnap.exists()) {
-                    console.error(`Webhook Error: Quote ${quoteId} not found.`);
-                    return NextResponse.json({ status: 'error', message: 'Quote not found' }, { status: 404 });
-                }
-
-                const quote = quoteSnap.data() as Quote;
-
-                if (quote.status === 'Paid') {
-                    // This payment has already been processed. Acknowledge and exit.
-                    console.log(`Webhook Info: Quote ${quoteId} is already paid. Acknowledging webhook.`);
-                    return NextResponse.json({ status: 'success', message: 'Already processed' });
-                }
-
                 // 3. PERFORM DATABASE UPDATES in a batch
                 const batch = writeBatch(db);
 
@@ -91,7 +99,7 @@ export async function POST(req: NextRequest) {
                     customerName: quote.customerName,
                     customerEmail: quote.customerEmail,
                     items: quote.items,
-                    totalCost: amount, // Use the amount from the verified transaction
+                    totalCost: amount, // Use the actual amount from the verified transaction
                     shippingAddress: quote.shippingAddress,
                     status: 'Pending',
                     createdAt: serverTimestamp(),
@@ -108,10 +116,10 @@ export async function POST(req: NextRequest) {
                     createdAt: serverTimestamp(),
                 });
                 
-                // Create admin notification in the central notifications collection
+                // Create notification for admins with the 'orders' role
                 const adminNotifRef = doc(collection(db, `notifications`));
                 batch.set(adminNotifRef, {
-                     userId: 'admin', // Keep a generic user ID for system-wide notifications
+                     role: 'orders',
                      title: "New Order Received",
                      description: `A new order #${orderRef.id.slice(-6)} was placed by ${quote.customerName}.`,
                      href: `/admin/orders/${orderRef.id}`,
@@ -123,8 +131,12 @@ export async function POST(req: NextRequest) {
                 
                 console.log(`Successfully processed payment and created order for quote ${quoteId}.`);
             } else {
-                 console.error("Webhook Error: Transaction verification failed.", verificationResponse);
-                 return NextResponse.json({ status: 'error', message: 'Transaction verification failed' }, { status: 400 });
+                 console.error("Webhook Error: Transaction verification failed or amount mismatch.", {
+                    paidAmount: verificationResponse.data.amount,
+                    expectedAmount: expectedTotalCost,
+                    verification: verificationResponse
+                 });
+                 return NextResponse.json({ status: 'error', message: 'Transaction verification failed or amount mismatch' }, { status: 400 });
             }
         }
         
