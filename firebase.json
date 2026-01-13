@@ -3,25 +3,6 @@
   "firestore": {
     "rules": "firestore.rules"
   },
-  "functions": [
-    {
-      "source": ".",
-      "codebase": "default",
-      "runtime": "nodejs20",
-      "ignore": [
-        "node_modules",
-        ".git",
-        "firebase-debug.log",
-        "firebase-debug.*.log",
-        "*.log",
-        ".next"
-      ],
-      "predeploy": [
-        "npm install",
-        "npm run build"
-      ]
-    }
-  ],
   "storage": {
     "rules": "storage.rules"
   },
