@@ -48,6 +48,18 @@ service cloud.firestore {
     function isChangingStatusTo(status) {
       return request.resource.data.status == status && resource.data.status != status;
     }
+    
+    function isAcceptingQuote() {
+      return resource.data.status == 'Pending User Action' && request.resource.data.status == 'Quote Ready';
+    }
+    
+    function isRejectingQuote() {
+      return resource.data.status == 'Pending User Action' && request.resource.data.status == 'Rejected';
+    }
+    
+    function isCancellingQuote() {
+      return resource.data.status == 'Quote Ready' && request.resource.data.status == 'Cancelled';
+    }
 
     // --- Collection Rules ---
 
@@ -69,12 +81,8 @@ service cloud.firestore {
     match /quotes/{quoteId} {
       allow read: if isQuoteOwner(resource.data) || hasRole('quotes');
       allow update: if hasRole('quotes') || 
-                      (isQuoteOwner(resource.data) && (
-                          isChangingStatusTo('Quote Ready') ||
-                          isChangingStatusTo('Rejected') ||
-                          isChangingStatusTo('Cancelled')
-                      ));
-      allow create: if request.auth != null;
+                      (isQuoteOwner(resource.data) && (isAcceptingQuote() || isRejectingQuote() || isCancellingQuote()));
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
       allow list: if hasRole('quotes');
     }
     
