@@ -5,7 +5,7 @@
  * environment variable, otherwise it assigns a default 'customer' role.
  */
 
-import { auth as AuthFunctions } from "firebase-functions/v2";
+import { auth, EventContext } from "firebase-functions/v1";
 import * as logger from "firebase-functions/logger";
 import { getFirestore } from "firebase-admin/firestore";
 import { initializeApp, getApps } from "firebase-admin/app";
@@ -25,8 +25,7 @@ const ALL_ROLES = [
 /**
  * Cloud Function that triggers when a new user is created in Firebase Authentication.
  */
-export const onNewUser = AuthFunctions.onUserCreate(async (event: { data: UserRecord }) => {
-  const user = event.data; // The user record created
+export const onNewUser = auth.user().onCreate(async (user: UserRecord, context: EventContext) => {
   const { email, uid } = user;
 
   const userDocRef = getFirestore().collection("users").doc(uid);
