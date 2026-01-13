@@ -20,8 +20,8 @@ export const onNewUser = onUserCreate(async (event: { data: UserRecord }) => {
 
   const userDocRef = getFirestore().collection("users").doc(uid);
 
-  // Check for the SUPER_ADMIN_EMAIL environment variable
-  const superAdminEmail = process.env.SUPER_ADMIN_EMAIL;
+  // The superadmin email is hardcoded here for simplicity.
+  const superAdminEmail = "oluwagbengwumi@gmail.com";
 
   if (email && email === superAdminEmail) {
     logger.info(`New user ${email} is the designated superadmin. Granting all roles.`);
