@@ -12,6 +12,9 @@
   },
   "compileOnSave": true,
   "include": [
-    "src"
+    "*.ts"
+  ],
+  "exclude": [
+    "lib"
   ]
 }
