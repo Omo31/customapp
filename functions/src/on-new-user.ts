@@ -1,4 +1,3 @@
-
 /**
  * @fileoverview
  * This file contains a Cloud Function that triggers on new user creation.
@@ -6,10 +5,11 @@
  * environment variable, otherwise it assigns a default 'customer' role.
  */
 
-import { onUserCreate, UserRecord } from "firebase-functions/v2/auth";
+import { auth as AuthFunctions } from "firebase-functions/v2";
 import * as logger from "firebase-functions/logger";
 import { getFirestore } from "firebase-admin/firestore";
 import { initializeApp, getApps } from "firebase-admin/app";
+import { UserRecord } from "firebase-functions/v1/auth";
 
 // Initialize the app if it hasn't been already
 if (getApps().length === 0) {
@@ -25,7 +25,7 @@ const ALL_ROLES = [
 /**
  * Cloud Function that triggers when a new user is created in Firebase Authentication.
  */
-export const onNewUser = onUserCreate(async (event: { data: UserRecord }) => {
+export const onNewUser = AuthFunctions.onUserCreate(async (event: { data: UserRecord }) => {
   const user = event.data; // The user record created
   const { email, uid } = user;
 
