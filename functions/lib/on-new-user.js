@@ -40,7 +40,7 @@ var __importStar = (this && this.__importStar) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.onNewUser = void 0;
-const auth_1 = require("firebase-functions/v2/auth");
+const v2_1 = require("firebase-functions/v2");
 const logger = __importStar(require("firebase-functions/logger"));
 const firestore_1 = require("firebase-admin/firestore");
 const app_1 = require("firebase-admin/app");
@@ -56,7 +56,7 @@ const ALL_ROLES = [
 /**
  * Cloud Function that triggers when a new user is created in Firebase Authentication.
  */
-exports.onNewUser = (0, auth_1.onUserCreate)(async (event) => {
+exports.onNewUser = v2_1.auth.onUserCreate(async (event) => {
     const user = event.data; // The user record created
     const { email, uid } = user;
     const userDocRef = (0, firestore_1.getFirestore)().collection("users").doc(uid);
