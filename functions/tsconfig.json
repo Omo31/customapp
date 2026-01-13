@@ -13,10 +13,6 @@
   },
   "compileOnSave": true,
   "include": [
-    "functions/src"
-  ],
-  "exclude": [
-    "node_modules",
     "src"
   ]
 }
