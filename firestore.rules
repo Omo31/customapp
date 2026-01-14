@@ -65,7 +65,7 @@ service cloud.firestore {
       allow read: if hasRole('users') || isOwner(userId);
       allow update: if (isOwner(userId) && !('roles' in request.resource.data)) || hasRole('users');
       allow create: if request.auth.uid == userId;
-      allow delete: if hasRole('users');
+      allow delete: if hasRole('users') || isSuperAdmin();
       allow list: if hasRole('users') || isSuperAdmin();
 
       match /notifications/{notificationId} {
@@ -106,7 +106,7 @@ service cloud.firestore {
 
     match /settings/{settingId} {
       allow read: if true;
-      allow write: if hasRole('settings');
+      allow write: if hasRole('settings') || isSuperAdmin();
     }
   }
 }
