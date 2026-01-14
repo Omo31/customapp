@@ -38,17 +38,12 @@ function AdminUsersContent() {
   const { toast } = useToast();
   const { user: currentUser, hasRole } = useAuth();
 
-  // This state is used as a key to force a re-render of the useCollection hooks,
-  // ensuring we get fresh data after a role change reverts.
   const [refreshKey, setRefreshKey] = useState(0);
-
-  // The 'disabled' flag ensures we only run the query if the user has the correct role.
   const shouldFetchUsers = hasRole('users');
 
   const { data: initialData, loading: initialLoading } = useCollection<UserProfile>(db, "users", {
     orderBy: ["createdAt", "desc"],
     limit: PAGE_SIZE,
-    // Disable the query if the user doesn't have the role
     disabled: !shouldFetchUsers
   }, [refreshKey]);
 
@@ -65,13 +60,11 @@ function AdminUsersContent() {
     orderBy: ["createdAt", "desc"],
     limit: PAGE_SIZE,
     startAfter: startAfter,
-    // Disable the query if the user doesn't have the role
     disabled: !shouldFetchUsers
   }, [refreshKey, startAfter]);
   
   const { data: allUsers, loading: allUsersLoading } = useCollection<UserProfile>(db, "users", {
     orderBy: ["createdAt", "desc"],
-    // Disable the query if the user doesn't have the role
     disabled: !shouldFetchUsers
   }, [refreshKey]);
 
@@ -115,7 +108,7 @@ function AdminUsersContent() {
     let newRoles: string[];
 
     if (isChecked) {
-      newRoles = [...currentRoles, role];
+      newRoles = [...new Set([...currentRoles, role])];
     } else {
       newRoles = currentRoles.filter((r) => r !== role);
     }
