@@ -10,11 +10,14 @@ export function FirebaseErrorListener() {
       // In a development environment, we log the error to the console
       // to avoid crashing the app with the Next.js error overlay.
       if (process.env.NODE_ENV === 'development') {
-        console.error("Firestore Permission Error:", error);
+        console.groupCollapsed("%cFirestore Permission Error", "color: red; font-weight: bold;");
+        console.error(error.message);
+        console.log("Full error object:", error);
+        console.groupEnd();
       } else {
         // In production, you might want to log this to a service
         // like Sentry, but for now we'll just log it to the console.
-        console.error(error);
+        console.error("Firestore Permission Error:", error);
       }
     };
 
