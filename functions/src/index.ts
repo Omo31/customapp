@@ -5,3 +5,4 @@
 
 // Import and re-export the onNewUser function
 export { onNewUser } from './on-new-user';
+export { onDeleteUser } from './on-delete-user';
