@@ -27,14 +27,14 @@ service cloud.firestore {
     function isSuperAdmin() {
       return request.auth != null &&
              userExists(request.auth.uid) &&
-             'superadmin' in getUserData(request.auth.uid).roles;
+             getUserData(request.auth.uid).roles.hasAny(['superadmin']);
     }
 
     function hasRole(role) {
         return isSuperAdmin() || (
                request.auth != null &&
                userExists(request.auth.uid) &&
-               role in getUserData(request.auth.uid).roles &&
+               getUserData(request.auth.uid).roles.hasAny([role]) &&
                isNotDisabled()
         );
     }
