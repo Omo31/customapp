@@ -28,7 +28,7 @@ service cloud.firestore {
       return request.auth != null &&
              userExists(request.auth.uid) &&
              'roles' in getUserData(request.auth.uid) &&
-             getUserData(request.auth.uid).roles.hasAny(['superadmin']);
+             'superadmin' in getUserData(request.auth.uid).roles;
     }
 
     function hasRole(role) {
@@ -71,10 +71,10 @@ service cloud.firestore {
       allow list: if hasRole('users');
 
       match /notifications/{notificationId} {
-        allow read, list: if isOwner(userId);
+        allow read, list: if isOwner(userId) || isSuperAdmin();
         allow create: if isOwner(userId) || hasRole('quotes') || hasRole('orders');
-        allow update: if isOwner(userId);
-        allow delete: if isOwner(userId);
+        allow update: if isOwner(userId) || isSuperAdmin();
+        allow delete: if isOwner(userId) || isSuperAdmin();
       }
     }
 
@@ -114,3 +114,5 @@ service cloud.firestore {
     }
   }
 }
+
+    
