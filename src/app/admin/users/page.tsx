@@ -269,7 +269,10 @@ function AdminUsersContent() {
                                   onCheckedChange={(isChecked) =>
                                     handleRoleChange(user.id!, role, isChecked)
                                   }
-                                  disabled={(role === 'superadmin' && !hasRole('superadmin')) || user.id === currentUser?.uid && role === 'superadmin'}
+                                  disabled={
+                                    (role === 'superadmin' && !hasRole('superadmin')) ||
+                                    (role === 'superadmin' && user.id === currentUser?.uid)
+                                  }
                                 />
                                 <Label htmlFor={`${user.id}-${role}`} className="text-sm font-medium capitalize leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
                                   {role.replace('-', ' ')}

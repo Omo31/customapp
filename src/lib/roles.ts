@@ -1,8 +1,7 @@
 
 
 // Defines roles that can be managed in the admin user interface.
-// 'superadmin' is intentionally excluded as it's a special role
-// and should not be granted or revoked lightly from the UI.
+// 'superadmin' is a special role that should only be managed by other superadmins.
 export const allAdminRoles = [
   "dashboard",
   "orders",
@@ -13,6 +12,7 @@ export const allAdminRoles = [
   "analytics",
   "notifications",
   "settings",
+  "superadmin",
 ];
 
 // All possible roles in the system, including special ones.
