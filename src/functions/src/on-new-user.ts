@@ -29,11 +29,8 @@ const ALL_ROLES = [
 export const onNewUser = onUserCreate(async (event: { data: UserRecord }) => {
   const user = event.data; // The user record created
   const { email, uid, displayName } = user;
-  
-  // displayName might be in the format "FirstName LastName"
-  const nameParts = displayName?.split(' ') || [];
-  const firstName = nameParts[0] || '';
-  const lastName = nameParts.slice(1).join(' ') || '';
+  const [firstName, ...lastNameParts] = displayName?.split(' ') || ["", ""];
+  const lastName = lastNameParts.join(' ');
 
 
   const userDocRef = getFirestore().collection("users").doc(uid);
@@ -41,11 +38,10 @@ export const onNewUser = onUserCreate(async (event: { data: UserRecord }) => {
   // Read the superadmin email from a secure environment variable
   const superAdminEmail = process.env.SUPER_ADMIN_EMAIL;
 
-  // This data structure now correctly uses the info available.
   const userData: any = {
       email,
-      firstName: firstName,
-      lastName: lastName,
+      firstName: firstName || '',
+      lastName: lastName || '',
       createdAt: serverTimestamp(),
       notificationPreferences: {
         marketingEmails: false,
@@ -62,8 +58,7 @@ export const onNewUser = onUserCreate(async (event: { data: UserRecord }) => {
   }
 
   try {
-    // Set the user document with all the correct information.
-    await userDocRef.set(userData, { merge: false }); // Use set without merge to create a clean document
+    await userDocRef.set(userData, { merge: true });
     logger.info(`Successfully created user profile and assigned roles for ${uid}`);
   } catch (error) {
     logger.error(`Error creating user profile for ${uid}. Error:`, error);
