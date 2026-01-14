@@ -66,7 +66,7 @@ service cloud.firestore {
       allow update: if (isOwner(userId) && !('roles' in request.resource.data)) || hasRole('users');
       allow create: if request.auth.uid == userId;
       allow delete: if hasRole('users');
-      allow list: if hasRole('users');
+      allow list: if hasRole('users') || isSuperAdmin();
 
       match /notifications/{notificationId} {
         allow read, list: if isOwner(userId);
