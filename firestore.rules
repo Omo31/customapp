@@ -27,7 +27,6 @@ service cloud.firestore {
     function isSuperAdmin() {
       return request.auth != null &&
              userExists(request.auth.uid) &&
-             'roles' in getUserData(request.auth.uid) &&
              'superadmin' in getUserData(request.auth.uid).roles;
     }
 
@@ -35,7 +34,6 @@ service cloud.firestore {
         return isSuperAdmin() || (
                request.auth != null &&
                userExists(request.auth.uid) &&
-               'roles' in getUserData(request.auth.uid) &&
                role in getUserData(request.auth.uid).roles &&
                isNotDisabled()
         );
