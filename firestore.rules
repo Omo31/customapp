@@ -36,7 +36,7 @@ service cloud.firestore {
                request.auth != null &&
                userExists(request.auth.uid) &&
                'roles' in getUserData(request.auth.uid) &&
-               getUserData(request.auth.uid).roles.hasAny([role]) &&
+               role in getUserData(request.auth.uid).roles &&
                isNotDisabled()
         );
     }
@@ -71,10 +71,10 @@ service cloud.firestore {
       allow list: if hasRole('users');
 
       match /notifications/{notificationId} {
-        allow read, list: if isOwner(userId) || isSuperAdmin();
+        allow read, list: if isOwner(userId);
         allow create: if isOwner(userId) || hasRole('quotes') || hasRole('orders');
-        allow update: if isOwner(userId) || isSuperAdmin();
-        allow delete: if isOwner(userId) || isSuperAdmin();
+        allow update: if isOwner(userId);
+        allow delete: if isOwner(userId);
       }
     }
 
@@ -102,9 +102,7 @@ service cloud.firestore {
     }
     
     match /notifications/{notificationId} {
-      allow read: if hasRole(resource.data.role);
-      allow list: if hasRole('notifications');                 
-      allow update, delete: if hasRole('notifications');
+      allow read, list, update, delete: if hasRole('notifications') || (resource.data.role != null && hasRole(resource.data.role));
       allow create: if request.auth != null;
     }
 
@@ -114,5 +112,3 @@ service cloud.firestore {
     }
   }
 }
-
-    
