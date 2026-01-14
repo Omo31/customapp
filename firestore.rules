@@ -72,8 +72,8 @@ service cloud.firestore {
       allow read: if hasRole('users') || isOwner(userId);
       allow update: if (isOwner(userId) && !('roles' in request.resource.data)) || hasRole('users');
       allow create: if request.auth.uid == userId;
-      allow delete: if hasRole('users') || isSuperAdmin();
-      allow list: if hasRole('users') || isSuperAdmin();
+      allow delete: if hasRole('users');
+      allow list: if hasRole('users');
 
       match /notifications/{notificationId} {
         allow read, list: if isOwner(userId) || hasRole('users');
@@ -88,22 +88,22 @@ service cloud.firestore {
       allow update: if hasRole('quotes') || 
                       (isQuoteOwner(resource.data) && (isAcceptingQuote() || isRejectingQuote() || isCancellingQuote()));
       allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
-      allow list: if hasRole('quotes') || isSuperAdmin();
+      allow list: if hasRole('quotes');
     }
     
     match /orders/{orderId} {
       allow read: if isOwner(resource.data.userId) || hasRole('orders');
       allow write, update: if hasRole('orders');
       allow create, delete: if false; 
-      allow list: if hasRole('orders') || isSuperAdmin();
+      allow list: if hasRole('orders');
     }
     
     match /purchaseOrders/{poId} {
-      allow read, write, create, list: if hasRole('purchase-orders') || isSuperAdmin();
+      allow read, write, create, list: if hasRole('purchase-orders');
     }
     
     match /expenses/{expenseId} {
-      allow read, write, create, list: if hasRole('accounting') || isSuperAdmin();
+      allow read, write, create, list: if hasRole('accounting');
     }
     
     match /notifications/{notificationId} {
@@ -113,7 +113,7 @@ service cloud.firestore {
 
     match /settings/{settingId} {
       allow read: if true;
-      allow write: if hasRole('settings') || isSuperAdmin();
+      allow write: if hasRole('settings');
     }
   }
 }
