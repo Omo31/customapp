@@ -143,15 +143,14 @@ export const useCollectionGroup = <T,>(
 
         const constraints: QueryConstraint[] = [];
 
-	if (options.where) {
-         if (options.where[2] === '' || options.where[2] === undefined) {
-          return null; 
-         }
-
-
         if (options.where) {
-            constraints.push(where(options.where[0], options.where[1], options.where[2]));
+            const w = options.where as [string, any, any];
+            if (w[2] === '' || w[2] === undefined) {
+                return null;
+            }
+            constraints.push(where(w[0], w[1], w[2]));
         }
+
         if (options.orderBy) {
             constraints.push(orderBy(options.orderBy[0], options.orderBy[1]));
         }
@@ -166,7 +165,6 @@ export const useCollectionGroup = <T,>(
         }
         
         return query(collectionGroup(db, path), ...constraints);
-      }
     }, [db, path, JSON.stringify(options)]);
 
     useEffect(() => {
