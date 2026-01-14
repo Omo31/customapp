@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -142,13 +141,16 @@ export const useCollectionGroup = <T,>(
         if (!db || !path) return null;
 
         const constraints: QueryConstraint[] = [];
-
+        
         if (options.where) {
-            const w = options.where as [string, any, any];
-            if (w[2] === '' || w[2] === undefined) {
-                return null;
+            const whereConditions = Array.isArray(options.where[0]) ? options.where as [string, any, any][] : [options.where as [string, any, any]];
+            for (const condition of whereConditions) {
+                const [field, op, value] = condition;
+                 if (['in', 'array-contains-any'].includes(op) && (!Array.isArray(value) || value.length === 0)) {
+                    return null;
+                }
+                constraints.push(where(field, op, value));
             }
-            constraints.push(where(w[0], w[1], w[2]));
         }
 
         if (options.orderBy) {
