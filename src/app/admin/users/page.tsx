@@ -11,7 +11,7 @@ import {
   TableHead,
   TableBody,
   TableCell,
-} from "@/components/table";
+} from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { allAdminRoles } from "@/lib/roles";
 import { doc, updateDoc } from "firebase/firestore";
@@ -37,8 +37,7 @@ function AdminUsersContent() {
   const { user: currentUser, hasRole } = useAuth();
   const [refreshKey, setRefreshKey] = useState(0);
 
-  // We remove the 'disabled' flag here because the page is already role-protected
-  // and we want the query to start as soon as possible.
+  // The query should list all users. No filter on ID.
   const { data: initialData, loading: initialLoading } = useCollection<UserProfile>(db, "users", {
     orderBy: ["createdAt", "desc"],
     limit: PAGE_SIZE,
