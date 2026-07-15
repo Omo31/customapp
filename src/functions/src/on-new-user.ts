@@ -26,12 +26,18 @@ const ALL_ROLES = [
 /**
  * Cloud Function that triggers when a new user is created in Firebase Authentication.
  */
-export const onNewUser = onUserCreate(async (event: { data: UserRecord }) => {
+export const onNewUser = onUserCreate(async (event) => {
   const user = event.data; // The user record created
-  const { email, uid, displayName } = user;
-  const [firstName, ...lastNameParts] = displayName?.split(' ') || ["", ""];
-  const lastName = lastNameParts.join(' ');
+  if (!user) {
+    logger.error("No user data provided in event.");
+    return;
+  }
 
+  const { email, uid, displayName } = user;
+  logger.info(`Processing new user signup: ${email} (UID: ${uid})`);
+
+  const [firstName = "", ...lastNameParts] = displayName?.split(' ') || ["", ""];
+  const lastName = lastNameParts.join(' ');
 
   const userDocRef = getFirestore().collection("users").doc(uid);
 
@@ -39,10 +45,11 @@ export const onNewUser = onUserCreate(async (event: { data: UserRecord }) => {
   const superAdminEmail = process.env.SUPER_ADMIN_EMAIL;
 
   const userData: any = {
-      email,
-      firstName: firstName || '',
-      lastName: lastName || '',
+      email: email || "",
+      firstName: firstName || "",
+      lastName: lastName || "",
       createdAt: serverTimestamp(),
+      disabled: false,
       notificationPreferences: {
         marketingEmails: false,
         quoteAndOrderUpdates: true,
@@ -50,17 +57,17 @@ export const onNewUser = onUserCreate(async (event: { data: UserRecord }) => {
   };
 
   if (superAdminEmail && email === superAdminEmail) {
-    logger.info(`New user ${email} is the designated superadmin. Granting all roles.`);
+    logger.info(`User ${email} matches SUPER_ADMIN_EMAIL. Granting all administrative roles.`);
     userData.roles = ALL_ROLES;
   } else {
-    logger.info(`New user ${email} registered. Assigning default 'customer' role.`);
+    logger.info(`User ${email} registered as a standard customer.`);
     userData.roles = ["customer"];
   }
 
   try {
     await userDocRef.set(userData, { merge: true });
-    logger.info(`Successfully created user profile and assigned roles for ${uid}`);
+    logger.info(`Successfully created user profile for UID: ${uid}`);
   } catch (error) {
-    logger.error(`Error creating user profile for ${uid}. Error:`, error);
+    logger.error(`Failed to create user profile for UID: ${uid}. Error:`, error);
   }
 });

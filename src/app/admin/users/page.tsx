@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useFirestore, useCollection } from "@/firebase";
@@ -20,8 +19,8 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
 import { Label } from "@/components/ui/label";
-import { Eye, Download, UserX } from "lucide-react";
-import { useState } from "react";
+import { Eye, Download, UserX, ShieldCheck } from "lucide-react";
+import { useState, useMemo } from "react";
 import { Pagination, PaginationContent, PaginationItem, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 import { usePagination } from "@/hooks/use-pagination";
 import ProtectedRoute from "@/components/auth/protected-route";
@@ -29,21 +28,20 @@ import { Switch } from "@/components/ui/switch";
 import { useAuth } from "@/hooks/use-auth.tsx";
 import { Badge } from "@/components/ui/badge";
 
-
 const PAGE_SIZE = 10;
 
 function AdminUsersContent() {
   const db = useFirestore();
   const { toast } = useToast();
   const { user: currentUser, hasRole } = useAuth();
-
   const [refreshKey, setRefreshKey] = useState(0);
-  const shouldFetchUsers = hasRole('users');
 
+  // CRITICAL: We fetch ALL users without a where clause to avoid filtering issues.
+  // The 'disabled' flag ensures we only query if the user has the 'users' management role.
   const { data: initialData, loading: initialLoading } = useCollection<UserProfile>(db, "users", {
     orderBy: ["createdAt", "desc"],
     limit: PAGE_SIZE,
-    disabled: !shouldFetchUsers
+    disabled: !hasRole('users')
   }, [refreshKey]);
 
   const {
@@ -55,21 +53,15 @@ function AdminUsersContent() {
     startAfter,
   } = usePagination({ data: initialData, pageSize: PAGE_SIZE });
 
-  const { data: users, loading: paginatedLoading } = useCollection<UserProfile>(db, "users", {
+  const { data: paginatedUsers, loading: paginatedLoading } = useCollection<UserProfile>(db, "users", {
     orderBy: ["createdAt", "desc"],
     limit: PAGE_SIZE,
     startAfter: startAfter,
-    disabled: !shouldFetchUsers
+    disabled: !hasRole('users')
   }, [refreshKey, startAfter]);
   
-  const { data: allUsers, loading: allUsersLoading } = useCollection<UserProfile>(db, "users", {
-    orderBy: ["createdAt", "desc"],
-    disabled: !shouldFetchUsers
-  }, [refreshKey]);
-
   const loading = initialLoading || paginatedLoading;
-  const currentUsers = currentPage > 1 ? users : initialData;
-
+  const currentUsers = currentPage > 1 ? paginatedUsers : initialData;
 
   const handleRoleChange = async (
     userId: string,
@@ -81,66 +73,51 @@ function AdminUsersContent() {
     const userToUpdate = currentUsers?.find((u) => u.id === userId);
     if (!userToUpdate) return;
     
-    // Prevent non-superadmins from changing superadmin role
+    // Security: Only superadmins can grant/revoke the superadmin role
     if (role === 'superadmin' && !hasRole('superadmin')) {
       toast({
-        title: "Action Forbidden",
-        description: "Only a superadmin can grant or revoke the superadmin role.",
+        title: "Permission Denied",
+        description: "Only a Superadmin can manage the Superadmin role.",
         variant: "destructive"
       });
-      setRefreshKey(prev => prev + 1);
       return;
-    }
-    
-    // Prevent user from removing their own 'users' role and locking themselves out
-    if (userId === currentUser.uid && role === 'users' && !isChecked && !hasRole('superadmin')) {
-        toast({
-            title: "Action Prevented",
-            description: "You cannot remove your own 'Users' management role.",
-            variant: "destructive"
-        });
-        setRefreshKey(prev => prev + 1); // Revert checkbox
-        return;
     }
 
     const currentRoles = userToUpdate.roles || [];
     let newRoles: string[];
 
     if (isChecked) {
-      newRoles = [...new Set([...currentRoles, role])];
+      newRoles = Array.from(new Set([...currentRoles, role]));
     } else {
       newRoles = currentRoles.filter((r) => r !== role);
     }
     
-    // Ensure 'customer' role is present if no other roles exist.
-    if (newRoles.filter(r => r !== 'customer').length === 0 && !newRoles.includes('customer')) {
-        newRoles.push('customer');
-    }
+    // Ensure 'customer' is kept if no other roles remain
+    if (newRoles.length === 0) newRoles.push('customer');
 
     try {
       const userRef = doc(db, "users", userId);
       await updateDoc(userRef, { roles: newRoles });
       toast({
         title: "Roles Updated",
-        description: `Successfully updated roles for ${userToUpdate.firstName}.`,
+        description: `Permissions for ${userToUpdate.firstName} have been saved.`,
       });
     } catch (e: any) {
-      console.error("Error updating roles: ", e);
+      console.error("Error updating roles:", e);
       toast({
-        title: "Error",
-        description: "Failed to update roles. Please try again.",
+        title: "Update Failed",
+        description: "An error occurred while saving roles.",
         variant: "destructive",
       });
     }
   };
 
-  const handleDisableUser = async (userId: string, isDisabled: boolean) => {
+  const handleToggleUserStatus = async (userId: string, isDisabled: boolean) => {
      const userToUpdate = currentUsers?.find((u) => u.id === userId);
      if (!userToUpdate) return;
 
      if (userToUpdate.roles.includes('superadmin') && !hasRole('superadmin')) {
-        toast({ title: "Action Forbidden", description: "The superadmin account cannot be disabled by a non-superadmin.", variant: "destructive" });
-        setRefreshKey(prev => prev + 1);
+        toast({ title: "Action Forbidden", description: "Superadmins cannot be disabled.", variant: "destructive" });
         return;
      }
 
@@ -148,69 +125,32 @@ function AdminUsersContent() {
         const userRef = doc(db, 'users', userId);
         await updateDoc(userRef, { disabled: isDisabled });
         toast({
-            title: `User ${isDisabled ? 'Disabled' : 'Enabled'}`,
-            description: `${userToUpdate.firstName} has been ${isDisabled ? 'disabled' : 'enabled'}.`,
+            title: isDisabled ? 'User Disabled' : 'User Enabled',
+            description: `${userToUpdate.firstName} is now ${isDisabled ? 'restricted' : 'active'}.`,
         });
      } catch (error) {
         toast({ title: "Error", description: "Could not update user status.", variant: "destructive" });
      }
   }
 
-  const handleDownloadCsv = () => {
-    if (!allUsers) {
-        toast({ title: 'No user data to download.', variant: 'destructive' });
-        return;
-    }
-
-    const headers = ['First Name', 'Last Name', 'Email', 'Roles', 'Joined On'];
-    const csvRows = [headers.join(',')];
-
-    allUsers.forEach(user => {
-        const row = [
-            `"${user.firstName}"`,
-            `"${user.lastName}"`,
-            `"${user.email}"`,
-            `"${(user.roles || []).join(', ')}"`,
-            `"${user.createdAt?.seconds ? new Date(user.createdAt.seconds * 1000).toISOString() : 'N/A'}"`
-        ];
-        csvRows.push(row.join(','));
-    });
-
-    const csvString = csvRows.join('\n');
-    const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.setAttribute('href', url);
-    link.setAttribute('download', 'users.csv');
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
-
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-            <h3 className="text-lg font-medium font-headline">Users</h3>
+            <h3 className="text-2xl font-bold font-headline">User Management</h3>
             <p className="text-sm text-muted-foreground">
-            Manage all registered users and their roles/permissions.
+              Manage permissions, roles, and account access for all registered users.
             </p>
         </div>
-        <Button onClick={handleDownloadCsv} disabled={allUsersLoading || !allUsers}>
-            <Download className="mr-2 h-4 w-4" />
-            Download CSV
-        </Button>
       </div>
       <Card>
         <CardHeader>
-          <CardTitle>All Users</CardTitle>
-          <CardDescription>A paginated list of all users in the system.</CardDescription>
+          <CardTitle>Registered Users</CardTitle>
+          <CardDescription>All users are listed here. You can assign administrative roles to grant access to different panel sections.</CardDescription>
         </CardHeader>
         <CardContent>
-          {loading && !currentUsers ? (
-            <div className="space-y-2">
+          {loading ? (
+            <div className="space-y-4">
               {[...Array(PAGE_SIZE)].map((_, i) => (
                 <Skeleton key={i} className="h-16 w-full" />
               ))}
@@ -220,11 +160,9 @@ function AdminUsersContent() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>User ID</TableHead>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Roles</TableHead>
-                    <TableHead>Manage Roles</TableHead>
+                    <TableHead>User</TableHead>
+                    <TableHead>Current Roles</TableHead>
+                    <TableHead>Manage Permissions</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -233,26 +171,25 @@ function AdminUsersContent() {
                     currentUsers.map((user) => (
                       <TableRow key={user.id} className={user.disabled ? "bg-muted/50" : ""}>
                         <TableCell>
-                          <div className="font-mono text-xs text-muted-foreground">{user.id}</div>
-                        </TableCell>
-                        <TableCell className="font-medium">
-                          <div className="font-medium flex items-center gap-2">
-                            {user.disabled && <UserX className="h-4 w-4 text-destructive" />}
-                            {user.firstName} {user.lastName}
+                          <div className="flex flex-col">
+                            <span className="font-bold flex items-center gap-2">
+                                {user.firstName} {user.lastName}
+                                {user.roles?.includes('superadmin') && <ShieldCheck className="h-4 w-4 text-primary" />}
+                            </span>
+                            <span className="text-xs text-muted-foreground">{user.email}</span>
                           </div>
                         </TableCell>
                         <TableCell>
-                            <div className="text-sm text-muted-foreground">{user.email}</div>
-                        </TableCell>
-                        <TableCell>
-                            <div className="flex flex-wrap gap-1 max-w-xs">
-                                {user.roles && user.roles.length > 0 ? user.roles.map(role => (
-                                    <Badge key={role} variant={role === 'superadmin' ? 'destructive' : role === 'customer' ? 'outline' : 'secondary'} className="capitalize">{role.replace('-', ' ')}</Badge>
-                                )) : <span className="text-xs text-muted-foreground">No roles</span>}
+                            <div className="flex flex-wrap gap-1">
+                                {user.roles?.map(role => (
+                                    <Badge key={role} variant={role === 'superadmin' ? 'default' : 'secondary'} className="capitalize text-[10px]">
+                                        {role.replace('-', ' ')}
+                                    </Badge>
+                                ))}
                             </div>
                         </TableCell>
                         <TableCell>
-                          <div className="flex flex-col md:flex-row md:flex-wrap gap-x-4 gap-y-2">
+                          <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                             {allAdminRoles.map((role) => (
                               <div key={role} className="flex items-center space-x-2">
                                 <Checkbox
@@ -263,36 +200,37 @@ function AdminUsersContent() {
                                   }
                                   disabled={
                                     (role === 'superadmin' && !hasRole('superadmin')) ||
-                                    (role === 'superadmin' && user.id === currentUser?.uid)
+                                    (user.id === currentUser?.uid && role === 'users')
                                   }
                                 />
-                                <Label htmlFor={`${user.id}-${role}`} className="text-sm font-medium capitalize leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                                <Label htmlFor={`${user.id}-${role}`} className="text-[11px] capitalize cursor-pointer">
                                   {role.replace('-', ' ')}
                                 </Label>
                               </div>
                             ))}
                           </div>
                         </TableCell>
-                        <TableCell className="text-right space-x-2">
-                           <Switch
-                            aria-label={`Disable user ${user.firstName}`}
-                            checked={!!user.disabled}
-                            onCheckedChange={(isChecked) => handleDisableUser(user.id!, isChecked)}
-                            disabled={(user.roles?.includes('superadmin') && !hasRole('superadmin')) || user.id === currentUser?.uid}
-                           />
-                          <Button asChild variant="outline" size="sm">
-                            <Link href={`/admin/users/${user.id}`}>
-                              <Eye className="mr-0 h-4 w-4 md:mr-2" />
-                              <span className="hidden md:inline">View</span>
-                            </Link>
-                          </Button>
+                        <TableCell className="text-right">
+                          <div className="flex items-center justify-end gap-2">
+                             <Switch
+                                checked={!!user.disabled}
+                                onCheckedChange={(checked) => handleToggleUserStatus(user.id!, checked)}
+                                disabled={user.roles?.includes('superadmin') || user.id === currentUser?.uid}
+                                title={user.disabled ? "Enable User" : "Disable User"}
+                             />
+                             <Button asChild variant="ghost" size="sm">
+                                <Link href={`/admin/users/${user.id}`}>
+                                    <Eye className="h-4 w-4" />
+                                </Link>
+                             </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))
                   ) : (
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center">
-                        No users found.
+                      <TableCell colSpan={4} className="text-center py-8">
+                        No users found in the database.
                       </TableCell>
                     </TableRow>
                   )}
@@ -306,13 +244,13 @@ function AdminUsersContent() {
               <Pagination>
                   <PaginationContent>
                       <PaginationItem>
-                          <PaginationPrevious onClick={handlePreviousPage} aria-disabled={!canGoPrevious} className={!canGoPrevious ? "pointer-events-none opacity-50" : undefined} />
+                          <PaginationPrevious onClick={handlePreviousPage} disabled={!canGoPrevious} />
                       </PaginationItem>
                       <PaginationItem>
-                        <span className="p-2 text-sm">Page {currentPage}</span>
+                        <span className="px-4 text-sm font-medium">Page {currentPage}</span>
                       </PaginationItem>
                       <PaginationItem>
-                          <PaginationNext onClick={handleNextPage} aria-disabled={!canGoNext} className={!canGoNext ? "pointer-events-none opacity-50" : undefined} />
+                          <PaginationNext onClick={handleNextPage} disabled={!canGoNext} />
                       </PaginationItem>
                   </PaginationContent>
               </Pagination>

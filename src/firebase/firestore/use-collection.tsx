@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -40,7 +39,6 @@ export const useCollection = <T,>(
     
     if (!db || !path) return null;
     
-    let effectivePath = path;
     const constraints: QueryConstraint[] = [];
 
     // Check for empty 'in' or 'array-contains-any' queries
@@ -58,20 +56,7 @@ export const useCollection = <T,>(
                     return null;
                 }
             }
-        }
-    }
-
-
-    if (options.where) {
-        if (Array.isArray(options.where[0])) {
-            // It's an array of where clauses
-            (options.where as [string, any, any][]).forEach(w => {
-                constraints.push(where(w[0], w[1], w[2]));
-            });
-        } else {
-            // It's a single where clause
-            const w = options.where as [string, any, any];
-            constraints.push(where(w[0], w[1], w[2]));
+            constraints.push(where(field, op, value));
         }
     }
 
@@ -88,8 +73,8 @@ export const useCollection = <T,>(
         constraints.push(limit(options.limit));
     }
 
-    return query(collection(db, effectivePath), ...constraints);
-  }, [db, path, JSON.stringify(options), ...deps]); // Simple deep dependency check
+    return query(collection(db, path), ...constraints);
+  }, [db, path, JSON.stringify(options), ...deps]);
 
 
   useEffect(() => {
