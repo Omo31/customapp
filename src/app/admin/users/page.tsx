@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useFirestore, useCollection } from "@/firebase";
@@ -19,8 +20,8 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
 import { Label } from "@/components/ui/label";
-import { Eye, Download, UserX, ShieldCheck } from "lucide-react";
-import { useState, useMemo } from "react";
+import { Eye, ShieldCheck, RefreshCcw } from "lucide-react";
+import { useState } from "react";
 import { Pagination, PaginationContent, PaginationItem, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 import { usePagination } from "@/hooks/use-pagination";
 import ProtectedRoute from "@/components/auth/protected-route";
@@ -28,7 +29,7 @@ import { Switch } from "@/components/ui/switch";
 import { useAuth } from "@/hooks/use-auth.tsx";
 import { Badge } from "@/components/ui/badge";
 
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 20;
 
 function AdminUsersContent() {
   const db = useFirestore();
@@ -36,8 +37,8 @@ function AdminUsersContent() {
   const { user: currentUser, hasRole } = useAuth();
   const [refreshKey, setRefreshKey] = useState(0);
 
-  // CRITICAL: We fetch ALL users without a where clause to avoid filtering issues.
-  // The 'disabled' flag ensures we only query if the user has the 'users' management role.
+  // We fetch ALL users without a where clause to avoid filtering issues.
+  // We use email as a fallback ordering if createdAt is missing for some old manual records.
   const { data: initialData, loading: initialLoading } = useCollection<UserProfile>(db, "users", {
     orderBy: ["createdAt", "desc"],
     limit: PAGE_SIZE,
@@ -73,7 +74,6 @@ function AdminUsersContent() {
     const userToUpdate = currentUsers?.find((u) => u.id === userId);
     if (!userToUpdate) return;
     
-    // Security: Only superadmins can grant/revoke the superadmin role
     if (role === 'superadmin' && !hasRole('superadmin')) {
       toast({
         title: "Permission Denied",
@@ -92,7 +92,6 @@ function AdminUsersContent() {
       newRoles = currentRoles.filter((r) => r !== role);
     }
     
-    // Ensure 'customer' is kept if no other roles remain
     if (newRoles.length === 0) newRoles.push('customer');
 
     try {
@@ -116,7 +115,7 @@ function AdminUsersContent() {
      const userToUpdate = currentUsers?.find((u) => u.id === userId);
      if (!userToUpdate) return;
 
-     if (userToUpdate.roles.includes('superadmin') && !hasRole('superadmin')) {
+     if (userToUpdate.roles?.includes('superadmin') && !hasRole('superadmin')) {
         toast({ title: "Action Forbidden", description: "Superadmins cannot be disabled.", variant: "destructive" });
         return;
      }
@@ -142,14 +141,18 @@ function AdminUsersContent() {
               Manage permissions, roles, and account access for all registered users.
             </p>
         </div>
+        <Button variant="outline" size="sm" onClick={() => setRefreshKey(k => k + 1)}>
+            <RefreshCcw className="h-4 w-4 mr-2" />
+            Refresh
+        </Button>
       </div>
       <Card>
         <CardHeader>
           <CardTitle>Registered Users</CardTitle>
-          <CardDescription>All users are listed here. You can assign administrative roles to grant access to different panel sections.</CardDescription>
+          <CardDescription>Assign administrative roles to grant access to different panel sections.</CardDescription>
         </CardHeader>
         <CardContent>
-          {loading ? (
+          {loading && !currentUsers ? (
             <div className="space-y-4">
               {[...Array(PAGE_SIZE)].map((_, i) => (
                 <Skeleton key={i} className="h-16 w-full" />
@@ -189,7 +192,7 @@ function AdminUsersContent() {
                             </div>
                         </TableCell>
                         <TableCell>
-                          <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                          <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 min-w-[300px]">
                             {allAdminRoles.map((role) => (
                               <div key={role} className="flex items-center space-x-2">
                                 <Checkbox
@@ -229,8 +232,8 @@ function AdminUsersContent() {
                     ))
                   ) : (
                     <TableRow>
-                      <TableCell colSpan={4} className="text-center py-8">
-                        No users found in the database.
+                      <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                        No users found. Try refreshing or check security rules.
                       </TableCell>
                     </TableRow>
                   )}
@@ -244,13 +247,13 @@ function AdminUsersContent() {
               <Pagination>
                   <PaginationContent>
                       <PaginationItem>
-                          <PaginationPrevious onClick={handlePreviousPage} disabled={!canGoPrevious} />
+                          <PaginationPrevious onClick={handlePreviousPage} aria-disabled={!canGoPrevious} className={!canGoPrevious ? "pointer-events-none opacity-50" : undefined} />
                       </PaginationItem>
                       <PaginationItem>
-                        <span className="px-4 text-sm font-medium">Page {currentPage}</span>
+                        <span className="px-4 text-sm font-medium text-muted-foreground">Page {currentPage}</span>
                       </PaginationItem>
                       <PaginationItem>
-                          <PaginationNext onClick={handleNextPage} disabled={!canGoNext} />
+                          <PaginationNext onClick={handleNextPage} aria-disabled={!canGoNext} className={!canGoNext ? "pointer-events-none opacity-50" : undefined} />
                       </PaginationItem>
                   </PaginationContent>
               </Pagination>

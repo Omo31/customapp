@@ -1,3 +1,4 @@
+
 /**
  * @fileoverview
  * This file contains a Cloud Function that triggers on new user creation.
@@ -8,9 +9,8 @@
 
 import { onUserCreate } from "firebase-functions/v2/auth";
 import * as logger from "firebase-functions/logger";
-import { getFirestore, serverTimestamp } from "firebase-admin/firestore";
+import { getFirestore, FieldValue } from "firebase-admin/firestore";
 import { initializeApp, getApps } from "firebase-admin/app";
-import { UserRecord } from "firebase-admin/auth";
 
 // Initialize the app if it hasn't been already
 if (getApps().length === 0) {
@@ -36,8 +36,14 @@ export const onNewUser = onUserCreate(async (event) => {
   const { email, uid, displayName } = user;
   logger.info(`Processing new user signup: ${email} (UID: ${uid})`);
 
-  const [firstName = "", ...lastNameParts] = displayName?.split(' ') || ["", ""];
-  const lastName = lastNameParts.join(' ');
+  // Handle name splitting safely
+  let firstName = "";
+  let lastName = "";
+  if (displayName) {
+    const parts = displayName.trim().split(/\s+/);
+    firstName = parts[0] || "";
+    lastName = parts.slice(1).join(" ") || "";
+  }
 
   const userDocRef = getFirestore().collection("users").doc(uid);
 
@@ -46,9 +52,9 @@ export const onNewUser = onUserCreate(async (event) => {
 
   const userData: any = {
       email: email || "",
-      firstName: firstName || "",
-      lastName: lastName || "",
-      createdAt: serverTimestamp(),
+      firstName: firstName,
+      lastName: lastName,
+      createdAt: FieldValue.serverTimestamp(),
       disabled: false,
       notificationPreferences: {
         marketingEmails: false,
@@ -56,7 +62,8 @@ export const onNewUser = onUserCreate(async (event) => {
       }
   };
 
-  if (superAdminEmail && email === superAdminEmail) {
+  // Assign roles
+  if (superAdminEmail && email && email.toLowerCase() === superAdminEmail.toLowerCase()) {
     logger.info(`User ${email} matches SUPER_ADMIN_EMAIL. Granting all administrative roles.`);
     userData.roles = ALL_ROLES;
   } else {
@@ -65,7 +72,8 @@ export const onNewUser = onUserCreate(async (event) => {
   }
 
   try {
-    await userDocRef.set(userData, { merge: true });
+    // We use set without merge to ensure a clean initial state for the user document
+    await userDocRef.set(userData);
     logger.info(`Successfully created user profile for UID: ${uid}`);
   } catch (error) {
     logger.error(`Failed to create user profile for UID: ${uid}. Error:`, error);
