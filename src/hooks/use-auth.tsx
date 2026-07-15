@@ -1,5 +1,3 @@
-
-
 "use client";
 import { useUser } from "@/firebase";
 import { 
@@ -15,31 +13,24 @@ import {
     updatePassword,
     deleteUser,
 } from "firebase/auth";
-import { doc, serverTimestamp, writeBatch, collection, setDoc } from 'firebase/firestore';
+import { doc, serverTimestamp, writeBatch, collection } from 'firebase/firestore';
 import { useToast } from "./use-toast";
 import { useState } from "react";
 import { auth, db } from "@/firebase";
 import type { UserProfile, Notification } from "@/types";
-import { errorEmitter } from "@/firebase/error-emitter";
-import { FirestorePermissionError } from "@/firebase/errors";
 import { useRouter } from "next/navigation";
 
-
-// This hook is now a wrapper around the core Firebase user state
-// to provide login/signup/logout functions with loading states.
 export const useAuth = () => {
   const { user, loading: userLoading, roles, hasRole: userHasRole } = useUser();
   const [actionLoading, setActionLoading] = useState(false);
   const { toast } = useToast();
   const router = useRouter();
 
-
   const loading = userLoading || actionLoading;
 
   const saveUserProfile = async (firebaseUser: FirebaseUser, firstName: string, lastName: string) => {
       const userRef = doc(db, 'users', firebaseUser.uid);
       
-      // The client no longer sets any roles. This is now handled exclusively by the backend Cloud Function.
       const userProfile: Omit<UserProfile, 'id' | 'roles'> = {
           firstName,
           lastName,
@@ -54,11 +45,8 @@ export const useAuth = () => {
       };
       
       const batch = writeBatch(db);
-      
-      // 1. Set the user profile (without roles)
       batch.set(userRef, userProfile, { merge: true });
 
-      // 2. Create the welcome notification for the user
       const userNotifRef = doc(collection(db, `users/${firebaseUser.uid}/notifications`));
       const userNotif: Omit<Notification, 'id'> = {
           userId: firebaseUser.uid,
@@ -70,7 +58,6 @@ export const useAuth = () => {
       };
       batch.set(userNotifRef, userNotif);
       
-      // 3. Create the notification for admins
       const adminNotifRef = doc(collection(db, `notifications`));
       const adminNotif: Omit<Notification, 'id'> = {
           role: 'users',
@@ -82,7 +69,6 @@ export const useAuth = () => {
       };
       batch.set(adminNotifRef, adminNotif);
       
-      // The calling function (signup) will handle the try/catch block
       await batch.commit();
   }
 
@@ -117,18 +103,13 @@ export const useAuth = () => {
         displayName: `${firstName} ${lastName}`
       });
       
-      // CRITICAL: This operation must be wrapped in a try/catch.
-      // If it fails, we need to delete the user from Auth to avoid inconsistency.
       try {
         await saveUserProfile(createdUser, firstName, lastName);
       } catch (dbError: any) {
         console.error("Database user profile creation failed:", dbError);
-        // This is a critical failure. The user exists in Auth but not in Firestore.
-        // We must delete the Auth user to allow them to try signing up again.
         if (createdUser) {
           await deleteUser(createdUser);
         }
-        // Re-throw a more user-friendly error.
         throw new Error("Failed to create user profile in database. Please try signing up again.");
       }
       
@@ -140,10 +121,9 @@ export const useAuth = () => {
           duration: 8000,
       });
 
-      // Sign out to force the user to verify their email
       await firebaseSignOut(auth);
 
-    } catch (error: any)       {
+    } catch (error: any) {
        console.error("Signup Error:", error);
        toast({
         title: 'Sign Up Failed',
@@ -239,17 +219,9 @@ export const useAuth = () => {
         if (!currentUser) throw new Error("No user is currently signed in.");
 
         await reauthenticateWithCredential(currentUser, credential);
-        
-        // Before deleting the Auth user, you might want to delete their Firestore data.
-        // This part is complex and depends on what data you want to remove.
-        // For now, we just delete the auth user.
-        
         await deleteUser(currentUser);
-
         toast({ title: "Account Deleted", description: "Your account has been permanently deleted." });
-        
         router.push('/');
-
     } catch (error: any) {
          toast({
             title: "Account Deletion Failed",
@@ -263,14 +235,11 @@ export const useAuth = () => {
   }
 
   const hasRole = (role: string) => {
-    // If the user has the 'superadmin' role, they have all permissions.
     if (userHasRole('superadmin')) return true;
-    // Otherwise, check for the specific role.
     return userHasRole(role);
   };
   
   const isAdmin = (roles?.filter(role => role !== 'customer').length || 0) > 0;
-
 
   return { user, loading, login, signup, logout, resetPassword, changePassword, deleteUserAccount, roles, hasRole, isAdmin };
 };

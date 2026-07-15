@@ -1,4 +1,3 @@
-
 'use client'
 
 import { 
@@ -14,7 +13,7 @@ import {
     SidebarRail
 } from "@/components/ui/sidebar"
 import { Logo } from "@/components/logo"
-import { useAuth } from "@/hooks/use-auth.tsx"
+import { useAuth } from "@/hooks/use-auth"
 import { usePathname } from "next/navigation"
 import { Home, User as UserIcon, LogOut, FileText, ShoppingCart, LayoutDashboard } from "lucide-react"
 import Link from "next/link"
