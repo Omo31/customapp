@@ -11,7 +11,7 @@ import {
   TableHead,
   TableBody,
   TableCell,
-} from "@/components/ui/table";
+} from "@/components/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { allAdminRoles } from "@/lib/roles";
 import { doc, updateDoc } from "firebase/firestore";
@@ -20,13 +20,13 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
 import { Label } from "@/components/ui/label";
-import { Eye, ShieldCheck, RefreshCcw } from "lucide-react";
+import { Eye, ShieldCheck, RefreshCcw, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { Pagination, PaginationContent, PaginationItem, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 import { usePagination } from "@/hooks/use-pagination";
 import ProtectedRoute from "@/components/auth/protected-route";
 import { Switch } from "@/components/ui/switch";
-import { useAuth } from "@/hooks/use-auth.tsx";
+import { useAuth } from "@/hooks/use-auth";
 import { Badge } from "@/components/ui/badge";
 
 const PAGE_SIZE = 20;
@@ -37,12 +37,11 @@ function AdminUsersContent() {
   const { user: currentUser, hasRole } = useAuth();
   const [refreshKey, setRefreshKey] = useState(0);
 
-  // We fetch ALL users without a where clause to avoid filtering issues.
-  // We use email as a fallback ordering if createdAt is missing for some old manual records.
+  // We remove the 'disabled' flag here because the page is already role-protected
+  // and we want the query to start as soon as possible.
   const { data: initialData, loading: initialLoading } = useCollection<UserProfile>(db, "users", {
     orderBy: ["createdAt", "desc"],
     limit: PAGE_SIZE,
-    disabled: !hasRole('users')
   }, [refreshKey]);
 
   const {
@@ -58,7 +57,6 @@ function AdminUsersContent() {
     orderBy: ["createdAt", "desc"],
     limit: PAGE_SIZE,
     startAfter: startAfter,
-    disabled: !hasRole('users')
   }, [refreshKey, startAfter]);
   
   const loading = initialLoading || paginatedLoading;
@@ -141,8 +139,8 @@ function AdminUsersContent() {
               Manage permissions, roles, and account access for all registered users.
             </p>
         </div>
-        <Button variant="outline" size="sm" onClick={() => setRefreshKey(k => k + 1)}>
-            <RefreshCcw className="h-4 w-4 mr-2" />
+        <Button variant="outline" size="sm" onClick={() => setRefreshKey(k => k + 1)} disabled={loading}>
+            {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <RefreshCcw className="h-4 w-4 mr-2" />}
             Refresh
         </Button>
       </div>
@@ -154,7 +152,7 @@ function AdminUsersContent() {
         <CardContent>
           {loading && !currentUsers ? (
             <div className="space-y-4">
-              {[...Array(PAGE_SIZE)].map((_, i) => (
+              {[...Array(5)].map((_, i) => (
                 <Skeleton key={i} className="h-16 w-full" />
               ))}
             </div>

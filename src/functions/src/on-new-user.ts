@@ -72,9 +72,9 @@ export const onNewUser = onUserCreate(async (event) => {
   }
 
   try {
-    // We use set without merge to ensure a clean initial state for the user document
-    await userDocRef.set(userData);
-    logger.info(`Successfully created user profile for UID: ${uid}`);
+    // We use set with merge: true to avoid overwriting fields if the client already wrote to the doc
+    await userDocRef.set(userData, { merge: true });
+    logger.info(`Successfully created/updated user profile for UID: ${uid}`);
   } catch (error) {
     logger.error(`Failed to create user profile for UID: ${uid}. Error:`, error);
   }

@@ -1,3 +1,4 @@
+
 "use client";
 import { useUser } from "@/firebase";
 import { 
@@ -45,6 +46,7 @@ export const useAuth = () => {
       };
       
       const batch = writeBatch(db);
+      // We use merge: true to preserve the roles if the Cloud Function has already set them
       batch.set(userRef, userProfile, { merge: true });
 
       const userNotifRef = doc(collection(db, `users/${firebaseUser.uid}/notifications`));
@@ -103,15 +105,9 @@ export const useAuth = () => {
         displayName: `${firstName} ${lastName}`
       });
       
-      try {
-        await saveUserProfile(createdUser, firstName, lastName);
-      } catch (dbError: any) {
-        console.error("Database user profile creation failed:", dbError);
-        if (createdUser) {
-          await deleteUser(createdUser);
-        }
-        throw new Error("Failed to create user profile in database. Please try signing up again.");
-      }
+      // We perform a client-side write to ensure the user has a profile immediately.
+      // The Cloud Function will supplement this with roles.
+      await saveUserProfile(createdUser, firstName, lastName);
       
       await sendEmailVerification(createdUser);
       
