@@ -8,12 +8,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { use } from "react";
 
 interface UserDetailsPageProps {
-  params: {
-    userId: string;
+    params: Promise<{
+      userId: string;
+    }>
   }
-}
 
 export default function UserDetailsPage({ params }: UserDetailsPageProps) {
     const { userId } = params;
