@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useFirestore, useDoc, useCollection } from "@/firebase";
@@ -8,6 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+// 1. Ensure 'use' is imported from 'react'
 import { use } from "react";
 
 interface UserDetailsPageProps {
@@ -17,7 +17,10 @@ interface UserDetailsPageProps {
   }
 
 export default function UserDetailsPage({ params }: UserDetailsPageProps) {
-    const { userId } = params;
+    // 2. Safely unwrap the async params Promise using React's use() hook
+    const resolvedParams = use(params);
+    const userId = resolvedParams.userId;
+    
     const db = useFirestore();
 
     const { data: user, loading: userLoading } = useDoc<UserProfile>(db, "users", userId);
@@ -87,7 +90,11 @@ export default function UserDetailsPage({ params }: UserDetailsPageProps) {
                         {orders.length > 0 ? orders.map(order => (
                             <TableRow key={order.id}>
                             <TableCell className="font-medium">#...{order.id?.slice(-6)}</TableCell>
-                            <TableCell>{new Date(order.createdAt?.seconds * 1000).toLocaleDateString()}</TableCell>
+                            <TableCell>
+                                {order.createdAt?.seconds 
+                                    ? new Date(order.createdAt.seconds * 1000).toLocaleDateString() 
+                                    : "N/A"}
+                            </TableCell>
                             <TableCell><Badge>{order.status}</Badge></TableCell>
                             <TableCell className="text-right">₦{order.totalCost.toLocaleString()}</TableCell>
                             </TableRow>
